@@ -242,6 +242,20 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .qa-save{flex:1;padding:9px;border-radius:7px;background:var(--wesele);border:none;color:#fff;font-size:14px;font-weight:700;cursor:pointer}
 
 /* ── MODALS ── */
+/* ── LOCK SCREEN ── */
+#lock-screen{position:fixed;inset:0;background:var(--bg);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;padding:24px}
+.lock-card{background:var(--surface);border:1px solid var(--border2);border-radius:18px;padding:32px 28px;width:100%;max-width:340px;display:flex;flex-direction:column;align-items:center;gap:16px}
+.lock-logo{font-size:36px;margin-bottom:4px}
+.lock-title{font-size:18px;font-weight:800;text-align:center}
+.lock-sub{font-size:12px;color:var(--text2);text-align:center;line-height:1.5}
+.lock-input{width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:9px;padding:12px 14px;color:var(--text);font-size:16px;text-align:center;letter-spacing:3px;outline:none;font-family:inherit}
+.lock-input:focus{border-color:var(--wesele)}
+.lock-btn{width:100%;background:var(--wesele);border:none;color:#fff;padding:12px;border-radius:9px;font-size:14px;font-weight:700;cursor:pointer}
+.lock-btn:hover{opacity:.88}
+.lock-err{color:var(--danger);font-size:12px;min-height:16px;text-align:center}
+.lock-reset{background:none;border:none;color:var(--text3);font-size:11px;cursor:pointer;margin-top:-4px}
+.lock-reset:hover{color:var(--text2)}
+#lock-screen.hidden{display:none}
 .modal-overlay{display:none;position:fixed;inset:0;background:#000c;z-index:400;align-items:center;justify-content:center;padding:14px}
 .modal-overlay.open{display:flex}
 .modal{background:var(--surface);border-radius:14px;width:100%;max-width:480px;max-height:92vh;overflow-y:auto;padding:18px;animation:fadeUp .2s ease;border:1px solid var(--border2)}
@@ -267,6 +281,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .tasks-list{display:flex;flex-direction:column}
 .task-row{display:flex;align-items:center;gap:8px;padding:6px 1px;border-bottom:1px solid var(--border)}
 .task-row:last-child{border-bottom:none}
+.task-del-btn{background:none;border:none;color:var(--text3);font-size:11px;cursor:pointer;padding:2px 5px;border-radius:3px;margin-left:auto;line-height:1;flex-shrink:0}
+.task-del-btn:hover{color:var(--danger);background:var(--surface2)}
 .chk{width:16px;height:16px;border-radius:4px;border:2px solid var(--border2);background:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .chk.on{background:var(--wesele);border-color:var(--wesele)}
 .chk.on::after{content:'✓';color:#fff;font-size:10px;font-weight:800}
@@ -337,6 +353,18 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 </head>
 <body>
 
+<!-- ── LOCK SCREEN ── -->
+<div id="lock-screen">
+  <div class="lock-card">
+    <div class="lock-logo">📷</div>
+    <div class="lock-title" id="lock-title">Fotograf Planer</div>
+    <div class="lock-sub" id="lock-sub">Ustaw hasło do aplikacji.<br>Na tym urządzeniu nie będziesz pytany ponownie.</div>
+    <input class="lock-input" id="lock-pwd" type="password" maxlength="32" placeholder="••••••" onkeydown="if(event.key==='Enter')lockSubmit()" autocomplete="current-password" />
+    <div class="lock-err" id="lock-err"></div>
+    <button class="lock-btn" onclick="lockSubmit()">Odblokuj</button>
+  </div>
+</div>
+
 <!-- ── TOPBAR ── -->
 <header class="topbar">
   <div class="logo">📷 <span>Foto</span>Planer</div>
@@ -367,6 +395,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <div class="drive-menu" id="drive-menu" style="display:none">
       <button class="drive-menu-btn" onclick="gdriveSave();hideDriveMenu()">⬆ Zapisz na Drive</button>
       <button class="drive-menu-btn" onclick="gdriveLoad();hideDriveMenu()">⬇ Wczytaj z Drive</button>
+      <button class="drive-menu-btn" onclick="gcalSyncAll();hideDriveMenu()">📅 Synchronizuj Kalendarz</button>
       <button class="drive-menu-btn" onclick="gdriveSetup();hideDriveMenu()">⚙ Konfiguruj Client ID</button>
       <hr style="border:none;border-top:1px solid var(--border);margin:3px 0">
       <button class="drive-menu-btn" onclick="gdriveDisconnect();hideDriveMenu()" style="color:var(--danger)">✕ Odłącz konto</button>
@@ -458,7 +487,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     </div>
     <div class="qa-row">
       <input class="qa-input" id="qa-date" type="date" style="flex:.6" />
-      <input class="qa-input" id="qa-deadline" type="date" placeholder="Termin dostawy (opcja)" style="flex:.6" />
+      <input class="qa-input" id="qa-deadline" type="date" placeholder="Termin oddania (opcja)" style="flex:.6" />
     </div>
     <div class="qa-btns">
       <button class="qa-cancel" onclick="closeQuickAdd()">Anuluj</button>
@@ -482,6 +511,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       <label class="form-label">Kategoria</label>
       <div class="cat-picker" id="cat-picker"></div>
     </div>
+    <div class="form-group" id="custom-cat-group" style="display:none">
+      <label class="form-label">Własna nazwa kategorii</label>
+      <input class="form-input" id="f-custom-cat" placeholder="np. Produktówka, Reportaż, Architektura..." />
+    </div>
     <div class="form-group">
       <label class="form-label">Kolumna</label>
       <div class="status-picker" id="status-picker"></div>
@@ -494,6 +527,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       <div class="form-group">
         <label class="form-label">Termin oddania materiałów</label>
         <input class="form-input" id="f-deadline" type="date" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Godzina oddania</label>
+        <input class="form-input" id="f-delivery-time" type="time" />
       </div>
     </div>
     <div class="form-row">
@@ -548,55 +585,37 @@ const CATS = {
   chrzest:  {label:'Chrzest',  icon:'👶',color:'#38bdf8',dim:'#38bdf825'},
   komunia:  {label:'Komunia',  icon:'✝️',color:'#a78bfa',dim:'#a78bfa25'},
   sesja:    {label:'Sesja',    icon:'📸',color:'#4ade80',dim:'#4ade8025'},
+  inne:     {label:'Inne',    icon:'📷',color:'#94a3b8',dim:'#94a3b825'},
 };
 
-// Auto-tasks per category (#12)
+// Standard tasks for all categories
+const STANDARD_TASKS = [
+  {id:'selekcja',    label:'Selekcja zdjęć'},
+  {id:'obrobka',     label:'Obróbka'},
+  {id:'pendrive',    label:'Pendrive'},
+  {id:'fotoksiazka', label:'Fotoksiążka'},
+  {id:'zamowienie',  label:'Zamówienie'},
+  {id:'oddanie',     label:'Oddanie materiału'},
+];
+const WESELE_TASKS = [
+  {id:'selekcja',         label:'Selekcja zdjęć'},
+  {id:'obrobka',          label:'Obróbka'},
+  {id:'sesja_plenerowa',  label:'Sesja plenerowa'},
+  {id:'pendrive',         label:'Pendrive'},
+  {id:'fotoksiazka_prem', label:'Fotoksiążka Premium'},
+  {id:'fotoksiazka_bas',  label:'Fotoksiążka Basic'},
+  {id:'zamowienie',       label:'Zamówienie'},
+  {id:'oddanie',          label:'Oddanie materiału'},
+];
 const CAT_TASKS = {
-  wesele:[
-    {id:'przygotowanie',  label:'Przygotowanie sprzętu'},
-    {id:'selekcja',       label:'Selekcja zdjęć'},
-    {id:'edycja',         label:'Edycja'},
-    {id:'retusze',        label:'Retusze'},
-    {id:'galeria',        label:'Galeria online'},
-    {id:'fotokniga_proj', label:'Fotokniga — projekt'},
-    {id:'fotokniga_zam',  label:'Fotokniga — zamówienie'},
-    {id:'album',          label:'Album'},
-    {id:'pendrive',       label:'Pendrive'},
-    {id:'wyslanie',       label:'Wysłanie do klienta'},
-  ],
-  urodziny:[
-    {id:'selekcja',  label:'Selekcja zdjęć'},
-    {id:'edycja',    label:'Edycja'},
-    {id:'galeria',   label:'Galeria online'},
-    {id:'pendrive',  label:'Pendrive'},
-    {id:'wyslanie',  label:'Wysłanie do klienta'},
-  ],
-  chrzest:[
-    {id:'selekcja',  label:'Selekcja zdjęć'},
-    {id:'edycja',    label:'Edycja'},
-    {id:'album',     label:'Album'},
-    {id:'pendrive',  label:'Pendrive'},
-    {id:'wyslanie',  label:'Wysłanie do klienta'},
-  ],
-  komunia:[
-    {id:'selekcja',       label:'Selekcja zdjęć'},
-    {id:'edycja',         label:'Edycja'},
-    {id:'retusze',        label:'Retusze'},
-    {id:'album',          label:'Album'},
-    {id:'fotokniga_proj', label:'Fotokniga — projekt'},
-    {id:'fotokniga_zam',  label:'Fotokniga — zamówienie'},
-    {id:'pendrive',       label:'Pendrive'},
-    {id:'wyslanie',       label:'Wysłanie do klienta'},
-  ],
-  sesja:[
-    {id:'selekcja',  label:'Selekcja zdjęć'},
-    {id:'edycja',    label:'Edycja'},
-    {id:'retusze',   label:'Retusze'},
-    {id:'galeria',   label:'Galeria online'},
-    {id:'wyslanie',  label:'Wysłanie do klienta'},
-  ],
+  wesele:   [...WESELE_TASKS],
+  urodziny: [...STANDARD_TASKS],
+  chrzest:  [...STANDARD_TASKS],
+  komunia:  [...STANDARD_TASKS],
+  sesja:    [...STANDARD_TASKS],
+  inne:     [...STANDARD_TASKS],
 };
-const DEFAULT_TASKS = CAT_TASKS.sesja;
+const DEFAULT_TASKS = STANDARD_TASKS;
 
 const WEDDING_SCHEDULE_TEMPLATE = [
   {id:'s1',time:'09:00',activity:'Sesja przygotowań Panny Młodej'},
@@ -615,7 +634,6 @@ const DAYS_SHORT   = ['Pn','Wt','Śr','Cz','Pt','So','Nd'];
 
 // ══ DATA ═══════════════════════════════════════════════════════════════════
 const DEFAULT_COLS = [
-  {id:'nowe',       name:'Nowe',       icon:'📥'},
   {id:'edycja_st',  name:'W edycji',   icon:'🖥️'},
   {id:'wysylka',    name:'Do wysyłki', icon:'📦'},
   {id:'zakonczone', name:'Zakończone', icon:'✅'},
@@ -639,12 +657,36 @@ function loadData() {
       } catch(e){}
     });
   }
+  // Migration: remove 'nowe' column, move its zlecenia to first remaining col
+  if(cols.some(c=>c.id==='nowe')){
+    const remaining=cols.filter(c=>c.id!=='nowe');
+    if(remaining.length){
+      zlecenia.forEach(z=>{if(z.status==='nowe')z.status=remaining[0].id;});
+      cols=remaining;
+      save();saveCols();
+    }
+  }
 }
 
-function save()     { localStorage.setItem('foto_v4', JSON.stringify(zlecenia)); }
+function save(){
+  localStorage.setItem('foto_v4', JSON.stringify(zlecenia));
+  // auto-sync to Drive + Google Calendar after 5s idle
+  if(gdriveToken){
+    clearTimeout(autoSyncTimer);
+    autoSyncTimer=setTimeout(async()=>{
+      await gdriveSave();
+      await gcalSyncAll();
+    },5000);
+  }
+}
 function saveCols() { localStorage.setItem('foto_cols', JSON.stringify(cols)); }
 function uid()      { return Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
 function esc(s)     { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+function getCatLabel(z){
+  if(z.cat==='inne'&&z.customCat)return z.customCat;
+  return CATS[z.cat]?.label||z.cat;
+}
 
 function daysUntil(dateStr) {
   if(!dateStr) return null;
@@ -880,7 +922,7 @@ function makeCard(z){
   const card=document.createElement('div');card.className='kanban-card';card.draggable=true;card.dataset.id=z.id;
   card.style.borderLeftColor=cat.color||'#555';
   card.innerHTML=`
-    <div class="card-cat" style="background:${cat.dim};color:${cat.color}">${cat.icon||''} ${cat.label||z.cat}</div>
+    <div class="card-cat" style="background:${cat.dim};color:${cat.color}">${cat.icon||''} ${getCatLabel(z)}</div>
     <div class="card-name">${esc(z.name)}</div>
     ${dateLabel?`<div class="card-date">📅 ${dateLabel}${z.secondShooter?` · 👤 ${esc(z.secondShooter)}`:''}</div>`:''}
     ${ddHtml}${finHtml}
@@ -1135,6 +1177,9 @@ function openAddModal(defaultStatus){
   document.getElementById('f-name').value='';
   document.getElementById('f-date').value=selectedDate||new Date().toISOString().slice(0,10);
   document.getElementById('f-deadline').value='';
+  document.getElementById('f-delivery-time').value='';
+  document.getElementById('f-custom-cat').value='';
+  document.getElementById('custom-cat-group').style.display='none';
   document.getElementById('f-price').value='';
   document.getElementById('f-deposit').value='';
   document.getElementById('f-second').value='';
@@ -1157,6 +1202,9 @@ function openEditModal(id){
   document.getElementById('f-name').value=z.name;
   document.getElementById('f-date').value=z.date||'';
   document.getElementById('f-deadline').value=z.deliveryDeadline||'';
+  document.getElementById('f-delivery-time').value=z.deliveryTime||'';
+  document.getElementById('f-custom-cat').value=z.customCat||'';
+  document.getElementById('custom-cat-group').style.display=z.cat==='inne'?'':'none';
   document.getElementById('f-price').value=z.price||'';
   document.getElementById('f-deposit').value=z.deposit||'';
   document.getElementById('f-second').value=z.secondShooter||'';
@@ -1178,6 +1226,8 @@ function renderCatPicker(){
 
 function selectCat(cat){
   selCat=cat;
+  const ccg=document.getElementById('custom-cat-group');
+  if(ccg)ccg.style.display=cat==='inne'?'':'none';
   // Auto-load tasks if not dirty (#12)
   if(!tasksDirty){
     taskStates={};
@@ -1195,25 +1245,48 @@ function renderStatusPicker(){
 
 function renderTaskForm(){
   const tasks=selCat&&!tasksDirty?(CAT_TASKS[selCat]||DEFAULT_TASKS):Object.entries(taskStates).map(([id,done])=>{
-    const def=[...Object.values(CAT_TASKS).flat()].find(t=>t.id===id)||{id,label:id};
+    const allDefs=[...WESELE_TASKS,...STANDARD_TASKS];
+    const def=allDefs.find(t=>t.id===id)||{id,label:id};
     return {...def,done};
   });
   document.getElementById('f-tasks').innerHTML=tasks.map(t=>`
     <div class="task-row">
       <div class="chk ${taskStates[t.id]?'on':''}" onclick="taskStates['${t.id}']=!taskStates['${t.id}'];tasksDirty=true;renderTaskForm()"></div>
       <div class="task-lbl ${taskStates[t.id]?'done':''}">${esc(t.label)}</div>
+      <button class="task-del-btn" onclick="deleteFormTask('${t.id}')" title="Usuń zadanie">✕</button>
     </div>`).join('');
+}
+
+function deleteFormTask(id){
+  if(!tasksDirty){
+    taskStates={};
+    (CAT_TASKS[selCat]||DEFAULT_TASKS).forEach(t=>taskStates[t.id]=false);
+    tasksDirty=true;
+  }
+  delete taskStates[id];
+  renderTaskForm();
 }
 
 function saveZlecenie(){
   const name=document.getElementById('f-name').value.trim();
   if(!name){document.getElementById('f-name').focus();return;}
   const cat=selCat||'sesja';
-  const taskTemplate=CAT_TASKS[cat]||DEFAULT_TASKS;
-  const tasks=taskTemplate.map(t=>({id:t.id,label:t.label,done:!!taskStates[t.id]}));
+  let tasks;
+  if(tasksDirty){
+    const allDefs=[...WESELE_TASKS,...STANDARD_TASKS];
+    tasks=Object.entries(taskStates).map(([id,done])=>{
+      const def=allDefs.find(t=>t.id===id)||{id,label:id};
+      return {id:def.id,label:def.label,done:!!done};
+    });
+  } else {
+    const taskTemplate=CAT_TASKS[cat]||DEFAULT_TASKS;
+    tasks=taskTemplate.map(t=>({id:t.id,label:t.label,done:!!taskStates[t.id]}));
+  }
   const obj={
     name,date:document.getElementById('f-date').value,cat,status:selStatus||cols[0]?.id,
     deliveryDeadline:document.getElementById('f-deadline').value,
+    deliveryTime:document.getElementById('f-delivery-time').value,
+    customCat:document.getElementById('f-custom-cat').value.trim(),
     price:Number(document.getElementById('f-price').value)||null,
     deposit:Number(document.getElementById('f-deposit').value)||null,
     secondShooter:document.getElementById('f-second').value.trim(),
@@ -1252,21 +1325,17 @@ function renderDetailModal(id){
   const done=(z.tasks||[]).filter(t=>t.done).length,total=(z.tasks||[]).length,pct=total?Math.round(done/total*100):0;
   const mapsUrl=z.location?`https://maps.google.com/?q=${encodeURIComponent(z.location)}`:null;
   const dl=z.deliveryDeadline?daysUntil(z.deliveryDeadline):null;
-  const dlText=dl===null?'':`Termin dostawy: <b style="color:${dl<0?'var(--danger)':dl<=7?'var(--warn)':'#4ade80'}">${formatDate(z.deliveryDeadline)}${dl<0?' (przekroczony '+Math.abs(dl)+'d)':dl===0?' (dziś!)':' (za '+dl+'d)'}</b>`;
+  const dlTimeStr=z.deliveryTime?` o ${z.deliveryTime}`:'';
+  const dlText=dl===null?'':`Termin oddania: <b style="color:${dl<0?'var(--danger)':dl<=7?'var(--warn)':'#4ade80'}">${formatDate(z.deliveryDeadline)}${dlTimeStr}${dl<0?' (przekroczony '+Math.abs(dl)+'d)':dl===0?' (dziś!)':' (za '+dl+'d)'}</b>`;
 
   const statusChips=cols.map(c=>`<span class="s-chip ${z.status===c.id?'active':''}" onclick="setStatus('${id}','${c.id}')">${c.icon} ${c.name}</span>`).join('');
-  const tasksHtml=(z.tasks||[]).map(t=>`<div class="task-row"><div class="chk ${t.done?'on':''}" onclick="toggleTask('${id}','${t.id}')"></div><div class="task-lbl ${t.done?'done':''}">${esc(t.label)}</div></div>`).join('');
+  const tasksHtml=(z.tasks||[]).map(t=>`<div class="task-row"><div class="chk ${t.done?'on':''}" onclick="toggleTask('${id}','${t.id}')"></div><div class="task-lbl ${t.done?'done':''}">${esc(t.label)}</div><button class="task-del-btn" onclick="deleteDetailTask('${id}','${t.id}')" title="Usuń zadanie">✕</button></div>`).join('');
   const orderedHtml=renderOrderedItems(z);
-  const schedHtml=z.cat==='wesele'?renderDaySchedule(z):'';
-
-  const tabs=['info','ordered','schedule'];
-  const tabLabels={info:'Szczegóły',ordered:'Zamówienia',schedule:'Harmonogram dnia'};
-  const showSchedule=z.cat==='wesele';
 
   document.getElementById('modal-detail-body').innerHTML=`
     <div class="detail-stripe" style="background:${cat.color}"></div>
     <div class="modal-top">
-      <span class="card-cat" style="background:${cat.dim};color:${cat.color}">${cat.icon||''} ${cat.label||z.cat}</span>
+      <span class="card-cat" style="background:${cat.dim};color:${cat.color}">${cat.icon||''} ${esc(getCatLabel(z))}</span>
       <div style="display:flex;gap:6px">
         <button class="btn-ghost" style="padding:5px 10px;font-size:12px" onclick="openEditModal('${id}')">✏️ Edytuj</button>
         <button class="modal-close" onclick="closeDetail()">✕</button>
@@ -1284,7 +1353,6 @@ function renderDetailModal(id){
     <div class="detail-tabs">
       <button class="dtab ${detailTab==='info'?'active':''}" onclick="switchDetailTab('${id}','info')">Zadania</button>
       <button class="dtab ${detailTab==='ordered'?'active':''}" onclick="switchDetailTab('${id}','ordered')">📦 Zamówienia</button>
-      ${showSchedule?`<button class="dtab ${detailTab==='schedule'?'active':''}" onclick="switchDetailTab('${id}','schedule')">🕐 Plan dnia</button>`:''}
     </div>
 
     <div class="dtab-panel ${detailTab==='info'?'active':''}">
@@ -1298,8 +1366,6 @@ function renderDetailModal(id){
     <div class="dtab-panel ${detailTab==='ordered'?'active':''}">
       ${orderedHtml}
     </div>
-
-    ${showSchedule?`<div class="dtab-panel ${detailTab==='schedule'?'active':''}">${schedHtml}</div>`:''}
     <div style="height:6px"></div>
   `;
 }
@@ -1309,7 +1375,7 @@ function switchDetailTab(id,tab){detailTab=tab;renderDetailModal(id);}
 // ── Ordered Items (#14)
 function renderOrderedItems(z){
   const items=(z.orderedItems||[]);
-  const products=['Fotokniga','Album','Pendrive','Odbitki','USB'];
+  const products=['Fotoksiążka','Album','Pendrive','Odbitki','USB'];
   let h=`<div class="detail-sec">Zamówione produkty</div>`;
   items.forEach(o=>{
     const recvCls=o.receivedDate?'yes':'no';
@@ -1402,6 +1468,12 @@ function toggleTask(zId,tId){
   save();renderDetailModal(zId);renderKanban();if(calView==='grid')renderDayStrip();else renderCalList();
 }
 
+function deleteDetailTask(zId,tId){
+  const z=zlecenia.find(x=>x.id===zId);if(!z)return;
+  z.tasks=(z.tasks||[]).filter(t=>t.id!==tId);
+  save();renderDetailModal(zId);renderKanban();
+}
+
 function setStatus(zId,status){
   const z=zlecenia.find(x=>x.id===zId);if(!z)return;
   z.status=status;save();renderDetailModal(zId);renderKanban();
@@ -1446,7 +1518,7 @@ function saveQuickAdd(){
     id,name,date:document.getElementById('qa-date').value,cat,
     status:cols[0]?.id||'nowe',
     deliveryDeadline:document.getElementById('qa-deadline').value,
-    price:null,deposit:null,secondShooter:'',location:'',notes:'',
+    price:null,deposit:null,deliveryTime:'',customCat:'',secondShooter:'',location:'',notes:'',
     orderedItems:[],daySchedule:[],editingFinished:'',tasks
   });
   save();closeQuickAdd();renderAll();
@@ -1486,7 +1558,7 @@ function renderNotifList(){
     const diff=Math.floor((new Date(z._alertDate)-today)/(1000*60*60*24));
     const when=diff===0?'Dziś! 🔴':diff===1?'Jutro 🟠':`Za ${diff} dni`;
     const urgColor=diff===0?'#ff4444':diff<=2?'#ff7a2f':'#4ade80';
-    const typeLabel=z._alertType==='dostawa'?'📦 Termin dostawy':'📅 Sesja/ślub';
+    const typeLabel=z._alertType==='dostawa'?'📦 Termin oddania':'📅 Sesja/ślub';
     return `<div class="notif-item" onclick="openDetail('${z.id}');toggleNotifDropdown()">
       <div class="notif-dot" style="background:${CATS[z.cat]?.color||'#888'}"></div>
       <div class="notif-info"><div class="notif-name">${esc(z.name)}</div><div class="notif-when">${typeLabel}</div></div>
@@ -1509,7 +1581,7 @@ function fireNotifications(){
     if(shown[key])return;
     const diff=Math.floor((new Date(z._alertDate)-new Date().setHours(0,0,0,0))/(1000*60*60*24));
     const when=diff===0?'Dziś!':diff===1?'Jutro':`Za ${diff} dni`;
-    const type=z._alertType==='dostawa'?'📦 Termin dostawy':'📅 Sesja';
+    const type=z._alertType==='dostawa'?'📦 Termin oddania':'📅 Sesja';
     new Notification(`📷 ${z.name}`,{body:`${type} — ${when}`,tag:z.id+z._alertType});
     shown[key]=true;
   });
@@ -1552,15 +1624,16 @@ document.addEventListener('click',e=>{
 // ══ GOOGLE DRIVE SYNC (#18) ════════════════════════════════════════════════
 let gdriveToken=null,gdriveFileId=null,tokenClient=null;
 let GDRIVE_CLIENT_ID=localStorage.getItem('foto_gdrive_client_id')||'';
-const GDRIVE_SCOPE='https://www.googleapis.com/auth/drive.appdata';
+const GDRIVE_SCOPE='https://www.googleapis.com/auth/drive.appdata https://www.googleapis.com/auth/calendar.events';
 const GDRIVE_FNAME='fotoplaner-sync.json';
+let autoSyncTimer=null;
 
 function toggleDriveMenu(){const m=document.getElementById('drive-menu');m.style.display=m.style.display==='none'?'':'none';}
 function hideDriveMenu(){const m=document.getElementById('drive-menu');if(m)m.style.display='none';}
 
 function updateDriveBtn(){
   const btn=document.getElementById('drive-btn');if(!btn)return;
-  btn.textContent=gdriveToken?'☁ Drive ✓':'☁ Drive';
+  btn.textContent=gdriveToken?'☁ Drive + 📅 ✓':'☁ Drive';
   btn.style.color=gdriveToken?'var(--sesja)':'';
   btn.style.borderColor=gdriveToken?'var(--sesja)':'';
 }
@@ -1578,10 +1651,13 @@ function initGIS(){
   if(!window.google||!GDRIVE_CLIENT_ID)return;
   tokenClient=google.accounts.oauth2.initTokenClient({
     client_id:GDRIVE_CLIENT_ID,scope:GDRIVE_SCOPE,
-    callback:(r)=>{
+    callback:async(r)=>{
       if(r.error){showDriveToast('Błąd logowania: '+r.error,true);return;}
       gdriveToken=r.access_token;
-      showDriveToast('✅ Połączono z Google Drive');updateDriveBtn();
+      showDriveToast('✅ Połączono z Google (Drive + Kalendarz)');updateDriveBtn();
+      // initial sync after connect
+      await gdriveSave();
+      await gcalSyncAll();
     }
   });
 }
@@ -1673,6 +1749,74 @@ function gdriveDisconnect(){
   updateDriveBtn();showDriveToast('Odłączono od Google Drive');
 }
 
+// ══ GOOGLE CALENDAR SYNC ════════════════════════════════════════════════════
+const GCAL_API='https://www.googleapis.com/calendar/v3/calendars/primary/events';
+
+function gcalEventBody(z){
+  const cat=CATS[z.cat]||{};
+  const label=getCatLabel(z);
+  const desc=[
+    z.secondShooter?`2. fotograf: ${z.secondShooter}`:'',
+    z.location?`Lokalizacja: ${z.location}`:'',
+    z.price?`Wynagrodzenie: ${Number(z.price).toLocaleString('pl')} zł`:'',
+    z.deposit?`Zaliczka: ${Number(z.deposit).toLocaleString('pl')} zł`:'',
+    z.notes?`Notatki: ${z.notes}`:'',
+    z.deliveryDeadline?`Termin oddania: ${z.deliveryDeadline}${z.deliveryTime?' o '+z.deliveryTime:''}`:'',
+  ].filter(Boolean).join('\n');
+  const body={
+    summary:`${cat.icon||''} ${z.name} [${label}]`,
+    description:desc||undefined,
+  };
+  // session date
+  if(z.date){
+    body.start={date:z.date};
+    body.end={date:z.date};
+  }
+  return body;
+}
+
+async function gcalRequest(url,method='GET',body=null){
+  const opts={method,headers:{Authorization:'Bearer '+gdriveToken,'Content-Type':'application/json'}};
+  if(body)opts.body=JSON.stringify(body);
+  const r=await fetch(url,opts);
+  if(r.status===401){gdriveToken=null;updateDriveBtn();throw new Error('Token wygasł');}
+  return r;
+}
+
+async function gcalSyncZlecenie(z){
+  if(!gdriveToken||!z.date)return;
+  try{
+    const body=gcalEventBody(z);
+    if(z.gcalEventId){
+      // update existing
+      const r=await gcalRequest(`${GCAL_API}/${z.gcalEventId}`,'PUT',body);
+      if(r.status===404){
+        // event was deleted in Calendar — recreate
+        delete z.gcalEventId;
+        await gcalSyncZlecenie(z);
+      }
+    } else {
+      // create new
+      const r=await gcalRequest(GCAL_API,'POST',body);
+      const json=await r.json();
+      if(json.id){z.gcalEventId=json.id;localStorage.setItem('foto_v4',JSON.stringify(zlecenia));}
+    }
+  }catch(e){console.warn('gcalSync error:',e.message);}
+}
+
+async function gcalDeleteZlecenie(z){
+  if(!gdriveToken||!z.gcalEventId)return;
+  try{await gcalRequest(`${GCAL_API}/${z.gcalEventId}`,'DELETE');}catch(e){}
+}
+
+async function gcalSyncAll(){
+  if(!gdriveToken)return;
+  showDriveToast('📅 Synchronizuję z Google Calendar...');
+  const withDates=zlecenia.filter(z=>z.date);
+  for(const z of withDates) await gcalSyncZlecenie(z);
+  showDriveToast(`📅 Zsynchronizowano ${withDates.length} zdarzeń z Google Calendar`);
+}
+
 // ══ PWA — MANIFEST + INSTALL PROMPT (#19) ══════════════════════════════════
 let deferredInstallPrompt=null;
 
@@ -1734,6 +1878,36 @@ async function installPWA(){
   const r=await deferredInstallPrompt.prompt();
   if(r.outcome==='accepted')deferredInstallPrompt=null;
 }
+
+// ══ LOCK SCREEN ═══════════════════════════════════════════════════════════
+(function initLock(){
+  const LS_AUTH = 'foto_auth';
+  const HASH    = '1nxkmfc'; // hash of correct password
+
+  function hashPwd(s){let h=5381;for(let i=0;i<s.length;i++)h=((h<<5)+h)^s.charCodeAt(i);return (h>>>0).toString(36);}
+
+  if(localStorage.getItem(LS_AUTH)==='1'){
+    document.getElementById('lock-screen').classList.add('hidden');
+    return;
+  }
+
+  document.getElementById('lock-title').textContent='Odblokuj aplikację';
+  document.getElementById('lock-sub').textContent='Wpisz hasło aby otworzyć FotoPlaner.\nNa tym urządzeniu nie będziesz pytany ponownie.';
+  setTimeout(()=>document.getElementById('lock-pwd').focus(),100);
+
+  window.lockSubmit = function(){
+    const el  = document.getElementById('lock-pwd');
+    const err = document.getElementById('lock-err');
+    const val = el.value;
+    if(!val){err.textContent='Wpisz hasło';el.focus();return;}
+    if(hashPwd(val)===HASH){
+      localStorage.setItem(LS_AUTH,'1');
+      document.getElementById('lock-screen').classList.add('hidden');
+    } else {
+      err.textContent='Nieprawidłowe hasło';el.value='';el.focus();
+    }
+  };
+})();
 
 // ══ INIT ═══════════════════════════════════════════════════════════════════
 loadData();
