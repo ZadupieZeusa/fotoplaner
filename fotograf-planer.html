@@ -1,0 +1,1745 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Fotograf Planer</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg:#0d0d0d;--panel:#141414;--surface:#1e1e1e;--surface2:#272727;--surface3:#313131;
+  --border:#2a2a2a;--border2:#383838;--text:#f0f0f0;--text2:#999;--text3:#555;
+  --wesele:#e84393;--urodziny:#ff7a2f;--chrzest:#38bdf8;--komunia:#a78bfa;--sesja:#4ade80;
+  --danger:#ff5555;--warn:#ffaa33;
+}
+html,body{height:100%;overflow:hidden}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);display:flex;flex-direction:column}
+
+/* ── TOPBAR ── */
+.topbar{display:flex;align-items:center;gap:6px;padding:0 12px;height:50px;background:var(--panel);border-bottom:1px solid var(--border);flex-shrink:0;z-index:50}
+.logo{font-size:14px;font-weight:800;letter-spacing:-.5px;white-space:nowrap;margin-right:4px}
+.logo span{color:var(--wesele)}
+.main-nav{display:flex;gap:2px;background:var(--surface2);border-radius:8px;padding:2px}
+.mnav{background:none;border:none;color:var(--text2);font-size:12px;font-weight:600;padding:4px 10px;border-radius:6px;cursor:pointer;white-space:nowrap;transition:all .15s}
+.mnav:hover{color:var(--text)}
+.mnav.active{background:var(--surface3);color:var(--text)}
+.month-nav{display:flex;align-items:center;gap:2px;margin-left:4px}
+.month-arrow{background:none;border:none;color:var(--text2);font-size:18px;cursor:pointer;width:26px;height:26px;display:flex;align-items:center;justify-content:center;border-radius:5px}
+.month-arrow:hover{background:var(--surface2)}
+.month-label-btn{background:none;border:none;color:var(--text);font-size:13px;font-weight:700;cursor:pointer;padding:3px 8px;border-radius:5px;white-space:nowrap}
+.month-label-btn:hover{background:var(--surface2)}
+.tb-spacer{flex:1}
+.view-toggle{display:flex;background:var(--surface2);border-radius:6px;padding:2px}
+.vt-btn{background:none;border:none;color:var(--text2);font-size:11px;font-weight:700;padding:4px 8px;border-radius:4px;cursor:pointer}
+.vt-btn.active{background:var(--surface3);color:var(--text)}
+.tb-btn{background:none;border:1px solid var(--border2);color:var(--text2);font-size:11px;padding:4px 9px;border-radius:6px;cursor:pointer;white-space:nowrap}
+.tb-btn:hover{background:var(--surface2);color:var(--text)}
+.btn-add{background:var(--wesele);border:none;color:#fff;padding:6px 12px;border-radius:7px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;box-shadow:0 0 10px #e8439330}
+.btn-add:hover{opacity:.88}
+
+/* ── NOTIFICATION BELL ── */
+.notif-wrap{position:relative}
+.notif-bell{background:none;border:none;color:var(--text2);font-size:16px;cursor:pointer;width:32px;height:32px;display:flex;align-items:center;justify-content:center;border-radius:6px;position:relative}
+.notif-bell:hover{background:var(--surface2)}
+.notif-badge{position:absolute;top:2px;right:2px;background:var(--wesele);color:#fff;font-size:9px;font-weight:800;width:15px;height:15px;border-radius:50%;display:flex;align-items:center;justify-content:center}
+.notif-dropdown{position:absolute;top:calc(100% + 6px);right:0;width:290px;background:var(--surface);border:1px solid var(--border2);border-radius:12px;box-shadow:0 8px 32px #0009;z-index:300;overflow:hidden}
+.notif-hdr{padding:9px 13px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.notif-hdr-title{font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.5px}
+.notif-enable-btn{background:none;border:1px solid var(--border2);color:var(--text2);font-size:10px;padding:2px 7px;border-radius:5px;cursor:pointer}
+.notif-list-el{max-height:260px;overflow-y:auto}
+.notif-item{display:flex;align-items:center;gap:9px;padding:9px 13px;border-bottom:1px solid var(--border);cursor:pointer}
+.notif-item:hover{background:var(--surface2)}
+.notif-item:last-child{border-bottom:none}
+.notif-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.notif-info{flex:1}
+.notif-name{font-size:12px;font-weight:600}
+.notif-when{font-size:10px;color:var(--text2)}
+.notif-urgency{font-size:10px;padding:2px 5px;border-radius:7px;font-weight:700;flex-shrink:0}
+.notif-empty{text-align:center;padding:18px;color:var(--text3);font-size:12px}
+.drive-menu{position:absolute;top:calc(100% + 6px);right:0;background:var(--surface);border:1px solid var(--border2);border-radius:10px;padding:5px;min-width:190px;z-index:300;box-shadow:0 8px 32px #0009}
+.drive-menu-btn{width:100%;text-align:left;background:none;border:none;color:var(--text2);font-size:12px;padding:7px 10px;border-radius:6px;cursor:pointer;display:block;font-family:inherit}
+.drive-menu-btn:hover{background:var(--surface2);color:var(--text)}
+
+/* ── MONTH PICKER ── */
+.month-popup{display:none;position:fixed;top:50px;left:0;right:0;bottom:0;z-index:200}
+.month-popup.open{display:flex;flex-direction:column;align-items:flex-start;padding:6px 0 0 12px}
+.mp-card{background:var(--surface);border:1px solid var(--border2);border-radius:12px;padding:12px;width:248px;box-shadow:0 8px 32px #0009}
+.mp-year-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:9px}
+.mp-year{font-size:14px;font-weight:800}
+.mp-arrow{background:none;border:none;color:var(--text2);font-size:15px;cursor:pointer;width:24px;height:24px;border-radius:5px;display:flex;align-items:center;justify-content:center}
+.mp-arrow:hover{background:var(--surface2)}
+.mp-months{display:grid;grid-template-columns:repeat(4,1fr);gap:3px}
+.mp-month-btn{padding:7px 2px;border:none;background:none;color:var(--text2);font-size:11px;font-weight:600;border-radius:6px;cursor:pointer}
+.mp-month-btn:hover{background:var(--surface2);color:var(--text)}
+.mp-month-btn.cur{background:var(--wesele);color:#fff}
+.mp-overlay{position:fixed;inset:0;z-index:-1}
+
+/* ── MAIN + VIEWS ── */
+.main{display:flex;flex:1;overflow:hidden;position:relative}
+.main-view{display:none;width:100%;height:100%}
+.main-view.active{display:flex}
+
+/* ── CAL PANEL ── */
+.cal-panel{width:330px;min-width:290px;flex-shrink:0;background:var(--panel);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden}
+.cal-grid-view{flex:1;overflow-y:auto;padding:9px 9px 10px}
+.cal-list-view{flex:1;overflow-y:auto}
+.cal-dow-row{display:grid;grid-template-columns:repeat(7,1fr);margin-bottom:3px}
+.cal-dow{text-align:center;font-size:10px;font-weight:700;color:var(--text3);padding:2px 0;text-transform:uppercase}
+.cal-days{display:grid;grid-template-columns:repeat(7,1fr);gap:2px}
+.cal-day{aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding-top:3px;border-radius:6px;cursor:pointer;user-select:none}
+.cal-day:hover{background:var(--surface2)}
+.cal-day.empty{pointer-events:none}
+.cal-day.other-month .day-num{color:var(--text3)}
+.cal-day.today .day-num{background:var(--wesele);color:#fff;border-radius:50%;width:21px;height:21px;display:flex;align-items:center;justify-content:center}
+.cal-day.selected:not(.today){background:var(--surface2)}
+.day-num{font-size:12px;font-weight:500;width:21px;height:21px;display:flex;align-items:center;justify-content:center}
+.day-dots{display:flex;gap:2px;margin-top:2px;flex-wrap:wrap;justify-content:center;max-width:24px}
+.day-dot{width:4px;height:4px;border-radius:50%}
+.cal-list-day-header{padding:7px 13px 4px;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;position:sticky;top:0;background:var(--panel)}
+.cal-list-item{display:flex;align-items:center;gap:8px;padding:8px 13px;border-bottom:1px solid var(--border);cursor:pointer}
+.cal-list-item:hover{background:var(--surface2)}
+.cal-list-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.cal-list-name{font-size:13px;font-weight:600;flex:1}
+.cal-list-meta{font-size:10px;color:var(--text2)}
+.cal-day-strip{border-top:1px solid var(--border);padding:9px;flex-shrink:0;max-height:190px;overflow-y:auto}
+.strip-label{font-size:10px;color:var(--text2);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+.strip-item{display:flex;align-items:center;gap:7px;padding:6px 8px;border-radius:6px;margin-bottom:3px;cursor:pointer;border-left:3px solid transparent}
+.strip-item:hover{background:var(--surface2)}
+.strip-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.strip-name{font-size:12px;font-weight:600;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.strip-badge{font-size:9px;padding:2px 5px;border-radius:7px;font-weight:600}
+.strip-empty{font-size:12px;color:var(--text3);padding:4px 2px}
+
+/* ── KANBAN PANEL ── */
+.kanban-panel{flex:1;display:flex;flex-direction:column;overflow:hidden;background:var(--bg)}
+.kanban-toolbar{padding:9px 13px;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--border);flex-shrink:0}
+.kanban-title{font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.6px}
+.kanban-count{font-size:11px;color:var(--text3)}
+.kanban-columns{flex:1;display:flex;gap:8px;padding:9px;overflow-x:auto;overflow-y:hidden}
+.kanban-col{min-width:215px;width:215px;flex-shrink:0;background:var(--panel);border-radius:10px;display:flex;flex-direction:column;border:1px solid var(--border);overflow:hidden}
+.kanban-col.drag-over{border-color:var(--wesele);background:#e8439308}
+.all-events-col{min-width:230px;width:230px}
+.col-header{padding:8px 10px 7px;display:flex;align-items:center;gap:6px;border-bottom:1px solid var(--border);flex-shrink:0}
+.col-icon{font-size:12px}
+.col-name{font-size:12px;font-weight:700;flex:1}
+.col-name-editable{font-size:12px;font-weight:700;flex:1;cursor:text;border-radius:4px;padding:1px 2px}
+.col-name-editable:hover{background:var(--surface2)}
+.col-name-input{font-size:12px;font-weight:700;flex:1;background:var(--surface2);border:1px solid var(--wesele);border-radius:4px;color:var(--text);padding:2px 5px;outline:none;min-width:0;width:100%}
+.col-badge{font-size:10px;background:var(--surface2);padding:2px 6px;border-radius:7px;color:var(--text2);font-weight:600;flex-shrink:0}
+.col-del-btn{background:none;border:none;color:var(--text3);font-size:11px;cursor:pointer;padding:2px 3px;border-radius:3px;flex-shrink:0}
+.col-del-btn:hover{color:#ff6666;background:#ff444420}
+.col-cards{flex:1;overflow-y:auto;padding:6px;display:flex;flex-direction:column;gap:5px;min-height:40px}
+.col-add-btn{margin:0 6px 6px;padding:5px;background:none;border:1px dashed var(--border2);border-radius:6px;color:var(--text3);font-size:11px;cursor:pointer;width:calc(100% - 12px)}
+.col-add-btn:hover{border-color:var(--text2);color:var(--text2);background:var(--surface2)}
+.add-col-card{min-width:190px;width:190px;flex-shrink:0;border:2px dashed var(--border2);border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;cursor:pointer;padding:16px;color:var(--text3);font-size:12px;font-weight:600;align-self:flex-start;height:70px}
+.add-col-card:hover{border-color:var(--wesele);color:var(--wesele);background:#e8439308}
+
+/* ── KANBAN CARDS ── */
+.kanban-card{background:var(--surface);border-radius:8px;padding:8px 10px;cursor:grab;border-left:3px solid transparent;user-select:none;position:relative}
+.kanban-card:hover{background:var(--surface2)}
+.kanban-card.dragging{opacity:.45;cursor:grabbing}
+.card-cat{font-size:9px;font-weight:700;padding:2px 5px;border-radius:6px;display:inline-flex;align-items:center;gap:2px;margin-bottom:4px;text-transform:uppercase;letter-spacing:.3px}
+.card-name{font-size:13px;font-weight:700;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.card-date{font-size:10px;color:var(--text2);margin-bottom:6px}
+.card-deadline{font-size:10px;font-weight:600;padding:1px 5px;border-radius:5px;display:inline-block;margin-bottom:5px}
+.card-deadline.ok{color:#4ade80;background:#4ade8015}
+.card-deadline.warn{color:var(--warn);background:#ffaa3315}
+.card-deadline.overdue{color:var(--danger);background:#ff555515}
+.card-finance{font-size:10px;font-weight:600;padding:1px 6px;border-radius:5px;display:inline-block;margin-bottom:5px;color:var(--sesja);background:#4ade8015}
+.card-finance.partial{color:var(--warn);background:#ffaa3315}
+.card-pbar-bg{height:3px;background:var(--surface3);border-radius:2px;margin-bottom:4px}
+.card-pbar-fill{height:100%;border-radius:2px}
+.card-dots{display:flex;gap:3px;flex-wrap:wrap}
+.card-dot{width:6px;height:6px;border-radius:50%;border:1.5px solid var(--border2)}
+.card-dot.done{border-color:transparent}
+/* all events col */
+.ae-month-label{font-size:10px;font-weight:800;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;padding:7px 4px 3px}
+.ae-item{display:flex;align-items:center;gap:7px;padding:6px 5px;border-radius:6px;cursor:pointer}
+.ae-item:hover{background:var(--surface2)}
+.ae-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.ae-name{font-size:12px;font-weight:600;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ae-chip{font-size:9px;padding:2px 5px;border-radius:5px;font-weight:700;flex-shrink:0}
+.ae-empty{text-align:center;color:var(--text3);font-size:12px;padding:18px 6px}
+
+/* ── TIMELINE VIEW ── */
+.tl-view{flex:1;display:none;flex-direction:column;overflow:hidden;background:var(--bg)}
+.tl-view.active{display:flex}
+.tl-toolbar{padding:9px 14px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border);background:var(--panel);flex-shrink:0}
+.tl-year-nav{display:flex;align-items:center;gap:4px}
+.tl-year-arrow{background:none;border:none;color:var(--text2);font-size:16px;cursor:pointer;width:26px;height:26px;border-radius:5px;display:flex;align-items:center;justify-content:center}
+.tl-year-arrow:hover{background:var(--surface2)}
+.tl-year-label{font-size:14px;font-weight:700;min-width:44px;text-align:center}
+.tl-legend{display:flex;gap:10px;flex-wrap:wrap}
+.tl-legend-item{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text2)}
+.tl-legend-dot{width:10px;height:10px;border-radius:3px;flex-shrink:0}
+.tl-spacer{flex:1}
+.tl-tip{font-size:11px;color:var(--text3)}
+.tl-container{flex:1;overflow:auto;position:relative}
+.tl-inner{min-width:1920px;padding-bottom:20px}
+.tl-months-header{display:flex;border-bottom:1px solid var(--border);background:var(--panel);position:sticky;top:0;z-index:10}
+.tl-row-header-top{width:200px;flex-shrink:0;padding:8px 12px;border-right:1px solid var(--border);font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase}
+.tl-month-head{flex:1;text-align:center;padding:8px 4px;font-size:11px;font-weight:700;color:var(--text2);border-right:1px solid var(--border)}
+.tl-month-head:last-child{border-right:none}
+.tl-rows-area{}
+.tl-row{display:flex;align-items:stretch;border-bottom:1px solid var(--border);min-height:44px}
+.tl-row:hover{background:var(--surface)}
+.tl-row-label{width:200px;flex-shrink:0;padding:8px 12px;border-right:1px solid var(--border);display:flex;flex-direction:column;justify-content:center;position:sticky;left:0;background:var(--panel);z-index:5}
+.tl-row:hover .tl-row-label{background:var(--surface)}
+.tl-row-name{font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tl-row-meta{font-size:10px;color:var(--text2);margin-top:1px}
+.tl-track{flex:1;position:relative;cursor:pointer}
+.tl-bar{position:absolute;top:50%;transform:translateY(-50%);height:18px;border-radius:4px;display:flex;align-items:center;padding:0 6px;font-size:10px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;min-width:8px}
+.tl-bar-dot{position:absolute;top:50%;transform:translateY(-50%);width:10px;height:10px;border-radius:50%;border:2px solid;background:var(--bg)}
+.tl-month-grid{position:absolute;top:0;bottom:0;width:1px;background:var(--border)}
+.tl-today-line{position:absolute;top:0;bottom:0;width:2px;background:var(--wesele);opacity:.6;z-index:4}
+.tl-empty{text-align:center;padding:60px 20px;color:var(--text3);font-size:14px}
+
+/* ── DASHBOARD VIEW ── */
+.dash-view{flex:1;display:none;flex-direction:column;overflow:hidden;background:var(--bg)}
+.dash-view.active{display:flex}
+.dash-toolbar{padding:9px 14px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border);background:var(--panel);flex-shrink:0}
+.dash-title{font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.6px}
+.dash-year-nav{display:flex;align-items:center;gap:4px}
+.dash-year-arrow{background:none;border:none;color:var(--text2);font-size:16px;cursor:pointer;width:26px;height:26px;border-radius:5px;display:flex;align-items:center;justify-content:center}
+.dash-year-arrow:hover{background:var(--surface2)}
+.dash-year-label{font-size:13px;font-weight:700;min-width:40px;text-align:center}
+.dash-body{flex:1;overflow-y:auto;padding:14px}
+.dash-body::-webkit-scrollbar{width:3px}
+.dash-body::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px;margin-bottom:14px}
+.stat-card{background:var(--panel);border-radius:10px;padding:13px 14px;border:1px solid var(--border)}
+.stat-num{font-size:26px;font-weight:800;line-height:1}
+.stat-lbl{font-size:11px;color:var(--text2);margin-top:3px}
+.stat-sub{font-size:10px;color:var(--text3);margin-top:1px}
+.charts-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+.chart-card{background:var(--panel);border-radius:10px;padding:14px;border:1px solid var(--border)}
+.chart-title{font-size:12px;font-weight:700;color:var(--text2);margin-bottom:10px;text-transform:uppercase;letter-spacing:.5px}
+.chart-wrap{position:relative;height:200px}
+.chart-full{grid-column:1/-1}
+.edit-table{width:100%;border-collapse:collapse;font-size:12px}
+.edit-table th{padding:6px 10px;text-align:left;color:var(--text3);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--border)}
+.edit-table td{padding:7px 10px;border-bottom:1px solid var(--border);color:var(--text2)}
+.edit-table td:first-child{color:var(--text);font-weight:600}
+.edit-days{font-weight:700;color:var(--text)}
+
+/* ── QUICK ADD ── */
+.qa-fab{position:fixed;bottom:22px;right:22px;width:48px;height:48px;border-radius:50%;background:var(--wesele);border:none;color:#fff;font-size:26px;cursor:pointer;box-shadow:0 4px 20px #e8439340;display:flex;align-items:center;justify-content:center;z-index:100;transition:transform .15s}
+.qa-fab:hover{transform:scale(1.1)}
+.qa-overlay{display:none;position:fixed;inset:0;background:#000b;z-index:300;align-items:flex-end;justify-content:center;padding:0 0 80px}
+.qa-overlay.open{display:flex}
+.qa-box{background:var(--surface);border-radius:14px;padding:18px;width:100%;max-width:400px;border:1px solid var(--border2);animation:fadeUp .18s ease}
+@keyframes fadeUp{from{transform:translateY(12px);opacity:0}to{transform:translateY(0);opacity:1}}
+.qa-title{font-size:15px;font-weight:800;margin-bottom:13px}
+.qa-hint{font-size:10px;color:var(--text3);margin-bottom:8px}
+.qa-cat-row{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:10px}
+.qa-cat-btn{padding:4px 10px;border-radius:16px;border:2px solid var(--border2);font-size:11px;font-weight:700;cursor:pointer;background:var(--surface2);color:var(--text2)}
+.qa-cat-btn.sel{color:#fff}
+.qa-row{display:flex;gap:7px;margin-bottom:9px}
+.qa-input{flex:1;background:var(--surface2);border:1px solid var(--border2);border-radius:8px;color:var(--text);font-size:14px;padding:9px 11px;outline:none;font-family:inherit}
+.qa-input:focus{border-color:var(--wesele)}
+.qa-btns{display:flex;gap:7px;margin-top:4px}
+.qa-cancel{padding:9px 14px;border-radius:7px;background:var(--surface2);border:1px solid var(--border2);color:var(--text2);font-size:13px;cursor:pointer}
+.qa-save{flex:1;padding:9px;border-radius:7px;background:var(--wesele);border:none;color:#fff;font-size:14px;font-weight:700;cursor:pointer}
+
+/* ── MODALS ── */
+.modal-overlay{display:none;position:fixed;inset:0;background:#000c;z-index:400;align-items:center;justify-content:center;padding:14px}
+.modal-overlay.open{display:flex}
+.modal{background:var(--surface);border-radius:14px;width:100%;max-width:480px;max-height:92vh;overflow-y:auto;padding:18px;animation:fadeUp .2s ease;border:1px solid var(--border2)}
+.modal::-webkit-scrollbar{width:3px}
+.modal::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+.modal-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.modal-title{font-size:16px;font-weight:800}
+.modal-close{background:none;border:none;color:var(--text3);font-size:17px;cursor:pointer;padding:3px;border-radius:4px}
+.modal-close:hover{color:var(--text2);background:var(--surface2)}
+.form-label{font-size:10px;color:var(--text2);margin-bottom:4px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;display:block}
+.form-group{margin-bottom:12px}
+.form-row{display:flex;gap:9px}
+.form-row .form-group{flex:1}
+.form-input,.form-textarea,.form-select{width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:8px;color:var(--text);font-size:13px;padding:8px 10px;outline:none;font-family:inherit}
+.form-input:focus,.form-textarea:focus{border-color:var(--wesele)}
+.form-textarea{resize:none;height:55px}
+.cat-picker{display:flex;gap:5px;flex-wrap:wrap}
+.cat-btn{padding:5px 10px;border-radius:16px;border:2px solid var(--border2);font-size:11px;font-weight:700;cursor:pointer;background:var(--surface2);color:var(--text2)}
+.cat-btn.sel{color:#fff}
+.status-picker{display:flex;gap:5px;flex-wrap:wrap}
+.status-btn{padding:4px 9px;border-radius:16px;border:2px solid var(--border2);font-size:11px;font-weight:700;cursor:pointer;background:var(--surface2);color:var(--text2)}
+.status-btn.sel{background:var(--surface3);border-color:var(--text2);color:var(--text)}
+.tasks-list{display:flex;flex-direction:column}
+.task-row{display:flex;align-items:center;gap:8px;padding:6px 1px;border-bottom:1px solid var(--border)}
+.task-row:last-child{border-bottom:none}
+.chk{width:16px;height:16px;border-radius:4px;border:2px solid var(--border2);background:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.chk.on{background:var(--wesele);border-color:var(--wesele)}
+.chk.on::after{content:'✓';color:#fff;font-size:10px;font-weight:800}
+.task-lbl{font-size:12px}
+.task-lbl.done{text-decoration:line-through;color:var(--text3)}
+.auto-tasks-note{font-size:10px;color:var(--text3);font-style:italic;padding:4px 0 6px}
+.btn-row{display:flex;gap:7px;margin-top:14px}
+.btn-primary{flex:1;padding:10px;border-radius:8px;background:var(--wesele);border:none;color:#fff;font-size:14px;font-weight:800;cursor:pointer}
+.btn-primary:hover{opacity:.85}
+.btn-ghost{padding:10px 13px;border-radius:8px;background:var(--surface2);border:1px solid var(--border2);color:var(--text2);font-size:13px;cursor:pointer}
+.btn-danger{padding:10px 12px;border-radius:8px;background:#ff444418;border:1px solid #ff444430;color:#ff6666;font-size:13px;cursor:pointer}
+.btn-sm{padding:5px 10px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;border:1px solid var(--border2);background:var(--surface2);color:var(--text2)}
+.btn-sm:hover{background:var(--surface3);color:var(--text)}
+
+/* Detail tabs */
+.detail-tabs{display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:12px}
+.dtab{background:none;border:none;color:var(--text2);font-size:12px;font-weight:600;padding:7px 12px;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px}
+.dtab.active{color:var(--text);border-bottom-color:var(--wesele)}
+.dtab-panel{display:none}
+.dtab-panel.active{display:block}
+
+/* Detail — info tab */
+.detail-stripe{height:3px;border-radius:2px;margin-bottom:12px}
+.detail-name{font-size:18px;font-weight:800;margin-bottom:3px}
+.detail-meta{font-size:12px;color:var(--text2);line-height:1.7;margin-bottom:10px}
+.detail-meta a{text-decoration:none}
+.detail-sec{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;margin:12px 0 6px}
+.pbar-bg{height:4px;background:var(--surface2);border-radius:2px;margin-bottom:11px}
+.pbar-fill{height:100%;border-radius:2px}
+.status-chips{display:flex;gap:5px;flex-wrap:wrap}
+.s-chip{font-size:11px;padding:3px 9px;border-radius:9px;cursor:pointer;font-weight:700;border:2px solid transparent;color:var(--text2);background:var(--surface2)}
+.s-chip.active{border-color:var(--text);color:var(--text)}
+
+/* Detail — ordered items */
+.order-item{display:flex;align-items:center;gap:8px;padding:7px 8px;border-radius:7px;border:1px solid var(--border);margin-bottom:5px;background:var(--surface2)}
+.order-name{font-size:13px;font-weight:600;flex:1}
+.order-dates{font-size:10px;color:var(--text2)}
+.order-recv{font-size:10px;font-weight:600;padding:2px 7px;border-radius:6px;cursor:pointer;border:1px solid}
+.order-recv.no{color:var(--text3);border-color:var(--border2)}
+.order-recv.yes{color:#4ade80;border-color:#4ade8040;background:#4ade8010}
+.order-del{background:none;border:none;color:var(--text3);font-size:13px;cursor:pointer;padding:2px 4px}
+.order-del:hover{color:#ff6666}
+.order-add-row{display:flex;gap:6px;margin-top:7px}
+.order-add-row .form-input{font-size:12px;padding:6px 8px}
+
+/* Detail — wedding schedule */
+.sched-item{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:6px;border-bottom:1px solid var(--border)}
+.sched-item:last-child{border-bottom:none}
+.sched-time{font-size:13px;font-weight:700;color:var(--text);min-width:44px}
+.sched-act{font-size:13px;color:var(--text2);flex:1}
+.sched-del{background:none;border:none;color:var(--text3);cursor:pointer;padding:2px 4px}
+.sched-del:hover{color:#ff6666}
+.sched-add-row{display:flex;gap:6px;margin-top:8px}
+.sched-add-row .form-input{font-size:12px;padding:6px 8px}
+
+/* ── MOBILE ── */
+@media(max-width:680px){
+  html,body{overflow:auto}
+  .main{flex-direction:column;overflow:visible}
+  .cal-panel{width:100%;min-width:unset;border-right:none;border-bottom:1px solid var(--border);max-height:340px}
+  .kanban-panel{height:auto;min-height:360px}
+  .stat-grid{grid-template-columns:repeat(2,1fr)}
+  .charts-grid{grid-template-columns:1fr}
+}
+::-webkit-scrollbar{width:3px;height:3px}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+</style>
+</head>
+<body>
+
+<!-- ── TOPBAR ── -->
+<header class="topbar">
+  <div class="logo">📷 <span>Foto</span>Planer</div>
+  <nav class="main-nav">
+    <button class="mnav active" onclick="setMainView('planer')">📅 Planer</button>
+    <button class="mnav" onclick="setMainView('timeline')">📊 Timeline</button>
+    <button class="mnav" onclick="setMainView('dashboard')">📈 Dashboard</button>
+  </nav>
+  <div class="month-nav" id="month-nav-area">
+    <button class="month-arrow" onclick="shiftMonth(-1)">‹</button>
+    <button class="month-label-btn" id="month-label" onclick="toggleMonthPicker()"></button>
+    <button class="month-arrow" onclick="shiftMonth(1)">›</button>
+  </div>
+  <div class="tb-spacer"></div>
+  <div class="view-toggle" id="cal-view-toggle">
+    <button class="vt-btn active" id="tb-grid" onclick="setCalView('grid')">📅</button>
+    <button class="vt-btn" id="tb-list" onclick="setCalView('list')">☰</button>
+  </div>
+  <div class="notif-wrap" id="notif-wrap">
+    <button class="notif-bell" onclick="toggleNotifDropdown()" title="Powiadomienia">🔔<span class="notif-badge" id="notif-badge" style="display:none">0</span></button>
+    <div class="notif-dropdown" id="notif-dropdown" style="display:none">
+      <div class="notif-hdr"><span class="notif-hdr-title">Najbliższe terminy</span><button class="notif-enable-btn" onclick="requestNotifPermission()">🔔 Włącz</button></div>
+      <div class="notif-list-el" id="notif-list"></div>
+    </div>
+  </div>
+  <div class="notif-wrap" id="drive-wrap">
+    <button class="tb-btn" id="drive-btn" onclick="toggleDriveMenu()">☁ Drive</button>
+    <div class="drive-menu" id="drive-menu" style="display:none">
+      <button class="drive-menu-btn" onclick="gdriveSave();hideDriveMenu()">⬆ Zapisz na Drive</button>
+      <button class="drive-menu-btn" onclick="gdriveLoad();hideDriveMenu()">⬇ Wczytaj z Drive</button>
+      <button class="drive-menu-btn" onclick="gdriveSetup();hideDriveMenu()">⚙ Konfiguruj Client ID</button>
+      <hr style="border:none;border-top:1px solid var(--border);margin:3px 0">
+      <button class="drive-menu-btn" onclick="gdriveDisconnect();hideDriveMenu()" style="color:var(--danger)">✕ Odłącz konto</button>
+    </div>
+  </div>
+  <button class="tb-btn" id="install-btn" style="display:none" onclick="installPWA()" title="Zainstaluj jako aplikację">📱 Zainstaluj</button>
+  <button class="tb-btn" onclick="exportData()">⬆ Export</button>
+  <button class="tb-btn" onclick="importData()">⬇ Import</button>
+  <button class="btn-add" onclick="openQuickAdd()">+ Dodaj</button>
+</header>
+
+<!-- ── MONTH PICKER ── -->
+<div class="month-popup" id="month-popup">
+  <div class="mp-card">
+    <div class="mp-year-nav">
+      <button class="mp-arrow" onclick="mpShiftYear(-1)">‹</button>
+      <div class="mp-year" id="mp-year-label"></div>
+      <button class="mp-arrow" onclick="mpShiftYear(1)">›</button>
+    </div>
+    <div class="mp-months" id="mp-months"></div>
+  </div>
+  <div class="mp-overlay" onclick="closeMonthPicker()"></div>
+</div>
+
+<!-- ── MAIN ── -->
+<main class="main">
+
+  <!-- VIEW: PLANER -->
+  <div class="main-view active" id="view-planer" style="flex-direction:row">
+    <div class="cal-panel">
+      <div class="cal-grid-view" id="cal-grid-view">
+        <div class="cal-dow-row" id="cal-dows"></div>
+        <div class="cal-days" id="cal-days"></div>
+      </div>
+      <div class="cal-list-view" id="cal-list-view" style="display:none"></div>
+      <div class="cal-day-strip" id="cal-day-strip"></div>
+    </div>
+    <div class="kanban-panel">
+      <div class="kanban-toolbar">
+        <div class="kanban-title">Tablica zleceń</div>
+        <div class="kanban-count" id="kanban-count"></div>
+        <div style="flex:1"></div>
+        <small style="color:var(--text3);font-size:10px">↔ przeciągnij · 2× klik = zmień nazwę</small>
+      </div>
+      <div class="kanban-columns" id="kanban-columns"></div>
+    </div>
+  </div>
+
+  <!-- VIEW: TIMELINE -->
+  <div class="main-view" id="view-timeline" style="flex-direction:column">
+    <div class="tl-toolbar">
+      <div class="tl-year-nav">
+        <button class="tl-year-arrow" onclick="shiftTlYear(-1)">‹</button>
+        <span class="tl-year-label" id="tl-year-label"></span>
+        <button class="tl-year-arrow" onclick="shiftTlYear(1)">›</button>
+      </div>
+      <div class="tl-legend" id="tl-legend"></div>
+      <div class="tl-spacer"></div>
+      <span class="tl-tip">Kliknij zlecenie aby otworzyć szczegóły</span>
+    </div>
+    <div class="tl-container" id="tl-container"></div>
+  </div>
+
+  <!-- VIEW: DASHBOARD -->
+  <div class="main-view" id="view-dashboard" style="flex-direction:column">
+    <div class="dash-toolbar">
+      <div class="dash-title">Dashboard</div>
+      <div class="dash-year-nav">
+        <button class="dash-year-arrow" onclick="shiftDashYear(-1)">‹</button>
+        <span class="dash-year-label" id="dash-year-label"></span>
+        <button class="dash-year-arrow" onclick="shiftDashYear(1)">›</button>
+      </div>
+      <div class="tb-spacer"></div>
+    </div>
+    <div class="dash-body" id="dash-body"></div>
+  </div>
+
+</main>
+
+<!-- ── QUICK ADD ── -->
+<button class="qa-fab" onclick="openQuickAdd()" title="Szybkie dodawanie (N)">+</button>
+<div class="qa-overlay" id="qa-overlay" onclick="if(event.target===this)closeQuickAdd()">
+  <div class="qa-box">
+    <div class="qa-title">Nowe zlecenie</div>
+    <div class="qa-hint">Skrót klawiszowy: N</div>
+    <div class="qa-cat-row" id="qa-cat-row"></div>
+    <div class="qa-row">
+      <input class="qa-input" id="qa-name" placeholder="Nazwa klienta / zlecenia" />
+    </div>
+    <div class="qa-row">
+      <input class="qa-input" id="qa-date" type="date" style="flex:.6" />
+      <input class="qa-input" id="qa-deadline" type="date" placeholder="Termin dostawy (opcja)" style="flex:.6" />
+    </div>
+    <div class="qa-btns">
+      <button class="qa-cancel" onclick="closeQuickAdd()">Anuluj</button>
+      <button class="qa-save" onclick="saveQuickAdd()">Zapisz + otwórz pełną edycję</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── ADD/EDIT MODAL ── -->
+<div class="modal-overlay" id="modal-add" onclick="if(event.target===this)closeAddModal()">
+  <div class="modal">
+    <div class="modal-top">
+      <div class="modal-title" id="modal-add-title">Nowe zlecenie</div>
+      <button class="modal-close" onclick="closeAddModal()">✕</button>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Klient / Nazwa</label>
+      <input class="form-input" id="f-name" placeholder="np. Kowalski — Ślub" />
+    </div>
+    <div class="form-group">
+      <label class="form-label">Kategoria</label>
+      <div class="cat-picker" id="cat-picker"></div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Kolumna</label>
+      <div class="status-picker" id="status-picker"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Data sesji / ślubu</label>
+        <input class="form-input" id="f-date" type="date" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Termin oddania materiałów</label>
+        <input class="form-input" id="f-deadline" type="date" />
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Wynagrodzenie (PLN)</label>
+        <input class="form-input" id="f-price" type="number" placeholder="0" min="0" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Zaliczka wpłacona (PLN)</label>
+        <input class="form-input" id="f-deposit" type="number" placeholder="0" min="0" />
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Drugi fotograf</label>
+      <input class="form-input" id="f-second" placeholder="Imię i nazwisko" />
+    </div>
+    <div class="form-group">
+      <label class="form-label">Lokalizacja</label>
+      <input class="form-input" id="f-location" placeholder="np. Kościół Św. Jana, Kraków" />
+    </div>
+    <div class="form-group">
+      <label class="form-label">Edycja zakończona</label>
+      <input class="form-input" id="f-edit-done" type="date" />
+    </div>
+    <div class="form-group">
+      <label class="form-label">Notatki</label>
+      <textarea class="form-textarea" id="f-notes" placeholder="Szczegóły..."></textarea>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Zadania <span id="tasks-auto-note" class="auto-tasks-note"></span></label>
+      <div class="tasks-list" id="f-tasks"></div>
+    </div>
+    <div class="btn-row">
+      <button class="btn-ghost" onclick="closeAddModal()">Anuluj</button>
+      <button class="btn-danger" id="btn-del" style="display:none" onclick="deleteZlecenie()">🗑</button>
+      <button class="btn-primary" onclick="saveZlecenie()">Zapisz</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── DETAIL MODAL ── -->
+<div class="modal-overlay" id="modal-detail" onclick="if(event.target===this)closeDetail()">
+  <div class="modal" id="modal-detail-body"></div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script>
+// ══ CONSTANTS ══════════════════════════════════════════════════════════════
+const CATS = {
+  wesele:   {label:'Wesele',   icon:'💒',color:'#e84393',dim:'#e8439325'},
+  urodziny: {label:'Urodziny', icon:'🎂',color:'#ff7a2f',dim:'#ff7a2f25'},
+  chrzest:  {label:'Chrzest',  icon:'👶',color:'#38bdf8',dim:'#38bdf825'},
+  komunia:  {label:'Komunia',  icon:'✝️',color:'#a78bfa',dim:'#a78bfa25'},
+  sesja:    {label:'Sesja',    icon:'📸',color:'#4ade80',dim:'#4ade8025'},
+};
+
+// Auto-tasks per category (#12)
+const CAT_TASKS = {
+  wesele:[
+    {id:'przygotowanie',  label:'Przygotowanie sprzętu'},
+    {id:'selekcja',       label:'Selekcja zdjęć'},
+    {id:'edycja',         label:'Edycja'},
+    {id:'retusze',        label:'Retusze'},
+    {id:'galeria',        label:'Galeria online'},
+    {id:'fotokniga_proj', label:'Fotokniga — projekt'},
+    {id:'fotokniga_zam',  label:'Fotokniga — zamówienie'},
+    {id:'album',          label:'Album'},
+    {id:'pendrive',       label:'Pendrive'},
+    {id:'wyslanie',       label:'Wysłanie do klienta'},
+  ],
+  urodziny:[
+    {id:'selekcja',  label:'Selekcja zdjęć'},
+    {id:'edycja',    label:'Edycja'},
+    {id:'galeria',   label:'Galeria online'},
+    {id:'pendrive',  label:'Pendrive'},
+    {id:'wyslanie',  label:'Wysłanie do klienta'},
+  ],
+  chrzest:[
+    {id:'selekcja',  label:'Selekcja zdjęć'},
+    {id:'edycja',    label:'Edycja'},
+    {id:'album',     label:'Album'},
+    {id:'pendrive',  label:'Pendrive'},
+    {id:'wyslanie',  label:'Wysłanie do klienta'},
+  ],
+  komunia:[
+    {id:'selekcja',       label:'Selekcja zdjęć'},
+    {id:'edycja',         label:'Edycja'},
+    {id:'retusze',        label:'Retusze'},
+    {id:'album',          label:'Album'},
+    {id:'fotokniga_proj', label:'Fotokniga — projekt'},
+    {id:'fotokniga_zam',  label:'Fotokniga — zamówienie'},
+    {id:'pendrive',       label:'Pendrive'},
+    {id:'wyslanie',       label:'Wysłanie do klienta'},
+  ],
+  sesja:[
+    {id:'selekcja',  label:'Selekcja zdjęć'},
+    {id:'edycja',    label:'Edycja'},
+    {id:'retusze',   label:'Retusze'},
+    {id:'galeria',   label:'Galeria online'},
+    {id:'wyslanie',  label:'Wysłanie do klienta'},
+  ],
+};
+const DEFAULT_TASKS = CAT_TASKS.sesja;
+
+const WEDDING_SCHEDULE_TEMPLATE = [
+  {id:'s1',time:'09:00',activity:'Sesja przygotowań Panny Młodej'},
+  {id:'s2',time:'11:00',activity:'Sesja przygotowań Pana Młodego'},
+  {id:'s3',time:'13:00',activity:'Ceremonia ślubna'},
+  {id:'s4',time:'14:30',activity:'Sesja plenerowa pary młodej'},
+  {id:'s5',time:'16:00',activity:'Przyjęcie weselne — wejście gości'},
+  {id:'s6',time:'16:30',activity:'Pierwsza para'},
+  {id:'s7',time:'19:00',activity:'Tort weselny'},
+  {id:'s8',time:'24:00',activity:'Koniec pracy fotografa'},
+];
+
+const MONTHS_PL    = ['Styczeń','Luty','Marzec','Kwiecień','Maj','Czerwiec','Lipiec','Sierpień','Wrzesień','Październik','Listopad','Grudzień'];
+const MONTHS_SHORT = ['Sty','Lut','Mar','Kwi','Maj','Cze','Lip','Sie','Wrz','Paź','Lis','Gru'];
+const DAYS_SHORT   = ['Pn','Wt','Śr','Cz','Pt','So','Nd'];
+
+// ══ DATA ═══════════════════════════════════════════════════════════════════
+const DEFAULT_COLS = [
+  {id:'nowe',       name:'Nowe',       icon:'📥'},
+  {id:'edycja_st',  name:'W edycji',   icon:'🖥️'},
+  {id:'wysylka',    name:'Do wysyłki', icon:'📦'},
+  {id:'zakonczone', name:'Zakończone', icon:'✅'},
+];
+
+let zlecenia = [], cols = [];
+
+function loadData() {
+  try { cols = JSON.parse(localStorage.getItem('foto_cols')||'null') || DEFAULT_COLS.map(c=>({...c})); } catch(e) { cols=DEFAULT_COLS.map(c=>({...c})); }
+  try { zlecenia = JSON.parse(localStorage.getItem('foto_v4')||'[]'); } catch(e) { zlecenia=[]; }
+  if (!zlecenia.length) {
+    ['foto_v3','foto_v2'].forEach(k=>{
+      if (zlecenia.length) return;
+      try {
+        const old=JSON.parse(localStorage.getItem(k)||'[]');
+        if (old.length) {
+          const map={nowe:'nowe',edycja:'edycja_st',edycja_st:'edycja_st',wysylka:'wysylka',zakonczone:'zakonczone'};
+          zlecenia=old.map(z=>({deliveryDeadline:'',price:null,deposit:null,secondShooter:'',orderedItems:[],editingFinished:'',daySchedule:[],...z,status:map[z.status]||cols[0]?.id||'nowe'}));
+          save();
+        }
+      } catch(e){}
+    });
+  }
+}
+
+function save()     { localStorage.setItem('foto_v4', JSON.stringify(zlecenia)); }
+function saveCols() { localStorage.setItem('foto_cols', JSON.stringify(cols)); }
+function uid()      { return Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
+function esc(s)     { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+function daysUntil(dateStr) {
+  if(!dateStr) return null;
+  const d=new Date(dateStr); d.setHours(0,0,0,0);
+  const t=new Date(); t.setHours(0,0,0,0);
+  return Math.floor((d-t)/(1000*60*60*24));
+}
+
+function formatDate(ds) {
+  if(!ds) return '';
+  const [y,m,d]=ds.split('-');
+  return `${Number(d)} ${MONTHS_SHORT[Number(m)-1]} ${y}`;
+}
+
+// ══ MAIN VIEW SWITCHING ════════════════════════════════════════════════════
+let mainView = 'planer';
+function setMainView(v) {
+  mainView = v;
+  document.querySelectorAll('.main-view').forEach(el=>el.classList.remove('active'));
+  document.querySelectorAll('.mnav').forEach(el=>el.classList.remove('active'));
+  document.getElementById('view-'+v).classList.add('active');
+  document.querySelectorAll('.mnav')[['planer','timeline','dashboard'].indexOf(v)].classList.add('active');
+  document.getElementById('month-nav-area').style.display = v==='planer' ? '' : 'none';
+  document.getElementById('cal-view-toggle').style.display = v==='planer' ? '' : 'none';
+  if(v==='timeline') renderTimeline();
+  if(v==='dashboard') renderDashboard();
+}
+
+// ══ CALENDAR ═══════════════════════════════════════════════════════════════
+let calYear, calMonth, selectedDate, calView='grid', mpYear;
+
+function initCal() {
+  const now=new Date();
+  calYear=now.getFullYear(); calMonth=now.getMonth(); mpYear=calYear;
+  selectedDate=now.toISOString().slice(0,10);
+  renderAll();
+}
+
+function shiftMonth(d) {
+  calMonth+=d; if(calMonth<0){calMonth=11;calYear--;} if(calMonth>11){calMonth=0;calYear++;}
+  renderAll();
+}
+
+function setCalView(v) {
+  calView=v;
+  document.getElementById('cal-grid-view').style.display=v==='grid'?'':'none';
+  document.getElementById('cal-list-view').style.display=v==='list'?'':'none';
+  document.getElementById('cal-day-strip').style.display=v==='grid'?'':'none';
+  document.getElementById('tb-grid').classList.toggle('active',v==='grid');
+  document.getElementById('tb-list').classList.toggle('active',v==='list');
+  renderAll();
+}
+
+function renderAll() {
+  document.getElementById('month-label').textContent=MONTHS_PL[calMonth]+' '+calYear;
+  if(calView==='grid'){renderCalGrid();renderDayStrip();} else renderCalList();
+  renderKanban(); updateNotifBadge();
+}
+
+function renderCalGrid() {
+  const dowEl=document.getElementById('cal-dows');
+  if(!dowEl.children.length) DAYS_SHORT.forEach(d=>{const e=document.createElement('div');e.className='cal-dow';e.textContent=d;dowEl.appendChild(e);});
+  const grid=document.getElementById('cal-days'); grid.innerHTML='';
+  const today=new Date().toISOString().slice(0,10);
+  const firstDow=(new Date(calYear,calMonth,1).getDay()+6)%7;
+  const dim=new Date(calYear,calMonth+1,0).getDate();
+  for(let i=0;i<firstDow;i++){const e=document.createElement('div');e.className='cal-day empty';grid.appendChild(e);}
+  for(let d=1;d<=dim;d++){
+    const ds=`${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const el=document.createElement('div');el.className='cal-day';
+    if(ds===today)el.classList.add('today');
+    if(ds===selectedDate)el.classList.add('selected');
+    const num=document.createElement('div');num.className='day-num';num.textContent=d;el.appendChild(num);
+    const dayZ=zlecenia.filter(z=>z.date===ds);
+    if(dayZ.length){
+      const dots=document.createElement('div');dots.className='day-dots';
+      dayZ.slice(0,3).forEach(z=>{const dot=document.createElement('div');dot.className='day-dot';dot.style.background=CATS[z.cat]?.color||'#888';dots.appendChild(dot);});
+      el.appendChild(dots);
+    }
+    // delivery deadline indicators
+    const ddZ=zlecenia.filter(z=>z.deliveryDeadline===ds);
+    if(ddZ.length&&!dayZ.length){
+      const d2=document.createElement('div');d2.style.cssText='width:6px;height:3px;background:var(--warn);border-radius:2px;margin-top:2px';el.appendChild(d2);
+    }
+    el.onclick=()=>{selectedDate=ds;renderCalGrid();renderDayStrip();};
+    grid.appendChild(el);
+  }
+}
+
+function renderDayStrip() {
+  const strip=document.getElementById('cal-day-strip');
+  const [y,m,d]=selectedDate.split('-');
+  const label=`${Number(d)} ${MONTHS_PL[Number(m)-1]}`;
+  const dayZ=zlecenia.filter(z=>z.date===selectedDate);
+  let h=`<div class="strip-label">${label}</div>`;
+  if(!dayZ.length) h+=`<div class="strip-empty">Brak zleceń</div>`;
+  else dayZ.forEach(z=>{
+    const cat=CATS[z.cat]||{};
+    const done=(z.tasks||[]).filter(t=>t.done).length,total=(z.tasks||[]).length;
+    h+=`<div class="strip-item" onclick="openDetail('${z.id}')" style="border-left-color:${cat.color}">
+      <div class="strip-dot" style="background:${cat.color}"></div>
+      <div class="strip-name">${esc(z.name)}</div>
+      <div class="strip-badge" style="background:${cat.dim};color:${cat.color}">${cat.icon||''} ${total?done+'/'+total:''}</div>
+    </div>`;
+  });
+  strip.innerHTML=h;
+}
+
+function renderCalList() {
+  const el=document.getElementById('cal-list-view');
+  const dim=new Date(calYear,calMonth+1,0).getDate();
+  let h='';
+  for(let d=1;d<=dim;d++){
+    const ds=`${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const dayZ=zlecenia.filter(z=>z.date===ds); if(!dayZ.length) continue;
+    const dow=['Nd','Pn','Wt','Śr','Cz','Pt','So'][new Date(ds).getDay()];
+    h+=`<div class="cal-list-day-header">${dow}, ${d} ${MONTHS_SHORT[calMonth]}</div>`;
+    dayZ.forEach(z=>{
+      const cat=CATS[z.cat]||{};
+      const done=(z.tasks||[]).filter(t=>t.done).length,total=(z.tasks||[]).length;
+      h+=`<div class="cal-list-item" onclick="openDetail('${z.id}')">
+        <div class="cal-list-dot" style="background:${cat.color}"></div>
+        <div class="cal-list-name">${esc(z.name)}</div>
+        <div class="cal-list-meta">${cat.icon||''} ${total?done+'/'+total+' zad.':''}</div>
+      </div>`;
+    });
+  }
+  if(!h) h=`<div style="text-align:center;color:var(--text3);padding:40px;font-size:13px">Brak zleceń w ${MONTHS_PL[calMonth]}</div>`;
+  el.innerHTML=h;
+}
+
+// ══ MONTH PICKER ═══════════════════════════════════════════════════════════
+function toggleMonthPicker(){const p=document.getElementById('month-popup');if(p.classList.contains('open')){closeMonthPicker();return;}mpYear=calYear;renderMp();p.classList.add('open');}
+function closeMonthPicker(){document.getElementById('month-popup').classList.remove('open');}
+function mpShiftYear(d){mpYear+=d;renderMp();}
+function renderMp(){
+  document.getElementById('mp-year-label').textContent=mpYear;
+  const g=document.getElementById('mp-months');g.innerHTML='';
+  MONTHS_SHORT.forEach((m,i)=>{
+    const btn=document.createElement('button');btn.className='mp-month-btn';btn.textContent=m;
+    if(mpYear===calYear&&i===calMonth)btn.classList.add('cur');
+    btn.onclick=()=>{calYear=mpYear;calMonth=i;closeMonthPicker();renderAll();};
+    g.appendChild(btn);
+  });
+}
+
+// ══ KANBAN ═════════════════════════════════════════════════════════════════
+let draggingId=null;
+
+function renderKanban(){
+  const c=document.getElementById('kanban-columns');c.innerHTML='';
+  document.getElementById('kanban-count').textContent=zlecenia.length+' zleceń';
+  renderAllEventsCol(c);
+  cols.forEach(col=>renderStatusCol(c,col));
+  const btn=document.createElement('div');btn.className='add-col-card';
+  btn.innerHTML='＋<br><span style="font-size:10px">Dodaj kolumnę</span>';
+  btn.onclick=addColumn;c.appendChild(btn);
+}
+
+function renderAllEventsCol(container){
+  const sorted=[...zlecenia].sort((a,b)=>(a.date||'9999').localeCompare(b.date||'9999'));
+  const groups={};
+  sorted.forEach(z=>{const key=z.date?z.date.slice(0,7):'x';if(!groups[key])groups[key]=[];groups[key].push(z);});
+  const col=document.createElement('div');col.className='kanban-col all-events-col';
+  const header=document.createElement('div');header.className='col-header';
+  header.innerHTML=`<span class="col-icon">📋</span><span class="col-name">Wszystkie zlecenia</span><span class="col-badge">${zlecenia.length}</span>`;
+  col.appendChild(header);
+  const cards=document.createElement('div');cards.className='col-cards';
+  if(!zlecenia.length){cards.innerHTML='<div class="ae-empty">Brak zleceń<br><small>Kliknij + Dodaj</small></div>';}
+  else {
+    Object.entries(groups).sort(([a],[b])=>a.localeCompare(b)).forEach(([key,items])=>{
+      const [y,m]=key.split('-');
+      const label=key==='x'?'Bez daty':`${MONTHS_PL[Number(m)-1]} ${y}`;
+      const lbl=document.createElement('div');lbl.className='ae-month-label';lbl.textContent=label;cards.appendChild(lbl);
+      items.forEach(z=>{
+        const cat=CATS[z.cat]||{};
+        const d=z.date?Number(z.date.slice(8)):null;
+        const mm=z.date?MONTHS_SHORT[Number(z.date.slice(5,7))-1]:'';
+        const item=document.createElement('div');item.className='ae-item';
+        item.innerHTML=`<div class="ae-dot" style="background:${cat.color}"></div><div class="ae-name">${esc(z.name)}</div>${d?`<div class="ae-chip" style="background:${cat.dim};color:${cat.color}">${d} ${mm}</div>`:''}`;
+        item.onclick=()=>openDetail(z.id);cards.appendChild(item);
+      });
+    });
+  }
+  col.appendChild(cards);container.appendChild(col);
+}
+
+function renderStatusCol(container,col){
+  const cards=zlecenia.filter(z=>(z.status||cols[0]?.id)===col.id);
+  const colEl=document.createElement('div');colEl.className='kanban-col';colEl.dataset.status=col.id;
+  const header=document.createElement('div');header.className='col-header';
+  const iconEl=document.createElement('span');iconEl.className='col-icon';iconEl.textContent=col.icon;
+  const nameEl=document.createElement('span');nameEl.className='col-name-editable';nameEl.title='2× klik = zmień nazwę';nameEl.textContent=col.name;
+  nameEl.ondblclick=()=>startRenameCol(col.id,nameEl);
+  const badge=document.createElement('span');badge.className='col-badge';badge.textContent=cards.length;
+  const delBtn=document.createElement('button');delBtn.className='col-del-btn';delBtn.textContent='✕';delBtn.title='Usuń';delBtn.onclick=()=>deleteCol(col.id);
+  header.appendChild(iconEl);header.appendChild(nameEl);header.appendChild(badge);header.appendChild(delBtn);colEl.appendChild(header);
+  const cardsEl=document.createElement('div');cardsEl.className='col-cards';cardsEl.id='col-'+col.id;
+  cards.forEach(z=>cardsEl.appendChild(makeCard(z)));colEl.appendChild(cardsEl);
+  const addBtn=document.createElement('button');addBtn.className='col-add-btn';addBtn.textContent='+ Dodaj';addBtn.onclick=()=>openAddModal(col.id);colEl.appendChild(addBtn);
+  colEl.addEventListener('dragover',e=>{e.preventDefault();colEl.classList.add('drag-over');});
+  colEl.addEventListener('dragleave',()=>colEl.classList.remove('drag-over'));
+  colEl.addEventListener('drop',e=>{e.preventDefault();colEl.classList.remove('drag-over');if(draggingId){const z=zlecenia.find(x=>x.id===draggingId);if(z){z.status=col.id;save();renderKanban();renderDayStrip();}}});
+  container.appendChild(colEl);
+}
+
+function makeCard(z){
+  const cat=CATS[z.cat]||{};
+  const done=(z.tasks||[]).filter(t=>t.done).length,total=(z.tasks||[]).length;
+  const pct=total?Math.round(done/total*100):0;
+  const [,m,d]=(z.date||'').split('-');
+  const dateLabel=z.date?`${Number(d)} ${MONTHS_SHORT[Number(m)-1]}`:'';
+
+  // Delivery deadline badge (#11)
+  let ddHtml='';
+  if(z.deliveryDeadline){
+    const diff=daysUntil(z.deliveryDeadline);
+    const cls=diff<0?'overdue':diff<=7?'warn':'ok';
+    const txt=diff<0?`Przekroczony (${Math.abs(diff)}d)`:diff===0?'Dziś!':diff<=7?`Za ${diff} dni`:`${formatDate(z.deliveryDeadline)}`;
+    ddHtml=`<div class="card-deadline ${cls}">📦 ${txt}</div>`;
+  }
+
+  // Finance badge (#2)
+  let finHtml='';
+  if(z.price){
+    const price=Number(z.price),dep=Number(z.deposit)||0,rem=price-dep;
+    if(dep>0&&rem>0) finHtml=`<div class="card-finance partial">💳 Pozostało: ${rem.toLocaleString('pl')} zł</div>`;
+    else if(dep>0&&rem<=0) finHtml=`<div class="card-finance">✓ Opłacone ${price.toLocaleString('pl')} zł</div>`;
+    else finHtml=`<div class="card-finance partial">💰 ${price.toLocaleString('pl')} zł · brak zaliczki</div>`;
+  }
+
+  const dotHtml=(z.tasks||[]).map(t=>`<div class="card-dot ${t.done?'done':''}" style="${t.done?'background:'+cat.color:''}"></div>`).join('');
+  const card=document.createElement('div');card.className='kanban-card';card.draggable=true;card.dataset.id=z.id;
+  card.style.borderLeftColor=cat.color||'#555';
+  card.innerHTML=`
+    <div class="card-cat" style="background:${cat.dim};color:${cat.color}">${cat.icon||''} ${cat.label||z.cat}</div>
+    <div class="card-name">${esc(z.name)}</div>
+    ${dateLabel?`<div class="card-date">📅 ${dateLabel}${z.secondShooter?` · 👤 ${esc(z.secondShooter)}`:''}</div>`:''}
+    ${ddHtml}${finHtml}
+    ${total?`<div class="card-pbar-bg"><div class="card-pbar-fill" style="width:${pct}%;background:${cat.color}"></div></div>`:''}
+    <div class="card-dots">${dotHtml}</div>
+  `;
+  card.addEventListener('dragstart',()=>{draggingId=z.id;setTimeout(()=>card.classList.add('dragging'),0);});
+  card.addEventListener('dragend',()=>{card.classList.remove('dragging');draggingId=null;});
+  card.addEventListener('click',()=>openDetail(z.id));
+  return card;
+}
+
+// Column management
+function startRenameCol(id,nameEl){
+  const col=cols.find(c=>c.id===id);if(!col)return;
+  const input=document.createElement('input');input.className='col-name-input';input.value=col.name;
+  nameEl.replaceWith(input);input.focus();input.select();
+  const finish=()=>{const v=input.value.trim()||col.name;col.name=v;saveCols();renderKanban();};
+  input.addEventListener('blur',finish);
+  input.addEventListener('keydown',e=>{if(e.key==='Enter')input.blur();if(e.key==='Escape')renderKanban();});
+}
+function addColumn(){
+  const icons=['📌','🔖','⭐','🎯','🚀','💡','🔧','📝','🏷️','🎨'];
+  const id='col_'+uid();cols.push({id,name:'Nowa kolumna',icon:icons[cols.length%icons.length]});
+  saveCols();renderKanban();
+  setTimeout(()=>{const n=document.querySelector(`[data-status="${id}"] .col-name-editable`);if(n)startRenameCol(id,n);},60);
+}
+function deleteCol(id){
+  const count=zlecenia.filter(z=>z.status===id).length;
+  const remaining=cols.filter(c=>c.id!==id);
+  if(!remaining.length){alert('Nie możesz usunąć ostatniej kolumny.');return;}
+  if(!confirm(count?`Kolumna zawiera ${count} zleceń. Przenieść do "${remaining[0].name}"?`:'Usunąć kolumnę?'))return;
+  if(count){zlecenia.filter(z=>z.status===id).forEach(z=>z.status=remaining[0].id);save();}
+  cols=remaining;saveCols();renderKanban();
+}
+
+// ══ TIMELINE VIEW (#9) ════════════════════════════════════════════════════
+let tlYear = new Date().getFullYear();
+const TL_MONTH_W = 160; // px per month
+const TL_TOTAL_W = TL_MONTH_W * 12;
+
+function shiftTlYear(d){tlYear+=d;renderTimeline();}
+
+function dayOfYear(ds) {
+  const d=new Date(ds);
+  const start=new Date(d.getFullYear(),0,1);
+  return Math.ceil((d-start)/(1000*60*60*24));
+}
+function isLeap(y){return (y%4===0&&y%100!==0)||y%400===0;}
+function totalDays(y){return isLeap(y)?366:365;}
+
+function dateToX(ds,year){
+  if(!ds)return null;
+  const d=new Date(ds);
+  if(d.getFullYear()!==year) return d.getFullYear()<year?0:TL_TOTAL_W;
+  return Math.round((dayOfYear(ds)-1)/totalDays(year)*TL_TOTAL_W);
+}
+
+function monthStartX(m,year){
+  const d=new Date(year,m,1);
+  const ds=d.toISOString().slice(0,10);
+  return dateToX(ds,year);
+}
+
+function renderTimeline(){
+  document.getElementById('tl-year-label').textContent=tlYear;
+  // Legend
+  const legend=document.getElementById('tl-legend');
+  legend.innerHTML=Object.entries(CATS).map(([k,v])=>`<div class="tl-legend-item"><div class="tl-legend-dot" style="background:${v.color}"></div>${v.label}</div>`).join('');
+
+  const container=document.getElementById('tl-container');
+  const yearZ=zlecenia.filter(z=>{
+    if(!z.date)return false;
+    const y=Number(z.date.slice(0,4));
+    const dy=z.deliveryDeadline?Number(z.deliveryDeadline.slice(0,4)):y;
+    return y===tlYear||dy===tlYear;
+  }).sort((a,b)=>(a.date||'').localeCompare(b.date||''));
+
+  if(!yearZ.length){container.innerHTML=`<div class="tl-empty">Brak zleceń w roku ${tlYear}<br><small style="color:var(--text3);font-size:12px">Dodaj zlecenia z datą w tym roku</small></div>`;return;}
+
+  const today=new Date().toISOString().slice(0,10);
+  const todayX=new Date().getFullYear()===tlYear?dateToX(today,tlYear):null;
+
+  let html=`<div class="tl-inner">`;
+  // Month headers
+  html+=`<div class="tl-months-header">
+    <div class="tl-row-header-top">Zlecenie</div>
+    ${MONTHS_SHORT.map(m=>`<div class="tl-month-head">${m}</div>`).join('')}
+  </div>`;
+
+  // Rows
+  html+=`<div class="tl-rows-area">`;
+  yearZ.forEach(z=>{
+    const cat=CATS[z.cat]||{};
+    const eventX=dateToX(z.date,tlYear);
+    const dlX=z.deliveryDeadline?dateToX(z.deliveryDeadline,tlYear):null;
+    const barLeft=eventX;
+    const barWidth=dlX!==null?Math.max(6,dlX-eventX):6;
+    const barColor=cat.color||'#888';
+    const done=(z.tasks||[]).filter(t=>t.done).length,total=(z.tasks||[]).length;
+    const pct=total?Math.round(done/total*100):0;
+
+    html+=`<div class="tl-row" onclick="openDetail('${z.id}')">
+      <div class="tl-row-label">
+        <div class="tl-row-name">${esc(z.name)}</div>
+        <div class="tl-row-meta" style="color:${cat.color}">${cat.icon||''} ${cat.label||''} ${pct?'· '+pct+'%':''}</div>
+      </div>
+      <div class="tl-track" style="position:relative">
+        ${MONTHS_SHORT.map((_,i)=>{const x=monthStartX(i,tlYear);return `<div class="tl-month-grid" style="left:${x}px"></div>`;}).join('')}
+        ${todayX!==null?`<div class="tl-today-line" style="left:${todayX}px"></div>`:''}
+        ${dlX!==null?
+          `<div class="tl-bar" style="left:${barLeft}px;width:${barWidth}px;background:${barColor};opacity:.85" title="${esc(z.name)}: ${formatDate(z.date)} → ${formatDate(z.deliveryDeadline)}">${barWidth>60?esc(z.name):''}</div>`:
+          `<div class="tl-bar-dot" style="left:${barLeft-5}px;border-color:${barColor}" title="${esc(z.name)}: ${formatDate(z.date)}"></div>`
+        }
+      </div>
+    </div>`;
+  });
+  html+=`</div></div>`;
+  container.innerHTML=html;
+  // Scroll to today
+  if(todayX) setTimeout(()=>container.scrollLeft=Math.max(0,todayX-160),50);
+}
+
+// ══ DASHBOARD (#15, #3, #16) ════════════════════════════════════════════
+let dashYear=new Date().getFullYear();
+let chartInstances=[];
+
+function shiftDashYear(d){dashYear+=d;renderDashboard();}
+
+function renderDashboard(){
+  document.getElementById('dash-year-label').textContent=dashYear;
+  chartInstances.forEach(c=>{try{c.destroy();}catch(e){}});
+  chartInstances=[];
+
+  const yearZ=zlecenia.filter(z=>z.date&&z.date.startsWith(dashYear+''));
+  const totalIncome=yearZ.reduce((s,z)=>s+(Number(z.price)||0),0);
+  const totalDeposits=yearZ.reduce((s,z)=>s+(Number(z.deposit)||0),0);
+  const totalRemaining=yearZ.reduce((s,z)=>s+Math.max(0,(Number(z.price)||0)-(Number(z.deposit)||0)),0);
+  const editedZ=yearZ.filter(z=>z.editingFinished&&z.date);
+  const avgEdit=editedZ.length?Math.round(editedZ.reduce((s,z)=>{const days=(new Date(z.editingFinished)-new Date(z.date))/(1000*60*60*24);return s+days;},0)/editedZ.length):null;
+
+  // Busiest month
+  const monthlyCounts=Array(12).fill(0);
+  yearZ.forEach(z=>{const m=Number(z.date.slice(5,7))-1;monthlyCounts[m]++;});
+  const busiestM=monthlyCounts.indexOf(Math.max(...monthlyCounts));
+
+  const body=document.getElementById('dash-body');
+  body.innerHTML=`
+    <div class="stat-grid">
+      <div class="stat-card"><div class="stat-num" style="color:var(--wesele)">${yearZ.length}</div><div class="stat-lbl">Zleceń w ${dashYear}</div></div>
+      <div class="stat-card"><div class="stat-num" style="color:var(--sesja)">${totalIncome?totalIncome.toLocaleString('pl')+' zł':'—'}</div><div class="stat-lbl">Kontrakty</div><div class="stat-sub">${totalDeposits?'Zaliczki: '+totalDeposits.toLocaleString('pl')+' zł':'brak zaliczek'}</div></div>
+      <div class="stat-card"><div class="stat-num" style="color:${totalRemaining?'var(--warn)':'var(--sesja)'}">${totalRemaining?totalRemaining.toLocaleString('pl')+' zł':'✓'}</div><div class="stat-lbl">Pozostało do zapłaty</div><div class="stat-sub">${totalRemaining?'od klientów':totalIncome?'wszystko opłacone':'brak zleceń'}</div></div>
+      <div class="stat-card"><div class="stat-num" style="color:var(--urodziny)">${avgEdit!==null?avgEdit+' dni':'—'}</div><div class="stat-lbl">Śr. czas edycji</div></div>
+      <div class="stat-card"><div class="stat-num" style="color:var(--chrzest)">${yearZ.length?MONTHS_SHORT[busiestM]:'—'}</div><div class="stat-lbl">Najzapełniony miesiąc</div></div>
+    </div>
+    <div class="charts-grid">
+      <div class="chart-card chart-full"><div class="chart-title">Zlecenia per miesiąc</div><div class="chart-wrap"><canvas id="chart-monthly"></canvas></div></div>
+      <div class="chart-card"><div class="chart-title">Kategorie zleceń</div><div class="chart-wrap"><canvas id="chart-cat"></canvas></div></div>
+      <div class="chart-card"><div class="chart-title">Przychód per miesiąc (PLN)</div><div class="chart-wrap"><canvas id="chart-income"></canvas></div></div>
+    </div>
+    <div class="chart-card" style="margin-bottom:14px">
+      <div class="chart-title">Czas edycji per zlecenie (#16)</div>
+      <table class="edit-table">
+        <thead><tr><th>Zlecenie</th><th>Kategoria</th><th>Data sesji</th><th>Edycja zakończona</th><th>Dni</th></tr></thead>
+        <tbody id="edit-table-body"></tbody>
+      </table>
+    </div>
+  `;
+
+  // Chart defaults for dark mode
+  if(window.Chart){
+    Chart.defaults.color='#999';
+    Chart.defaults.borderColor='#2a2a2a';
+
+    // Monthly events (grouped bar by category)
+    const catKeys=Object.keys(CATS);
+    const monthlyData=catKeys.map(ck=>({
+      label:CATS[ck].label,
+      data:Array(12).fill(0),
+      backgroundColor:CATS[ck].color+'bb',
+      borderRadius:3,
+    }));
+    yearZ.forEach(z=>{
+      const mi=Number(z.date.slice(5,7))-1;
+      const ci=catKeys.indexOf(z.cat);
+      if(ci>=0)monthlyData[ci].data[mi]++;
+    });
+    const ctx1=document.getElementById('chart-monthly');
+    if(ctx1){
+      chartInstances.push(new Chart(ctx1,{
+        type:'bar',
+        data:{labels:MONTHS_SHORT,datasets:monthlyData},
+        options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,labels:{boxWidth:12,font:{size:11}}}},scales:{x:{stacked:false,grid:{color:'#2a2a2a'}},y:{stacked:false,grid:{color:'#2a2a2a'},ticks:{stepSize:1}}}}
+      }));
+    }
+
+    // Category donut
+    const catCounts=catKeys.map(ck=>yearZ.filter(z=>z.cat===ck).length);
+    const ctx2=document.getElementById('chart-cat');
+    if(ctx2){
+      chartInstances.push(new Chart(ctx2,{
+        type:'doughnut',
+        data:{labels:catKeys.map(k=>CATS[k].label),datasets:[{data:catCounts,backgroundColor:catKeys.map(k=>CATS[k].color+'bb'),borderWidth:0}]},
+        options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'right',labels:{boxWidth:12,font:{size:11}}}}}
+      }));
+    }
+
+    // Monthly income bar
+    const incomeData=Array(12).fill(0);
+    yearZ.forEach(z=>{if(z.price){const mi=Number(z.date.slice(5,7))-1;incomeData[mi]+=Number(z.price);}});
+    const ctx3=document.getElementById('chart-income');
+    if(ctx3){
+      chartInstances.push(new Chart(ctx3,{
+        type:'bar',
+        data:{labels:MONTHS_SHORT,datasets:[{label:'PLN',data:incomeData,backgroundColor:CATS.wesele.color+'99',borderRadius:3}]},
+        options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{color:'#2a2a2a'}},y:{grid:{color:'#2a2a2a'},ticks:{callback:v=>v?v.toLocaleString('pl'):0}}}}
+      }));
+    }
+  }
+
+  // Editing time table
+  const tbody=document.getElementById('edit-table-body');
+  if(tbody){
+    const rows=yearZ.filter(z=>z.editingFinished).map(z=>{
+      const days=Math.round((new Date(z.editingFinished)-new Date(z.date))/(1000*60*60*24));
+      return {z,days};
+    }).sort((a,b)=>b.days-a.days);
+    rows.forEach(({z,days})=>{
+      const cat=CATS[z.cat]||{};
+      const tr=document.createElement('tr');
+      tr.innerHTML=`<td>${esc(z.name)}</td><td style="color:${cat.color}">${cat.icon} ${cat.label}</td><td>${formatDate(z.date)}</td><td>${formatDate(z.editingFinished)}</td><td class="edit-days">${days}</td>`;
+      tbody.appendChild(tr);
+    });
+    if(!rows.length){
+      const tr=document.createElement('tr');
+      tr.innerHTML=`<td colspan="5" style="text-align:center;color:var(--text3);padding:14px">Brak zakończonych edycji — uzupełnij pole "Edycja zakończona" w zleceniach</td>`;
+      tbody.appendChild(tr);
+    }
+  }
+}
+
+// ══ ADD/EDIT MODAL ════════════════════════════════════════════════════════
+let editingId=null,selCat=null,selStatus=null,taskStates={};
+let tasksDirty=false; // true if user manually changed tasks
+
+function openAddModal(defaultStatus){
+  editingId=null;selCat=null;tasksDirty=false;
+  selStatus=defaultStatus||cols[0]?.id;
+  taskStates={};
+  (CAT_TASKS.sesja||DEFAULT_TASKS).forEach(t=>taskStates[t.id]=false);
+  document.getElementById('modal-add-title').textContent='Nowe zlecenie';
+  document.getElementById('f-name').value='';
+  document.getElementById('f-date').value=selectedDate||new Date().toISOString().slice(0,10);
+  document.getElementById('f-deadline').value='';
+  document.getElementById('f-price').value='';
+  document.getElementById('f-deposit').value='';
+  document.getElementById('f-second').value='';
+  document.getElementById('f-location').value='';
+  document.getElementById('f-edit-done').value='';
+  document.getElementById('f-notes').value='';
+  document.getElementById('btn-del').style.display='none';
+  renderCatPicker();renderStatusPicker();renderTaskForm();
+  document.getElementById('modal-add').classList.add('open');
+}
+
+function openEditModal(id){
+  closeDetail();
+  const z=zlecenia.find(x=>x.id===id);if(!z)return;
+  editingId=id;selCat=z.cat;selStatus=z.status||cols[0]?.id;tasksDirty=true;
+  taskStates={};
+  const tasks=z.tasks||(CAT_TASKS[z.cat]||DEFAULT_TASKS).map(t=>({...t,done:false}));
+  tasks.forEach(t=>taskStates[t.id]=t.done);
+  document.getElementById('modal-add-title').textContent='Edytuj zlecenie';
+  document.getElementById('f-name').value=z.name;
+  document.getElementById('f-date').value=z.date||'';
+  document.getElementById('f-deadline').value=z.deliveryDeadline||'';
+  document.getElementById('f-price').value=z.price||'';
+  document.getElementById('f-deposit').value=z.deposit||'';
+  document.getElementById('f-second').value=z.secondShooter||'';
+  document.getElementById('f-location').value=z.location||'';
+  document.getElementById('f-edit-done').value=z.editingFinished||'';
+  document.getElementById('f-notes').value=z.notes||'';
+  document.getElementById('btn-del').style.display='';
+  renderCatPicker();renderStatusPicker();renderTaskForm();
+  document.getElementById('modal-add').classList.add('open');
+}
+
+function closeAddModal(){document.getElementById('modal-add').classList.remove('open');}
+
+function renderCatPicker(){
+  document.getElementById('cat-picker').innerHTML=Object.entries(CATS).map(([k,v])=>
+    `<button class="cat-btn ${selCat===k?'sel':''}" style="${selCat===k?'background:'+v.color+';border-color:'+v.color:''}" onclick="selectCat('${k}')">${v.icon} ${v.label}</button>`
+  ).join('');
+}
+
+function selectCat(cat){
+  selCat=cat;
+  // Auto-load tasks if not dirty (#12)
+  if(!tasksDirty){
+    taskStates={};
+    (CAT_TASKS[cat]||DEFAULT_TASKS).forEach(t=>taskStates[t.id]=false);
+    document.getElementById('tasks-auto-note').textContent='— auto-zadania dla: '+CATS[cat].label;
+  }
+  renderCatPicker();renderTaskForm();
+}
+
+function renderStatusPicker(){
+  document.getElementById('status-picker').innerHTML=cols.map(c=>
+    `<button class="status-btn ${selStatus===c.id?'sel':''}" onclick="selStatus='${c.id}';renderStatusPicker()">${c.icon} ${c.name}</button>`
+  ).join('');
+}
+
+function renderTaskForm(){
+  const tasks=selCat&&!tasksDirty?(CAT_TASKS[selCat]||DEFAULT_TASKS):Object.entries(taskStates).map(([id,done])=>{
+    const def=[...Object.values(CAT_TASKS).flat()].find(t=>t.id===id)||{id,label:id};
+    return {...def,done};
+  });
+  document.getElementById('f-tasks').innerHTML=tasks.map(t=>`
+    <div class="task-row">
+      <div class="chk ${taskStates[t.id]?'on':''}" onclick="taskStates['${t.id}']=!taskStates['${t.id}'];tasksDirty=true;renderTaskForm()"></div>
+      <div class="task-lbl ${taskStates[t.id]?'done':''}">${esc(t.label)}</div>
+    </div>`).join('');
+}
+
+function saveZlecenie(){
+  const name=document.getElementById('f-name').value.trim();
+  if(!name){document.getElementById('f-name').focus();return;}
+  const cat=selCat||'sesja';
+  const taskTemplate=CAT_TASKS[cat]||DEFAULT_TASKS;
+  const tasks=taskTemplate.map(t=>({id:t.id,label:t.label,done:!!taskStates[t.id]}));
+  const obj={
+    name,date:document.getElementById('f-date').value,cat,status:selStatus||cols[0]?.id,
+    deliveryDeadline:document.getElementById('f-deadline').value,
+    price:Number(document.getElementById('f-price').value)||null,
+    deposit:Number(document.getElementById('f-deposit').value)||null,
+    secondShooter:document.getElementById('f-second').value.trim(),
+    location:document.getElementById('f-location').value.trim(),
+    editingFinished:document.getElementById('f-edit-done').value,
+    notes:document.getElementById('f-notes').value.trim(),tasks
+  };
+  if(editingId){
+    const i=zlecenia.findIndex(z=>z.id===editingId);
+    if(i>=0)zlecenia[i]={...zlecenia[i],...obj};
+  } else {
+    zlecenia.push({id:uid(),orderedItems:[],daySchedule:[],...obj});
+  }
+  save();closeAddModal();renderAll();
+}
+
+function deleteZlecenie(){
+  if(!editingId||!confirm('Usunąć to zlecenie?'))return;
+  zlecenia=zlecenia.filter(z=>z.id!==editingId);
+  save();closeAddModal();renderAll();
+}
+
+// ══ DETAIL MODAL ══════════════════════════════════════════════════════════
+let detailTab='info';
+
+function openDetail(id){
+  const z=zlecenia.find(x=>x.id===id);if(!z)return;
+  detailTab='info';
+  renderDetailModal(id);
+  document.getElementById('modal-detail').classList.add('open');
+}
+
+function renderDetailModal(id){
+  const z=zlecenia.find(x=>x.id===id);if(!z)return;
+  const cat=CATS[z.cat]||{};
+  const done=(z.tasks||[]).filter(t=>t.done).length,total=(z.tasks||[]).length,pct=total?Math.round(done/total*100):0;
+  const mapsUrl=z.location?`https://maps.google.com/?q=${encodeURIComponent(z.location)}`:null;
+  const dl=z.deliveryDeadline?daysUntil(z.deliveryDeadline):null;
+  const dlText=dl===null?'':`Termin dostawy: <b style="color:${dl<0?'var(--danger)':dl<=7?'var(--warn)':'#4ade80'}">${formatDate(z.deliveryDeadline)}${dl<0?' (przekroczony '+Math.abs(dl)+'d)':dl===0?' (dziś!)':' (za '+dl+'d)'}</b>`;
+
+  const statusChips=cols.map(c=>`<span class="s-chip ${z.status===c.id?'active':''}" onclick="setStatus('${id}','${c.id}')">${c.icon} ${c.name}</span>`).join('');
+  const tasksHtml=(z.tasks||[]).map(t=>`<div class="task-row"><div class="chk ${t.done?'on':''}" onclick="toggleTask('${id}','${t.id}')"></div><div class="task-lbl ${t.done?'done':''}">${esc(t.label)}</div></div>`).join('');
+  const orderedHtml=renderOrderedItems(z);
+  const schedHtml=z.cat==='wesele'?renderDaySchedule(z):'';
+
+  const tabs=['info','ordered','schedule'];
+  const tabLabels={info:'Szczegóły',ordered:'Zamówienia',schedule:'Harmonogram dnia'};
+  const showSchedule=z.cat==='wesele';
+
+  document.getElementById('modal-detail-body').innerHTML=`
+    <div class="detail-stripe" style="background:${cat.color}"></div>
+    <div class="modal-top">
+      <span class="card-cat" style="background:${cat.dim};color:${cat.color}">${cat.icon||''} ${cat.label||z.cat}</span>
+      <div style="display:flex;gap:6px">
+        <button class="btn-ghost" style="padding:5px 10px;font-size:12px" onclick="openEditModal('${id}')">✏️ Edytuj</button>
+        <button class="modal-close" onclick="closeDetail()">✕</button>
+      </div>
+    </div>
+    <div class="detail-name">${esc(z.name)}</div>
+    <div class="detail-meta">
+      ${z.date?`📅 ${formatDate(z.date)}<br>`:''}
+      ${z.secondShooter?`👤 2. fotograf: ${esc(z.secondShooter)}<br>`:''}
+      ${z.location?`📍 <a href="${mapsUrl}" target="_blank" style="color:${cat.color}">${esc(z.location)}</a><br>`:''}
+      ${dlText?`${dlText}<br>`:''}
+      ${z.price?(()=>{const p=Number(z.price),d=Number(z.deposit)||0,r=p-d;return `💰 ${p.toLocaleString('pl')} zł${d?` · Zaliczka: <b style="color:var(--sesja)">${d.toLocaleString('pl')} zł</b> · Pozostało: <b style="color:${r>0?'var(--warn)':'#4ade80'}">${r.toLocaleString('pl')} zł</b>`:' · <span style="color:var(--warn);font-size:11px">brak zaliczki</span>'}<br>`;})():''}
+    </div>
+
+    <div class="detail-tabs">
+      <button class="dtab ${detailTab==='info'?'active':''}" onclick="switchDetailTab('${id}','info')">Zadania</button>
+      <button class="dtab ${detailTab==='ordered'?'active':''}" onclick="switchDetailTab('${id}','ordered')">📦 Zamówienia</button>
+      ${showSchedule?`<button class="dtab ${detailTab==='schedule'?'active':''}" onclick="switchDetailTab('${id}','schedule')">🕐 Plan dnia</button>`:''}
+    </div>
+
+    <div class="dtab-panel ${detailTab==='info'?'active':''}">
+      <div class="detail-sec">Status</div>
+      <div class="status-chips">${statusChips}</div>
+      ${z.notes?`<div class="detail-sec">Notatki</div><div style="background:var(--surface2);border-radius:7px;padding:8px 10px;font-size:12px;color:var(--text2)">${esc(z.notes)}</div>`:''}
+      ${total?`<div class="detail-sec">Zadania — ${done}/${total} (${pct}%)</div><div class="pbar-bg"><div class="pbar-fill" style="width:${pct}%;background:${cat.color}"></div></div>`:''}
+      <div class="tasks-list">${tasksHtml}</div>
+    </div>
+
+    <div class="dtab-panel ${detailTab==='ordered'?'active':''}">
+      ${orderedHtml}
+    </div>
+
+    ${showSchedule?`<div class="dtab-panel ${detailTab==='schedule'?'active':''}">${schedHtml}</div>`:''}
+    <div style="height:6px"></div>
+  `;
+}
+
+function switchDetailTab(id,tab){detailTab=tab;renderDetailModal(id);}
+
+// ── Ordered Items (#14)
+function renderOrderedItems(z){
+  const items=(z.orderedItems||[]);
+  const products=['Fotokniga','Album','Pendrive','Odbitki','USB'];
+  let h=`<div class="detail-sec">Zamówione produkty</div>`;
+  items.forEach(o=>{
+    const recvCls=o.receivedDate?'yes':'no';
+    h+=`<div class="order-item">
+      <div class="order-name">${esc(o.name)}</div>
+      <div class="order-dates">Zamówiono: ${o.orderedDate?formatDate(o.orderedDate):'—'}</div>
+      <div class="order-recv ${recvCls}" onclick="toggleOrderReceived('${z.id}','${o.id}')">${o.receivedDate?'✓ Odebrano':'Oczekuje'}</div>
+      <button class="order-del" onclick="deleteOrder('${z.id}','${o.id}')">✕</button>
+    </div>`;
+  });
+  h+=`<div class="order-add-row">
+    <select class="form-input" id="order-name-${z.id}" style="flex:.8;font-size:12px;padding:6px 8px">
+      ${products.map(p=>`<option>${p}</option>`).join('')}
+      <option value="__custom">Własna nazwa...</option>
+    </select>
+    <input class="form-input" id="order-date-${z.id}" type="date" style="flex:.6" value="${new Date().toISOString().slice(0,10)}" />
+    <button class="btn-sm" onclick="addOrderItem('${z.id}')">+ Dodaj</button>
+  </div>`;
+  return h;
+}
+
+function addOrderItem(zId){
+  const z=zlecenia.find(x=>x.id===zId);if(!z)return;
+  if(!z.orderedItems)z.orderedItems=[];
+  const sel=document.getElementById('order-name-'+zId);
+  const dateEl=document.getElementById('order-date-'+zId);
+  let name=sel?.value||'Produkt';
+  if(name==='__custom'){name=prompt('Podaj nazwę produktu:')||'Produkt';}
+  z.orderedItems.push({id:uid(),name,orderedDate:dateEl?.value||'',receivedDate:null});
+  save();renderDetailModal(zId);
+}
+
+function toggleOrderReceived(zId,oId){
+  const z=zlecenia.find(x=>x.id===zId);if(!z)return;
+  const o=(z.orderedItems||[]).find(x=>x.id===oId);if(!o)return;
+  o.receivedDate=o.receivedDate?null:new Date().toISOString().slice(0,10);
+  save();renderDetailModal(zId);
+}
+
+function deleteOrder(zId,oId){
+  const z=zlecenia.find(x=>x.id===zId);if(!z)return;
+  z.orderedItems=(z.orderedItems||[]).filter(x=>x.id!==oId);
+  save();renderDetailModal(zId);
+}
+
+// ── Wedding Day Schedule (#10)
+function renderDaySchedule(z){
+  const items=z.daySchedule||[];
+  let h=`<div class="detail-sec">Harmonogram dnia ślubu</div>`;
+  if(!items.length)h+=`<div style="color:var(--text3);font-size:12px;margin-bottom:8px">Brak harmonogramu. Dodaj punkty lub użyj szablonu.</div>`;
+  else items.forEach(s=>{
+    h+=`<div class="sched-item"><span class="sched-time">${esc(s.time)}</span><span class="sched-act">${esc(s.activity)}</span><button class="sched-del" onclick="deleteSchedItem('${z.id}','${s.id}')">✕</button></div>`;
+  });
+  h+=`<div class="sched-add-row">
+    <input class="form-input" id="sched-time-${z.id}" type="time" style="flex:.3" value="10:00" />
+    <input class="form-input" id="sched-act-${z.id}" placeholder="Opis punktu..." style="flex:1" />
+    <button class="btn-sm" onclick="addSchedItem('${z.id}')">+ Dodaj</button>
+  </div>
+  <button class="btn-sm" style="margin-top:7px;width:100%;text-align:center" onclick="loadSchedTemplate('${z.id}')">📋 Załaduj szablon wesela</button>`;
+  return h;
+}
+
+function addSchedItem(zId){
+  const z=zlecenia.find(x=>x.id===zId);if(!z)return;
+  if(!z.daySchedule)z.daySchedule=[];
+  const time=document.getElementById('sched-time-'+zId)?.value||'';
+  const act=document.getElementById('sched-act-'+zId)?.value.trim()||'';
+  if(!act)return;
+  z.daySchedule.push({id:uid(),time,activity:act});
+  z.daySchedule.sort((a,b)=>a.time.localeCompare(b.time));
+  save();renderDetailModal(zId);
+}
+
+function deleteSchedItem(zId,sId){
+  const z=zlecenia.find(x=>x.id===zId);if(!z)return;
+  z.daySchedule=(z.daySchedule||[]).filter(x=>x.id!==sId);
+  save();renderDetailModal(zId);
+}
+
+function loadSchedTemplate(zId){
+  const z=zlecenia.find(x=>x.id===zId);if(!z)return;
+  if(z.daySchedule?.length&&!confirm('Zastąpić obecny harmonogram szablonem?'))return;
+  z.daySchedule=WEDDING_SCHEDULE_TEMPLATE.map(s=>({...s,id:uid()}));
+  save();renderDetailModal(zId);
+}
+
+function toggleTask(zId,tId){
+  const z=zlecenia.find(x=>x.id===zId);if(!z)return;
+  const t=(z.tasks||[]).find(x=>x.id===tId);if(t)t.done=!t.done;
+  save();renderDetailModal(zId);renderKanban();if(calView==='grid')renderDayStrip();else renderCalList();
+}
+
+function setStatus(zId,status){
+  const z=zlecenia.find(x=>x.id===zId);if(!z)return;
+  z.status=status;save();renderDetailModal(zId);renderKanban();
+}
+
+function closeDetail(){document.getElementById('modal-detail').classList.remove('open');}
+
+// ══ QUICK ADD (#20) ════════════════════════════════════════════════════════
+let qaCat=null;
+
+function openQuickAdd(){
+  qaCat=null;
+  const row=document.getElementById('qa-cat-row');
+  row.innerHTML=Object.entries(CATS).map(([k,v])=>
+    `<button class="qa-cat-btn" data-cat="${k}" style="" onclick="selectQaCat('${k}')">${v.icon} ${v.label}</button>`
+  ).join('');
+  document.getElementById('qa-name').value='';
+  document.getElementById('qa-date').value=selectedDate||new Date().toISOString().slice(0,10);
+  document.getElementById('qa-deadline').value='';
+  document.getElementById('qa-overlay').classList.add('open');
+  setTimeout(()=>document.getElementById('qa-name').focus(),80);
+}
+
+function selectQaCat(cat){
+  qaCat=cat;
+  document.querySelectorAll('.qa-cat-btn').forEach(b=>{
+    const c=b.dataset.cat;const v=CATS[c];
+    b.classList.toggle('sel',c===cat);
+    b.style.background=c===cat?v.color:'';b.style.borderColor=c===cat?v.color:'';
+  });
+}
+
+function closeQuickAdd(){document.getElementById('qa-overlay').classList.remove('open');}
+
+function saveQuickAdd(){
+  const name=document.getElementById('qa-name').value.trim();
+  if(!name){document.getElementById('qa-name').focus();return;}
+  const cat=qaCat||'sesja';
+  const tasks=(CAT_TASKS[cat]||DEFAULT_TASKS).map(t=>({...t,done:false}));
+  const id=uid();
+  zlecenia.push({
+    id,name,date:document.getElementById('qa-date').value,cat,
+    status:cols[0]?.id||'nowe',
+    deliveryDeadline:document.getElementById('qa-deadline').value,
+    price:null,deposit:null,secondShooter:'',location:'',notes:'',
+    orderedItems:[],daySchedule:[],editingFinished:'',tasks
+  });
+  save();closeQuickAdd();renderAll();
+  openEditModal(id);
+}
+
+// Keyboard shortcut
+document.addEventListener('keydown',e=>{
+  if(e.key==='n'&&!['INPUT','TEXTAREA','SELECT'].includes(document.activeElement.tagName)){
+    e.preventDefault();openQuickAdd();
+  }
+  if(e.key==='Escape'){
+    closeQuickAdd();closeAddModal();closeDetail();closeMonthPicker();
+  }
+});
+
+// ══ NOTIFICATIONS ══════════════════════════════════════════════════════════
+function getUpcoming(days=7){
+  const today=new Date();today.setHours(0,0,0,0);
+  const limit=new Date(today);limit.setDate(limit.getDate()+days);
+  // Include both event dates AND delivery deadlines
+  const results=[];
+  zlecenia.forEach(z=>{
+    if(z.date){const d=new Date(z.date);if(d>=today&&d<=limit)results.push({...z,_alertDate:z.date,_alertType:'sesja'});}
+    if(z.deliveryDeadline&&z.deliveryDeadline!==z.date){const d=new Date(z.deliveryDeadline);if(d>=today&&d<=limit)results.push({...z,_alertDate:z.deliveryDeadline,_alertType:'dostawa'});}
+  });
+  return results.sort((a,b)=>a._alertDate.localeCompare(b._alertDate));
+}
+function updateNotifBadge(){const u=getUpcoming(7);const b=document.getElementById('notif-badge');if(u.length){b.textContent=u.length;b.style.display='';}else b.style.display='none';}
+function toggleNotifDropdown(){const dd=document.getElementById('notif-dropdown');const open=dd.style.display!=='none';if(open){dd.style.display='none';return;}renderNotifList();dd.style.display='';}
+function renderNotifList(){
+  const upcoming=getUpcoming(14);
+  const list=document.getElementById('notif-list');
+  if(!upcoming.length){list.innerHTML='<div class="notif-empty">Brak terminów w ciągu 14 dni</div>';return;}
+  const today=new Date();today.setHours(0,0,0,0);
+  list.innerHTML=upcoming.map(z=>{
+    const diff=Math.floor((new Date(z._alertDate)-today)/(1000*60*60*24));
+    const when=diff===0?'Dziś! 🔴':diff===1?'Jutro 🟠':`Za ${diff} dni`;
+    const urgColor=diff===0?'#ff4444':diff<=2?'#ff7a2f':'#4ade80';
+    const typeLabel=z._alertType==='dostawa'?'📦 Termin dostawy':'📅 Sesja/ślub';
+    return `<div class="notif-item" onclick="openDetail('${z.id}');toggleNotifDropdown()">
+      <div class="notif-dot" style="background:${CATS[z.cat]?.color||'#888'}"></div>
+      <div class="notif-info"><div class="notif-name">${esc(z.name)}</div><div class="notif-when">${typeLabel}</div></div>
+      <div class="notif-urgency" style="background:${urgColor}20;color:${urgColor}">${when}</div>
+    </div>`;
+  }).join('');
+}
+async function requestNotifPermission(){
+  if(!('Notification'in window)){alert('Przeglądarka nie obsługuje powiadomień.');return;}
+  const p=await Notification.requestPermission();
+  if(p==='granted'){fireNotifications();alert('Powiadomienia włączone!');}
+  else alert('Powiadomienia zablokowane w przeglądarce.');
+}
+function fireNotifications(){
+  if(Notification.permission!=='granted')return;
+  const today=new Date().toISOString().slice(0,10);
+  const shown=JSON.parse(localStorage.getItem('foto_notif_shown')||'{}');
+  getUpcoming(3).forEach(z=>{
+    const key=`${z.id}_${z._alertType}_${today}`;
+    if(shown[key])return;
+    const diff=Math.floor((new Date(z._alertDate)-new Date().setHours(0,0,0,0))/(1000*60*60*24));
+    const when=diff===0?'Dziś!':diff===1?'Jutro':`Za ${diff} dni`;
+    const type=z._alertType==='dostawa'?'📦 Termin dostawy':'📅 Sesja';
+    new Notification(`📷 ${z.name}`,{body:`${type} — ${when}`,tag:z.id+z._alertType});
+    shown[key]=true;
+  });
+  localStorage.setItem('foto_notif_shown',JSON.stringify(shown));
+}
+
+// ══ EXPORT / IMPORT ════════════════════════════════════════════════════════
+function exportData(){
+  const data={zlecenia,cols,exported:new Date().toISOString(),version:4};
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;a.download=`fotoplaner-${new Date().toISOString().slice(0,10)}.json`;a.click();URL.revokeObjectURL(url);
+}
+function importData(){
+  const input=document.createElement('input');input.type='file';input.accept='.json';
+  input.onchange=e=>{
+    const file=e.target.files[0];if(!file)return;
+    const reader=new FileReader();
+    reader.onload=ev=>{
+      try{
+        const data=JSON.parse(ev.target.result);
+        if(!confirm(`Importować ${data.zlecenia?.length||0} zleceń? Obecne dane zostaną zastąpione.`))return;
+        zlecenia=data.zlecenia||[];if(data.cols)cols=data.cols;
+        save();saveCols();renderAll();
+      }catch(e){alert('Błąd: nieprawidłowy plik JSON.');}
+    };
+    reader.readAsText(file);
+  };
+  input.click();
+}
+
+// Close dropdowns on outside click
+document.addEventListener('click',e=>{
+  const wrap=document.getElementById('notif-wrap');
+  if(!wrap.contains(e.target))document.getElementById('notif-dropdown').style.display='none';
+  const dw=document.getElementById('drive-wrap');
+  if(dw&&!dw.contains(e.target))hideDriveMenu();
+});
+
+// ══ GOOGLE DRIVE SYNC (#18) ════════════════════════════════════════════════
+let gdriveToken=null,gdriveFileId=null,tokenClient=null;
+let GDRIVE_CLIENT_ID=localStorage.getItem('foto_gdrive_client_id')||'';
+const GDRIVE_SCOPE='https://www.googleapis.com/auth/drive.appdata';
+const GDRIVE_FNAME='fotoplaner-sync.json';
+
+function toggleDriveMenu(){const m=document.getElementById('drive-menu');m.style.display=m.style.display==='none'?'':'none';}
+function hideDriveMenu(){const m=document.getElementById('drive-menu');if(m)m.style.display='none';}
+
+function updateDriveBtn(){
+  const btn=document.getElementById('drive-btn');if(!btn)return;
+  btn.textContent=gdriveToken?'☁ Drive ✓':'☁ Drive';
+  btn.style.color=gdriveToken?'var(--sesja)':'';
+  btn.style.borderColor=gdriveToken?'var(--sesja)':'';
+}
+
+function showDriveToast(msg,err=false){
+  let t=document.getElementById('drive-toast');
+  if(!t){t=document.createElement('div');t.id='drive-toast';
+    t.style.cssText='position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:var(--surface);border:1px solid var(--border2);border-radius:9px;padding:9px 18px;font-size:13px;z-index:9999;transition:opacity .4s;white-space:nowrap;pointer-events:none';
+    document.body.appendChild(t);}
+  t.textContent=msg;t.style.borderColor=err?'var(--danger)':'var(--wesele)';t.style.opacity='1';
+  clearTimeout(t._to);t._to=setTimeout(()=>t.style.opacity='0',3500);
+}
+
+function initGIS(){
+  if(!window.google||!GDRIVE_CLIENT_ID)return;
+  tokenClient=google.accounts.oauth2.initTokenClient({
+    client_id:GDRIVE_CLIENT_ID,scope:GDRIVE_SCOPE,
+    callback:(r)=>{
+      if(r.error){showDriveToast('Błąd logowania: '+r.error,true);return;}
+      gdriveToken=r.access_token;
+      showDriveToast('✅ Połączono z Google Drive');updateDriveBtn();
+    }
+  });
+}
+
+async function loadGIS(){
+  return new Promise((res,rej)=>{
+    if(window.google){res();return;}
+    const s=document.createElement('script');
+    s.src='https://accounts.google.com/gsi/client';
+    s.onload=res;s.onerror=rej;
+    document.head.appendChild(s);
+  });
+}
+
+async function gdriveConnect(){
+  if(location.protocol==='file:'){
+    alert('⚠ Synchronizacja Drive wymaga HTTPS.\n\nOpcje:\n1. GitHub Pages (bezpłatnie) — wgraj plik HTML, włącz Pages\n2. Lokalny serwer: python3 -m http.server 8000\n   potem otwórz: http://localhost:8000/fotograf-planer.html');
+    return false;
+  }
+  if(!GDRIVE_CLIENT_ID){
+    const id=prompt('Wklej Google OAuth Client ID:\n\nJak uzyskać (bezpłatnie):\n1. Wejdź na console.cloud.google.com\n2. Utwórz projekt\n3. APIs & Services → Credentials\n4. Create credentials → OAuth 2.0 Client ID\n5. App type: Web application\n6. Authorized origins: '+location.origin+'\n7. Skopiuj Client ID');
+    if(!id)return false;
+    GDRIVE_CLIENT_ID=id.trim();localStorage.setItem('foto_gdrive_client_id',GDRIVE_CLIENT_ID);
+  }
+  try{
+    await loadGIS();initGIS();
+    if(!tokenClient){showDriveToast('Błąd inicjalizacji GIS',true);return false;}
+    tokenClient.requestAccessToken();return true;
+  }catch(e){showDriveToast('Błąd ładowania GIS: '+e.message,true);return false;}
+}
+
+async function driveRequest(url,opts={}){
+  opts.headers={...opts.headers,Authorization:'Bearer '+gdriveToken};
+  const r=await fetch(url,opts);
+  if(r.status===401){gdriveToken=null;updateDriveBtn();throw new Error('Token wygasł — zaloguj się ponownie');}
+  return r;
+}
+
+async function findDriveFile(){
+  if(gdriveFileId)return gdriveFileId;
+  const r=await driveRequest(`https://www.googleapis.com/drive/v3/files?spaces=appDataFolder&q=name%3D%22${GDRIVE_FNAME}%22&fields=files(id,name)`);
+  const d=await r.json();
+  gdriveFileId=d.files?.[0]?.id||null;
+  return gdriveFileId;
+}
+
+async function gdriveSave(){
+  if(!gdriveToken){const ok=await gdriveConnect();if(!ok||!gdriveToken)return;setTimeout(()=>showDriveToast('Zaloguj się, potem kliknij Zapisz ponownie'),500);return;}
+  showDriveToast('☁ Zapisuję na Drive...');
+  try{
+    await findDriveFile();
+    const content=JSON.stringify({zlecenia,cols,exported:new Date().toISOString(),version:4},null,2);
+    const bnd='---fotoplaner---boundary---';
+    const meta=JSON.stringify({name:GDRIVE_FNAME,parents:['appDataFolder']});
+    const body=`--${bnd}\r\nContent-Type: application/json\r\n\r\n${meta}\r\n--${bnd}\r\nContent-Type: application/json\r\n\r\n${content}\r\n--${bnd}--`;
+    const url=gdriveFileId
+      ?`https://www.googleapis.com/upload/drive/v3/files/${gdriveFileId}?uploadType=multipart`
+      :'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart';
+    const method=gdriveFileId?'PATCH':'POST';
+    const r=await driveRequest(url,{method,headers:{'Content-Type':'multipart/related; boundary='+bnd},body});
+    const json=await r.json();
+    if(json.id){gdriveFileId=json.id;showDriveToast('☁ Zapisano na Drive! ('+new Date().toLocaleTimeString('pl')+')');}
+    else throw new Error(json.error?.message||JSON.stringify(json));
+  }catch(e){showDriveToast('Błąd zapisu: '+e.message,true);}
+}
+
+async function gdriveLoad(){
+  if(!gdriveToken){const ok=await gdriveConnect();if(!ok||!gdriveToken)return;setTimeout(()=>showDriveToast('Zaloguj się, potem kliknij Wczytaj ponownie'),500);return;}
+  showDriveToast('☁ Szukam pliku na Drive...');
+  try{
+    const fid=await findDriveFile();
+    if(!fid){showDriveToast('Brak pliku na Drive — najpierw zapisz dane.');return;}
+    const r=await driveRequest(`https://www.googleapis.com/drive/v3/files/${fid}?alt=media`);
+    const data=await r.json();
+    if(!confirm(`Wczytać ${data.zlecenia?.length||0} zleceń z Drive?\nEksport z: ${data.exported?new Date(data.exported).toLocaleString('pl'):'nieznana data'}\n\nObecne dane zostaną zastąpione.`))return;
+    zlecenia=data.zlecenia||[];if(data.cols)cols=data.cols;
+    save();saveCols();renderAll();
+    showDriveToast('☁ Wczytano z Drive! ('+zlecenia.length+' zleceń)');
+  }catch(e){showDriveToast('Błąd odczytu: '+e.message,true);}
+}
+
+function gdriveSetup(){
+  const id=prompt('Obecny Client ID:\n'+(GDRIVE_CLIENT_ID||'brak')+'\n\nWklej nowy Client ID (lub pozostaw puste aby zachować):');
+  if(id&&id.trim()){GDRIVE_CLIENT_ID=id.trim();localStorage.setItem('foto_gdrive_client_id',GDRIVE_CLIENT_ID);gdriveToken=null;gdriveFileId=null;tokenClient=null;updateDriveBtn();showDriveToast('Client ID zapisany. Kliknij Zapisz/Wczytaj aby się zalogować.');}
+}
+
+function gdriveDisconnect(){
+  gdriveToken=null;gdriveFileId=null;tokenClient=null;
+  updateDriveBtn();showDriveToast('Odłączono od Google Drive');
+}
+
+// ══ PWA — MANIFEST + INSTALL PROMPT (#19) ══════════════════════════════════
+let deferredInstallPrompt=null;
+
+function initPWA(){
+  // Inline manifest via Blob URL (works on HTTPS / localhost)
+  const manifest={
+    name:'FotoPlaner',short_name:'FotoPlaner',
+    description:'Planer dla fotografa — kalendarz, kanban, finanse',
+    start_url:location.pathname||'./','display':'standalone',
+    background_color:'#0d0d0d',theme_color:'#e84393',
+    icons:[{
+      src:'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="20" fill="%23e84393"/><text y=".9em" font-size="75" text-anchor="middle" x="50">📷</text></svg>',
+      sizes:'512x512',type:'image/svg+xml',purpose:'any maskable'
+    }]
+  };
+  const blob=new Blob([JSON.stringify(manifest)],{type:'application/manifest+json'});
+  const link=document.createElement('link');link.rel='manifest';link.href=URL.createObjectURL(blob);
+  document.head.appendChild(link);
+
+  // Catch install prompt
+  window.addEventListener('beforeinstallprompt',e=>{
+    e.preventDefault();deferredInstallPrompt=e;
+    const btn=document.getElementById('install-btn');if(btn)btn.style.display='';
+  });
+  window.addEventListener('appinstalled',()=>{
+    deferredInstallPrompt=null;
+    const btn=document.getElementById('install-btn');if(btn)btn.style.display='none';
+    showDriveToast('✅ Aplikacja zainstalowana!');
+  });
+
+  // Service Worker (works on HTTPS/localhost, not file://)
+  if('serviceWorker' in navigator && location.protocol!=='file:'){
+    const sw=`const C='fp-v1';
+self.addEventListener('install',e=>e.waitUntil(
+  caches.open(C).then(c=>c.add(new Request(self.location.origin+self.location.pathname.replace('sw.js','')||'/')))
+));
+self.addEventListener('fetch',e=>e.respondWith(
+  caches.match(e.request).then(r=>r||fetch(e.request).then(res=>{
+    if(e.request.url.startsWith(self.location.origin)){
+      const cl=res.clone();caches.open(C).then(c=>c.put(e.request,cl));
+    }return res;
+  }))
+));`;
+    const swBlob=new Blob([sw],{type:'text/javascript'});
+    const swUrl=URL.createObjectURL(swBlob);
+    // Note: Blob-URL SW scope is limited — for full offline support host on HTTPS
+    navigator.serviceWorker.register(swUrl,{scope:'./'}).catch(()=>{});
+  }
+}
+
+async function installPWA(){
+  if(!deferredInstallPrompt){
+    if(location.protocol==='file:')
+      alert('📱 Instalacja jako PWA\n\nWymaga HTTPS. Wgraj plik na GitHub Pages:\n1. github.com → nowe repozytorium\n2. Wgraj fotograf-planer.html\n3. Settings → Pages → Deploy from branch\n4. Otwórz stronę w Chrome/Edge → Zainstaluj');
+    else
+      showDriveToast('Przeglądarka nie pokazała przycisku instalacji — spróbuj w Chrome/Edge');
+    return;
+  }
+  const r=await deferredInstallPrompt.prompt();
+  if(r.outcome==='accepted')deferredInstallPrompt=null;
+}
+
+// ══ INIT ═══════════════════════════════════════════════════════════════════
+loadData();
+initCal();
+initPWA();
+if(Notification.permission==='granted')fireNotifications();
+</script>
+</body>
+</html>
