@@ -404,7 +404,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   <button class="tb-btn" id="install-btn" style="display:none" onclick="installPWA()" title="Zainstaluj jako aplikację">📱 Zainstaluj</button>
   <button class="tb-btn" onclick="exportData()">⬆ Export</button>
   <button class="tb-btn" onclick="importData()">⬇ Import</button>
-  <button class="btn-add" onclick="openQuickAdd()">+ Dodaj</button>
+  <button class="btn-add" onclick="openAddModal()">+ Dodaj</button>
 </header>
 
 <!-- ── MONTH PICKER ── -->
@@ -476,7 +476,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 </main>
 
 <!-- ── QUICK ADD ── -->
-<button class="qa-fab" onclick="openQuickAdd()" title="Szybkie dodawanie (N)">+</button>
+<button class="qa-fab" onclick="openAddModal()" title="Nowe zlecenie (N)">+</button>
 <div class="qa-overlay" id="qa-overlay" onclick="if(event.target===this)closeQuickAdd()">
   <div class="qa-box">
     <div class="qa-title">Nowe zlecenie</div>
@@ -524,13 +524,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
         <label class="form-label">Data sesji / ślubu</label>
         <input class="form-input" id="f-date" type="date" />
       </div>
-      <div class="form-group">
+      <div class="form-group" id="deadline-row" style="display:none">
         <label class="form-label">Termin oddania materiałów</label>
         <input class="form-input" id="f-deadline" type="date" />
-      </div>
-      <div class="form-group">
-        <label class="form-label">Godzina oddania</label>
-        <input class="form-input" id="f-delivery-time" type="time" />
       </div>
     </div>
     <div class="form-row">
@@ -543,17 +539,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
         <input class="form-input" id="f-deposit" type="number" placeholder="0" min="0" />
       </div>
     </div>
+    <div id="cat-addr-fields"></div>
     <div class="form-group">
-      <label class="form-label">Drugi fotograf</label>
-      <input class="form-input" id="f-second" placeholder="Imię i nazwisko" />
-    </div>
-    <div class="form-group">
-      <label class="form-label">Lokalizacja</label>
-      <input class="form-input" id="f-location" placeholder="np. Kościół Św. Jana, Kraków" />
-    </div>
-    <div class="form-group">
-      <label class="form-label">Edycja zakończona</label>
-      <input class="form-input" id="f-edit-done" type="date" />
+      <label class="form-label">Pakiet</label>
+      <textarea class="form-textarea" id="f-pakiet" placeholder="np. Pakiet Premium, Srebrny, Full Day..."></textarea>
     </div>
     <div class="form-group">
       <label class="form-label">Notatki</label>
@@ -617,6 +606,15 @@ const CAT_TASKS = {
 };
 const DEFAULT_TASKS = STANDARD_TASKS;
 
+const CAT_ADDR = {
+  wesele:   [{id:'kosciol',label:'Adres kościoła'},{id:'pan',label:'Adres Pana Młodego'},{id:'pani',label:'Adres Pani Młodej'},{id:'sala',label:'Adres sali weselnej'}],
+  urodziny: [{id:'sala',label:'Adres sali'}],
+  chrzest:  [{id:'kosciol',label:'Adres kościoła'},{id:'sala',label:'Adres sali'}],
+  komunia:  [{id:'kosciol',label:'Adres kościoła'},{id:'sala',label:'Adres sali'}],
+  sesja:    [{id:'lokalizacja',label:'Lokalizacja'}],
+  inne:     [{id:'adres',label:'Adres'}],
+};
+
 const WEDDING_SCHEDULE_TEMPLATE = [
   {id:'s1',time:'09:00',activity:'Sesja przygotowań Panny Młodej'},
   {id:'s2',time:'11:00',activity:'Sesja przygotowań Pana Młodego'},
@@ -635,7 +633,8 @@ const DAYS_SHORT   = ['Pn','Wt','Śr','Cz','Pt','So','Nd'];
 // ══ DATA ═══════════════════════════════════════════════════════════════════
 const DEFAULT_COLS = [
   {id:'edycja_st',  name:'W edycji',   icon:'🖥️'},
-  {id:'wysylka',    name:'Do wysyłki', icon:'📦'},
+  {id:'wysylka',    name:'Zamówione',  icon:'📦'},
+  {id:'odbior',     name:'Do odbioru', icon:'🎁'},
   {id:'zakonczone', name:'Zakończone', icon:'✅'},
 ];
 
@@ -665,6 +664,25 @@ function loadData() {
       cols=remaining;
       save();saveCols();
     }
+  }
+  // Migration: remove 'zlecenia' column → move its items to first remaining col
+  if(cols.some(c=>c.id==='zlecenia')){
+    const remaining=cols.filter(c=>c.id!=='zlecenia');
+    if(remaining.length){
+      zlecenia.forEach(z=>{if(z.status==='zlecenia')z.status=remaining[0].id;});
+      cols=remaining;
+      save();saveCols();
+    }
+  }
+  // Migration: rename 'Do wysyłki' → 'Zamówione'
+  const wysCol=cols.find(c=>c.id==='wysylka');
+  if(wysCol&&wysCol.name==='Do wysyłki'){wysCol.name='Zamówione';saveCols();}
+  // Migration: add 'odbior' column before 'zakonczone' if missing
+  if(!cols.some(c=>c.id==='odbior')){
+    const zakIdx=cols.findIndex(c=>c.id==='zakonczone');
+    const pos=zakIdx>=0?zakIdx:cols.length;
+    cols.splice(pos,0,{id:'odbior',name:'Do odbioru',icon:'🎁'});
+    saveCols();
   }
 }
 
@@ -778,17 +796,21 @@ function renderCalGrid() {
 
 function renderDayStrip() {
   const strip=document.getElementById('cal-day-strip');
-  const [y,m,d]=selectedDate.split('-');
-  const label=`${Number(d)} ${MONTHS_PL[Number(m)-1]}`;
-  const dayZ=zlecenia.filter(z=>z.date===selectedDate);
-  let h=`<div class="strip-label">${label}</div>`;
-  if(!dayZ.length) h+=`<div class="strip-empty">Brak zleceń</div>`;
-  else dayZ.forEach(z=>{
+  const monthPrefix=`${calYear}-${String(calMonth+1).padStart(2,'0')}`;
+  const monthZ=zlecenia.filter(z=>z.date&&z.date.startsWith(monthPrefix)).sort((a,b)=>a.date.localeCompare(b.date));
+  let h=`<div class="strip-label">${MONTHS_PL[calMonth]} ${calYear}</div>`;
+  if(!monthZ.length) h+=`<div class="strip-empty">Brak zleceń w tym miesiącu</div>`;
+  else monthZ.forEach(z=>{
     const cat=CATS[z.cat]||{};
     const done=(z.tasks||[]).filter(t=>t.done).length,total=(z.tasks||[]).length;
+    const d=z.date.split('-')[2];
+    const dow=['Nd','Pn','Wt','Śr','Cz','Pt','So'][new Date(z.date).getDay()];
     h+=`<div class="strip-item" onclick="openDetail('${z.id}')" style="border-left-color:${cat.color}">
       <div class="strip-dot" style="background:${cat.color}"></div>
-      <div class="strip-name">${esc(z.name)}</div>
+      <div style="flex:1;min-width:0">
+        <div class="strip-name">${esc(z.name)}</div>
+        <div style="font-size:10px;color:var(--text3)">${dow} ${Number(d)} ${MONTHS_SHORT[calMonth]}</div>
+      </div>
       <div class="strip-badge" style="background:${cat.dim};color:${cat.color}">${cat.icon||''} ${total?done+'/'+total:''}</div>
     </div>`;
   });
@@ -883,7 +905,9 @@ function renderStatusCol(container,col){
   nameEl.ondblclick=()=>startRenameCol(col.id,nameEl);
   const badge=document.createElement('span');badge.className='col-badge';badge.textContent=cards.length;
   const delBtn=document.createElement('button');delBtn.className='col-del-btn';delBtn.textContent='✕';delBtn.title='Usuń';delBtn.onclick=()=>deleteCol(col.id);
-  header.appendChild(iconEl);header.appendChild(nameEl);header.appendChild(badge);header.appendChild(delBtn);colEl.appendChild(header);
+  header.appendChild(iconEl);header.appendChild(nameEl);header.appendChild(badge);
+  if(col.id==='zakonczone'){const clrBtn=document.createElement('button');clrBtn.className='col-del-btn';clrBtn.textContent='🗑';clrBtn.title='Wyczyść zakończone';clrBtn.style.marginRight='2px';clrBtn.onclick=()=>clearZakonczone();header.appendChild(clrBtn);}
+  header.appendChild(delBtn);colEl.appendChild(header);
   const cardsEl=document.createElement('div');cardsEl.className='col-cards';cardsEl.id='col-'+col.id;
   cards.forEach(z=>cardsEl.appendChild(makeCard(z)));colEl.appendChild(cardsEl);
   const addBtn=document.createElement('button');addBtn.className='col-add-btn';addBtn.textContent='+ Dodaj';addBtn.onclick=()=>openAddModal(col.id);colEl.appendChild(addBtn);
@@ -924,7 +948,7 @@ function makeCard(z){
   card.innerHTML=`
     <div class="card-cat" style="background:${cat.dim};color:${cat.color}">${cat.icon||''} ${getCatLabel(z)}</div>
     <div class="card-name">${esc(z.name)}</div>
-    ${dateLabel?`<div class="card-date">📅 ${dateLabel}${z.secondShooter?` · 👤 ${esc(z.secondShooter)}`:''}</div>`:''}
+    ${dateLabel?`<div class="card-date">📅 ${dateLabel}</div>`:''}
     ${ddHtml}${finHtml}
     ${total?`<div class="card-pbar-bg"><div class="card-pbar-fill" style="width:${pct}%;background:${cat.color}"></div></div>`:''}
     <div class="card-dots">${dotHtml}</div>
@@ -957,6 +981,14 @@ function deleteCol(id){
   if(!confirm(count?`Kolumna zawiera ${count} zleceń. Przenieść do "${remaining[0].name}"?`:'Usunąć kolumnę?'))return;
   if(count){zlecenia.filter(z=>z.status===id).forEach(z=>z.status=remaining[0].id);save();}
   cols=remaining;saveCols();renderKanban();
+}
+
+function clearZakonczone(){
+  const count=zlecenia.filter(z=>z.status==='zakonczone').length;
+  if(!count){alert('Brak zakończonych zleceń.');return;}
+  if(!confirm(`Usunąć ${count} zakończonych zleceń? Tej operacji nie można cofnąć.`))return;
+  zlecenia=zlecenia.filter(z=>z.status!=='zakonczone');
+  save();renderKanban();renderDayStrip();
 }
 
 // ══ TIMELINE VIEW (#9) ════════════════════════════════════════════════════
@@ -1170,31 +1202,28 @@ let tasksDirty=false; // true if user manually changed tasks
 
 function openAddModal(defaultStatus){
   editingId=null;selCat=null;tasksDirty=false;
-  selStatus=defaultStatus||cols[0]?.id;
+  selStatus=defaultStatus!==undefined&&defaultStatus!==null?defaultStatus:'';
   taskStates={};
   (CAT_TASKS.sesja||DEFAULT_TASKS).forEach(t=>taskStates[t.id]=false);
   document.getElementById('modal-add-title').textContent='Nowe zlecenie';
   document.getElementById('f-name').value='';
   document.getElementById('f-date').value=selectedDate||new Date().toISOString().slice(0,10);
   document.getElementById('f-deadline').value='';
-  document.getElementById('f-delivery-time').value='';
   document.getElementById('f-custom-cat').value='';
   document.getElementById('custom-cat-group').style.display='none';
   document.getElementById('f-price').value='';
   document.getElementById('f-deposit').value='';
-  document.getElementById('f-second').value='';
-  document.getElementById('f-location').value='';
-  document.getElementById('f-edit-done').value='';
+  document.getElementById('f-pakiet').value='';
   document.getElementById('f-notes').value='';
   document.getElementById('btn-del').style.display='none';
-  renderCatPicker();renderStatusPicker();renderTaskForm();
+  renderCatPicker();renderStatusPicker();renderTaskForm();renderCatAddrFields();
   document.getElementById('modal-add').classList.add('open');
 }
 
 function openEditModal(id){
   closeDetail();
   const z=zlecenia.find(x=>x.id===id);if(!z)return;
-  editingId=id;selCat=z.cat;selStatus=z.status||cols[0]?.id;tasksDirty=true;
+  editingId=id;selCat=z.cat;selStatus=z.status!==undefined&&z.status!==null?z.status:'';tasksDirty=true;
   taskStates={};
   const tasks=z.tasks||(CAT_TASKS[z.cat]||DEFAULT_TASKS).map(t=>({...t,done:false}));
   tasks.forEach(t=>taskStates[t.id]=t.done);
@@ -1202,17 +1231,14 @@ function openEditModal(id){
   document.getElementById('f-name').value=z.name;
   document.getElementById('f-date').value=z.date||'';
   document.getElementById('f-deadline').value=z.deliveryDeadline||'';
-  document.getElementById('f-delivery-time').value=z.deliveryTime||'';
   document.getElementById('f-custom-cat').value=z.customCat||'';
   document.getElementById('custom-cat-group').style.display=z.cat==='inne'?'':'none';
   document.getElementById('f-price').value=z.price||'';
   document.getElementById('f-deposit').value=z.deposit||'';
-  document.getElementById('f-second').value=z.secondShooter||'';
-  document.getElementById('f-location').value=z.location||'';
-  document.getElementById('f-edit-done').value=z.editingFinished||'';
+  document.getElementById('f-pakiet').value=z.pakiet||'';
   document.getElementById('f-notes').value=z.notes||'';
   document.getElementById('btn-del').style.display='';
-  renderCatPicker();renderStatusPicker();renderTaskForm();
+  renderCatPicker();renderStatusPicker();renderTaskForm();renderCatAddrFields(z.adresy||{});
   document.getElementById('modal-add').classList.add('open');
 }
 
@@ -1234,13 +1260,31 @@ function selectCat(cat){
     (CAT_TASKS[cat]||DEFAULT_TASKS).forEach(t=>taskStates[t.id]=false);
     document.getElementById('tasks-auto-note').textContent='— auto-zadania dla: '+CATS[cat].label;
   }
-  renderCatPicker();renderTaskForm();
+  renderCatPicker();renderTaskForm();renderCatAddrFields();
 }
 
 function renderStatusPicker(){
-  document.getElementById('status-picker').innerHTML=cols.map(c=>
-    `<button class="status-btn ${selStatus===c.id?'sel':''}" onclick="selStatus='${c.id}';renderStatusPicker()">${c.icon} ${c.name}</button>`
+  const allBtn=`<button class="status-btn ${selStatus===''?'sel':''}" onclick="selStatus='';renderStatusPicker();updateDeadlineVisibility()">📋 Wszystkie</button>`;
+  document.getElementById('status-picker').innerHTML=allBtn+cols.map(c=>
+    `<button class="status-btn ${selStatus===c.id?'sel':''}" onclick="selStatus='${c.id}';renderStatusPicker();updateDeadlineVisibility()">${c.icon} ${c.name}</button>`
   ).join('');
+  updateDeadlineVisibility();
+}
+function updateDeadlineVisibility(){
+  const row=document.getElementById('deadline-row');
+  if(row)row.style.display=selStatus==='edycja_st'?'':'none';
+}
+function renderCatAddrFields(adresy){
+  const fields=CAT_ADDR[selCat]||[];
+  const el=document.getElementById('cat-addr-fields');
+  if(!el)return;
+  if(!fields.length){el.innerHTML='';return;}
+  el.innerHTML=fields.map(f=>`<div class="form-group"><label class="form-label">${f.label}</label><input class="form-input cat-addr-input" data-addr-id="${f.id}" placeholder="${f.label}..." value="${esc((adresy||{})[f.id]||'')}" /></div>`).join('');
+}
+function readCatAddrFields(){
+  const obj={};
+  document.querySelectorAll('.cat-addr-input').forEach(el=>obj[el.dataset.addrId]=el.value.trim());
+  return obj;
 }
 
 function renderTaskForm(){
@@ -1283,15 +1327,13 @@ function saveZlecenie(){
     tasks=taskTemplate.map(t=>({id:t.id,label:t.label,done:!!taskStates[t.id]}));
   }
   const obj={
-    name,date:document.getElementById('f-date').value,cat,status:selStatus||cols[0]?.id,
+    name,date:document.getElementById('f-date').value,cat,status:selStatus,
     deliveryDeadline:document.getElementById('f-deadline').value,
-    deliveryTime:document.getElementById('f-delivery-time').value,
     customCat:document.getElementById('f-custom-cat').value.trim(),
     price:Number(document.getElementById('f-price').value)||null,
     deposit:Number(document.getElementById('f-deposit').value)||null,
-    secondShooter:document.getElementById('f-second').value.trim(),
-    location:document.getElementById('f-location').value.trim(),
-    editingFinished:document.getElementById('f-edit-done').value,
+    pakiet:document.getElementById('f-pakiet').value.trim(),
+    adresy:readCatAddrFields(),
     notes:document.getElementById('f-notes').value.trim(),tasks
   };
   if(editingId){
@@ -1324,11 +1366,10 @@ function renderDetailModal(id){
   const cat=CATS[z.cat]||{};
   const done=(z.tasks||[]).filter(t=>t.done).length,total=(z.tasks||[]).length,pct=total?Math.round(done/total*100):0;
   const mapsUrl=z.location?`https://maps.google.com/?q=${encodeURIComponent(z.location)}`:null;
-  const dl=z.deliveryDeadline?daysUntil(z.deliveryDeadline):null;
-  const dlTimeStr=z.deliveryTime?` o ${z.deliveryTime}`:'';
-  const dlText=dl===null?'':`Termin oddania: <b style="color:${dl<0?'var(--danger)':dl<=7?'var(--warn)':'#4ade80'}">${formatDate(z.deliveryDeadline)}${dlTimeStr}${dl<0?' (przekroczony '+Math.abs(dl)+'d)':dl===0?' (dziś!)':' (za '+dl+'d)'}</b>`;
+  const dl=(z.status==='edycja_st'&&z.deliveryDeadline)?daysUntil(z.deliveryDeadline):null;
+  const dlText=dl===null?'':`Termin oddania: <b style="color:${dl<0?'var(--danger)':dl<=7?'var(--warn)':'#4ade80'}">${formatDate(z.deliveryDeadline)}${dl<0?' (przekroczony '+Math.abs(dl)+'d)':dl===0?' (dziś!)':' (za '+dl+'d)'}</b>`;
 
-  const statusChips=cols.map(c=>`<span class="s-chip ${z.status===c.id?'active':''}" onclick="setStatus('${id}','${c.id}')">${c.icon} ${c.name}</span>`).join('');
+  const statusChips=`<span class="s-chip ${!z.status||z.status===''?'active':''}" onclick="setStatus('${id}','')">📋 Wszystkie</span>`+cols.map(c=>`<span class="s-chip ${z.status===c.id?'active':''}" onclick="setStatus('${id}','${c.id}')">${c.icon} ${c.name}</span>`).join('');
   const tasksHtml=(z.tasks||[]).map(t=>`<div class="task-row"><div class="chk ${t.done?'on':''}" onclick="toggleTask('${id}','${t.id}')"></div><div class="task-lbl ${t.done?'done':''}">${esc(t.label)}</div><button class="task-del-btn" onclick="deleteDetailTask('${id}','${t.id}')" title="Usuń zadanie">✕</button></div>`).join('');
   const orderedHtml=renderOrderedItems(z);
 
@@ -1344,8 +1385,6 @@ function renderDetailModal(id){
     <div class="detail-name">${esc(z.name)}</div>
     <div class="detail-meta">
       ${z.date?`📅 ${formatDate(z.date)}<br>`:''}
-      ${z.secondShooter?`👤 2. fotograf: ${esc(z.secondShooter)}<br>`:''}
-      ${z.location?`📍 <a href="${mapsUrl}" target="_blank" style="color:${cat.color}">${esc(z.location)}</a><br>`:''}
       ${dlText?`${dlText}<br>`:''}
       ${z.price?(()=>{const p=Number(z.price),d=Number(z.deposit)||0,r=p-d;return `💰 ${p.toLocaleString('pl')} zł${d?` · Zaliczka: <b style="color:var(--sesja)">${d.toLocaleString('pl')} zł</b> · Pozostało: <b style="color:${r>0?'var(--warn)':'#4ade80'}">${r.toLocaleString('pl')} zł</b>`:' · <span style="color:var(--warn);font-size:11px">brak zaliczki</span>'}<br>`;})():''}
     </div>
@@ -1358,6 +1397,8 @@ function renderDetailModal(id){
     <div class="dtab-panel ${detailTab==='info'?'active':''}">
       <div class="detail-sec">Status</div>
       <div class="status-chips">${statusChips}</div>
+      ${z.pakiet?`<div class="detail-sec">Pakiet</div><div style="background:var(--surface2);border-radius:7px;padding:8px 10px;font-size:12px;color:var(--text2)">📋 ${esc(z.pakiet)}</div>`:''}
+      ${(()=>{const fields=CAT_ADDR[z.cat]||[];const adr=z.adresy||{};const rows=fields.filter(f=>adr[f.id]).map(f=>`<div style="margin-bottom:4px"><span style="color:var(--text3);font-size:10px">${f.label}</span><br>${esc(adr[f.id])}</div>`).join('');return rows?`<div class="detail-sec">Adresy</div><div style="background:var(--surface2);border-radius:7px;padding:8px 10px;font-size:12px;color:var(--text2)">${rows}</div>`:'';})()}
       ${z.notes?`<div class="detail-sec">Notatki</div><div style="background:var(--surface2);border-radius:7px;padding:8px 10px;font-size:12px;color:var(--text2)">${esc(z.notes)}</div>`:''}
       ${total?`<div class="detail-sec">Zadania — ${done}/${total} (${pct}%)</div><div class="pbar-bg"><div class="pbar-fill" style="width:${pct}%;background:${cat.color}"></div></div>`:''}
       <div class="tasks-list">${tasksHtml}</div>
@@ -1528,7 +1569,7 @@ function saveQuickAdd(){
 // Keyboard shortcut
 document.addEventListener('keydown',e=>{
   if(e.key==='n'&&!['INPUT','TEXTAREA','SELECT'].includes(document.activeElement.tagName)){
-    e.preventDefault();openQuickAdd();
+    e.preventDefault();openAddModal();
   }
   if(e.key==='Escape'){
     closeQuickAdd();closeAddModal();closeDetail();closeMonthPicker();
@@ -1623,7 +1664,8 @@ document.addEventListener('click',e=>{
 
 // ══ GOOGLE DRIVE SYNC (#18) ════════════════════════════════════════════════
 let gdriveToken=null,gdriveFileId=null,tokenClient=null;
-let GDRIVE_CLIENT_ID=localStorage.getItem('foto_gdrive_client_id')||'';
+const HARDCODED_CLIENT_ID='298351769527-fdtj2ij6f6s657ju43i9aka4bipb68cs.apps.googleusercontent.com';
+let GDRIVE_CLIENT_ID=localStorage.getItem('foto_gdrive_client_id')||HARDCODED_CLIENT_ID;
 const GDRIVE_SCOPE='https://www.googleapis.com/auth/drive.appdata https://www.googleapis.com/auth/calendar.events';
 const GDRIVE_FNAME='fotoplaner-sync.json';
 let autoSyncTimer=null;
@@ -1914,6 +1956,13 @@ loadData();
 initCal();
 initPWA();
 if(Notification.permission==='granted')fireNotifications();
+// Auto-reconnect Drive silently (no popup) if user already authorized before
+if(GDRIVE_CLIENT_ID){
+  loadGIS().then(()=>{
+    initGIS();
+    if(tokenClient)tokenClient.requestAccessToken({prompt:''});
+  }).catch(()=>{});
+}
 </script>
 </body>
 </html>
