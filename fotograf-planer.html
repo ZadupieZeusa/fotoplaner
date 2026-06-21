@@ -876,28 +876,21 @@ function renderAllEventsCol(container){
   const header=document.createElement('div');header.className='col-header';
   header.innerHTML=`<span class="col-icon">📋</span><span class="col-name">Wszystkie zlecenia</span><span class="col-badge">${zlecenia.length}</span>`;
   col.appendChild(header);
-  const cards=document.createElement('div');cards.className='col-cards';
-  if(!zlecenia.length){cards.innerHTML='<div class="ae-empty">Brak zleceń<br><small>Kliknij + Dodaj</small></div>';}
+  const cardsEl=document.createElement('div');cardsEl.className='col-cards';
+  if(!zlecenia.length){cardsEl.innerHTML='<div class="ae-empty">Brak zleceń<br><small>Kliknij + Dodaj</small></div>';}
   else {
     Object.entries(groups).sort(([a],[b])=>a.localeCompare(b)).forEach(([key,items])=>{
       const [y,m]=key.split('-');
       const label=key==='x'?'Bez daty':`${MONTHS_PL[Number(m)-1]} ${y}`;
-      const lbl=document.createElement('div');lbl.className='ae-month-label';lbl.textContent=label;cards.appendChild(lbl);
-      items.forEach(z=>{
-        const cat=CATS[z.cat]||{};
-        const d=z.date?Number(z.date.slice(8)):null;
-        const mm=z.date?MONTHS_SHORT[Number(z.date.slice(5,7))-1]:'';
-        const item=document.createElement('div');item.className='ae-item';
-        item.innerHTML=`<div class="ae-dot" style="background:${cat.color}"></div><div class="ae-name">${esc(z.name)}</div>${d?`<div class="ae-chip" style="background:${cat.dim};color:${cat.color}">${d} ${mm}</div>`:''}`;
-        item.onclick=()=>openDetail(z.id);cards.appendChild(item);
-      });
+      const lbl=document.createElement('div');lbl.className='ae-month-label';lbl.textContent=label;cardsEl.appendChild(lbl);
+      items.forEach(z=>cardsEl.appendChild(makeCard(z)));
     });
   }
-  col.appendChild(cards);container.appendChild(col);
+  col.appendChild(cardsEl);container.appendChild(col);
 }
 
 function renderStatusCol(container,col){
-  const cards=zlecenia.filter(z=>(z.status||cols[0]?.id)===col.id);
+  const cards=zlecenia.filter(z=>z.status===col.id);
   const colEl=document.createElement('div');colEl.className='kanban-col';colEl.dataset.status=col.id;
   const header=document.createElement('div');header.className='col-header';
   const iconEl=document.createElement('span');iconEl.className='col-icon';iconEl.textContent=col.icon;
