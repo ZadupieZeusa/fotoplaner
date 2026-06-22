@@ -341,12 +341,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 /* ── MOBILE ── */
 @media(max-width:680px){
   .main-view{flex-direction:column}
-  .cal-panel{width:100%;min-width:unset;border-right:none;border-bottom:1px solid var(--border);max-height:260px;flex-shrink:0;overflow:hidden}
-  .kanban-panel{flex:1;min-height:0;overflow:hidden;display:flex;flex-direction:column}
+  .cal-panel{width:100%;min-width:unset;border-right:none;border-bottom:1px solid var(--border);max-height:240px;flex-shrink:0;overflow:hidden}
+  .kanban-panel{flex:1;min-height:0;display:flex;flex-direction:column}
   .kanban-toolbar{flex-shrink:0}
-  .kanban-columns{flex:1;min-height:0;overflow-x:scroll;overflow-y:hidden;-webkit-overflow-scrolling:touch;touch-action:pan-x;flex-wrap:nowrap;align-items:stretch}
+  .kanban-columns{overflow-x:scroll;overflow-y:hidden;-webkit-overflow-scrolling:touch;touch-action:pan-x;flex-wrap:nowrap;align-items:flex-start}
   .kanban-col{min-width:270px;width:270px;flex-shrink:0}
-  .col-cards{overflow-y:auto;-webkit-overflow-scrolling:touch}
   .stat-grid{grid-template-columns:repeat(2,1fr)}
   .charts-grid{grid-template-columns:1fr}
 }
@@ -761,11 +760,26 @@ function setCalView(v) {
   renderAll();
 }
 
+function fixMobileKanban(){
+  if(window.innerWidth>680)return;
+  const cols=document.getElementById('kanban-columns');
+  if(!cols)return;
+  const topbar=document.querySelector('.topbar');
+  const cal=document.querySelector('.cal-panel');
+  const toolbar=document.querySelector('.kanban-toolbar');
+  const h=window.innerHeight-(topbar?topbar.offsetHeight:50)-(cal?cal.offsetHeight:240)-(toolbar?toolbar.offsetHeight:44);
+  cols.style.height=Math.max(h,200)+'px';
+  cols.style.overflowX='scroll';
+  cols.style.overflowY='hidden';
+  cols.style.touchAction='pan-x';
+}
 function renderAll() {
   document.getElementById('month-label').textContent=MONTHS_PL[calMonth]+' '+calYear;
   if(calView==='grid'){renderCalGrid();renderDayStrip();} else renderCalList();
   renderKanban(); updateNotifBadge();
+  setTimeout(fixMobileKanban,50);
 }
+window.addEventListener('resize',fixMobileKanban);
 
 function renderCalGrid() {
   const dowEl=document.getElementById('cal-dows');
