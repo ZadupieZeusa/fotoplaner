@@ -1861,33 +1861,18 @@ async function gcalSyncZlecenie(z){
   if(!gdriveToken||!z.date)return;
   try{
     const body=gcalEventBody(z);
-    if(z.gcalEventId){
-      // update existing
-      const r=await gcalRequest(`${GCAL_API}/${z.gcalEventId}`,'PUT',body);
-      if(r.status===404){
-        // event deleted — sprawdź czy istnieje inny z tą samą nazwą
-        delete z.gcalEventId;
-        const existing=await gcalFindExisting(z);
-        if(existing){
-          z.gcalEventId=existing.id;
-          localStorage.setItem('foto_v4',JSON.stringify(zlecenia));
-        } else {
-          await gcalSyncZlecenie(z);
-        }
-      }
+    // Zawsze sprawdź duplikaty na tej dacie (usuwa nadmiarowe, zwraca jeden lub null)
+    const existing=await gcalFindExisting(z);
+    if(existing){
+      // Zaktualizuj znaleziony event i zapisz jego ID
+      z.gcalEventId=existing.id;
+      await gcalRequest(`${GCAL_API}/${z.gcalEventId}`,'PUT',body);
+      localStorage.setItem('foto_v4',JSON.stringify(zlecenia));
     } else {
-      // Sprawdź czy event już istnieje w kalendarzu zanim dodasz nowy
-      const existing=await gcalFindExisting(z);
-      if(existing){
-        // Już jest — zapisz ID żeby nie tworzyć duplikatów
-        z.gcalEventId=existing.id;
-        localStorage.setItem('foto_v4',JSON.stringify(zlecenia));
-      } else {
-        // Nie ma — utwórz nowy
-        const r=await gcalRequest(GCAL_API,'POST',body);
-        const json=await r.json();
-        if(json.id){z.gcalEventId=json.id;localStorage.setItem('foto_v4',JSON.stringify(zlecenia));}
-      }
+      // Brak w kalendarzu — utwórz nowy
+      const r=await gcalRequest(GCAL_API,'POST',body);
+      const json=await r.json();
+      if(json.id){z.gcalEventId=json.id;localStorage.setItem('foto_v4',JSON.stringify(zlecenia));}
     }
   }catch(e){console.warn('gcalSync error:',e.message);}
 }
