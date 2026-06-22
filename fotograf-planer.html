@@ -340,12 +340,18 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 
 /* ── MOBILE ── */
 @media(max-width:680px){
-  html,body{overflow:auto}
-  .main{flex-direction:column;overflow:visible}
-  .cal-panel{width:100%;min-width:unset;border-right:none;border-bottom:1px solid var(--border);max-height:340px}
-  .kanban-panel{height:auto;min-height:360px}
+  html,body{height:100%;overflow:hidden}
+  .app{height:100dvh;display:flex;flex-direction:column;overflow:hidden}
+  .main{flex-direction:column;overflow:hidden;flex:1}
+  .main-view{flex-direction:column}
+  .cal-panel{width:100%;min-width:unset;border-right:none;border-bottom:1px solid var(--border);max-height:260px;flex-shrink:0}
+  .kanban-panel{flex:1;min-height:0;overflow:hidden}
+  .kanban-columns{height:100%;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch}
+  .kanban-col{min-width:270px;width:270px}
   .stat-grid{grid-template-columns:repeat(2,1fr)}
   .charts-grid{grid-template-columns:1fr}
+  .topbar{flex-wrap:nowrap;overflow-x:auto;gap:4px}
+  .topbar-actions{flex-shrink:0}
 }
 ::-webkit-scrollbar{width:3px;height:3px}
 ::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
@@ -1746,12 +1752,13 @@ async function gdriveSave(){
     await findDriveFile();
     const content=JSON.stringify({zlecenia,cols,exported:new Date().toISOString(),version:4},null,2);
     const bnd='---fotoplaner---boundary---';
-    const meta=JSON.stringify({name:GDRIVE_FNAME,parents:['appDataFolder']});
+    const method=gdriveFileId?'PATCH':'POST';
+    const metaObj=gdriveFileId?{name:GDRIVE_FNAME}:{name:GDRIVE_FNAME,parents:['appDataFolder']};
+    const meta=JSON.stringify(metaObj);
     const body=`--${bnd}\r\nContent-Type: application/json\r\n\r\n${meta}\r\n--${bnd}\r\nContent-Type: application/json\r\n\r\n${content}\r\n--${bnd}--`;
     const url=gdriveFileId
       ?`https://www.googleapis.com/upload/drive/v3/files/${gdriveFileId}?uploadType=multipart`
       :'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart';
-    const method=gdriveFileId?'PATCH':'POST';
     const r=await driveRequest(url,{method,headers:{'Content-Type':'multipart/related; boundary='+bnd},body});
     const json=await r.json();
     if(json.id){gdriveFileId=json.id;showDriveToast('☁ Zapisano na Drive! ('+new Date().toLocaleTimeString('pl')+')');}
