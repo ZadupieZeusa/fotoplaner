@@ -1837,6 +1837,26 @@ async function gcalRequest(url,method='GET',body=null){
   return r;
 }
 
+async function gcalFindExisting(z){
+  // Szukaj wszystkich eventów w kalendarzu na tej dacie z tą samą nazwą
+  const dayStart=encodeURIComponent(z.date+'T00:00:00Z');
+  const dayEnd=encodeURIComponent(z.date+'T23:59:59Z');
+  const r=await gcalRequest(`${GCAL_API}?timeMin=${dayStart}&timeMax=${dayEnd}&singleEvents=true&maxResults=100`);
+  if(!r.ok)return null;
+  const data=await r.json();
+  const cat=CATS[z.cat]||{};
+  const label=getCatLabel(z);
+  const expectedSummary=`${cat.icon||''} ${z.name} [${label}]`;
+  const matches=(data.items||[]).filter(e=>e.summary===expectedSummary);
+  // Jeśli duplikaty — usuń nadmiarowe, zostaw jeden
+  if(matches.length>1){
+    for(let i=1;i<matches.length;i++){
+      try{await gcalRequest(`${GCAL_API}/${matches[i].id}`,'DELETE');}catch(e){}
+    }
+  }
+  return matches[0]||null;
+}
+
 async function gcalSyncZlecenie(z){
   if(!gdriveToken||!z.date)return;
   try{
@@ -1845,15 +1865,29 @@ async function gcalSyncZlecenie(z){
       // update existing
       const r=await gcalRequest(`${GCAL_API}/${z.gcalEventId}`,'PUT',body);
       if(r.status===404){
-        // event was deleted in Calendar — recreate
+        // event deleted — sprawdź czy istnieje inny z tą samą nazwą
         delete z.gcalEventId;
-        await gcalSyncZlecenie(z);
+        const existing=await gcalFindExisting(z);
+        if(existing){
+          z.gcalEventId=existing.id;
+          localStorage.setItem('foto_v4',JSON.stringify(zlecenia));
+        } else {
+          await gcalSyncZlecenie(z);
+        }
       }
     } else {
-      // create new
-      const r=await gcalRequest(GCAL_API,'POST',body);
-      const json=await r.json();
-      if(json.id){z.gcalEventId=json.id;localStorage.setItem('foto_v4',JSON.stringify(zlecenia));}
+      // Sprawdź czy event już istnieje w kalendarzu zanim dodasz nowy
+      const existing=await gcalFindExisting(z);
+      if(existing){
+        // Już jest — zapisz ID żeby nie tworzyć duplikatów
+        z.gcalEventId=existing.id;
+        localStorage.setItem('foto_v4',JSON.stringify(zlecenia));
+      } else {
+        // Nie ma — utwórz nowy
+        const r=await gcalRequest(GCAL_API,'POST',body);
+        const json=await r.json();
+        if(json.id){z.gcalEventId=json.id;localStorage.setItem('foto_v4',JSON.stringify(zlecenia));}
+      }
     }
   }catch(e){console.warn('gcalSync error:',e.message);}
 }
