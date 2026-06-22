@@ -340,18 +340,14 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 
 /* ── MOBILE ── */
 @media(max-width:680px){
-  html,body{height:100%;overflow:hidden}
-  .app{height:100dvh;display:flex;flex-direction:column;overflow:hidden}
-  .main{flex-direction:column;overflow:hidden;flex:1}
+  .main{flex-direction:column}
   .main-view{flex-direction:column}
   .cal-panel{width:100%;min-width:unset;border-right:none;border-bottom:1px solid var(--border);max-height:260px;flex-shrink:0}
-  .kanban-panel{flex:1;min-height:0;overflow:hidden}
-  .kanban-columns{height:100%;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch}
-  .kanban-col{min-width:270px;width:270px}
+  .kanban-panel{flex:1;min-height:0}
+  .kanban-columns{overflow-x:auto;overflow-y:visible;-webkit-overflow-scrolling:touch;flex-wrap:nowrap;align-items:flex-start}
+  .kanban-col{min-width:270px;width:270px;flex-shrink:0}
   .stat-grid{grid-template-columns:repeat(2,1fr)}
   .charts-grid{grid-template-columns:1fr}
-  .topbar{flex-wrap:nowrap;overflow-x:auto;gap:4px}
-  .topbar-actions{flex-shrink:0}
 }
 ::-webkit-scrollbar{width:3px;height:3px}
 ::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
@@ -1855,7 +1851,14 @@ async function gcalSyncAll(){
   if(!gdriveToken)return;
   showDriveToast('📅 Synchronizuję z Google Calendar...');
   const withDates=zlecenia.filter(z=>z.date);
-  for(const z of withDates) await gcalSyncZlecenie(z);
+  let newIds=false;
+  for(const z of withDates){
+    const hadId=!!z.gcalEventId;
+    await gcalSyncZlecenie(z);
+    if(!hadId&&z.gcalEventId)newIds=true;
+  }
+  // Jeśli pojawiły się nowe ID eventów — zapisz na Drive żeby inne urządzenia nie tworzyły duplikatów
+  if(newIds) await gdriveSave();
   showDriveToast(`📅 Zsynchronizowano ${withDates.length} zdarzeń z Google Calendar`);
 }
 
