@@ -1000,6 +1000,7 @@ function clearZakonczone(){
   if(!confirm(`Usunąć ${count} zakończonych zleceń? Tej operacji nie można cofnąć.`))return;
   zlecenia=zlecenia.filter(z=>z.status!=='zakonczone');
   save();renderKanban();renderDayStrip();
+  if(gdriveToken)gdriveSave();
 }
 
 // ══ TIMELINE VIEW (#9) ════════════════════════════════════════════════════
@@ -1356,10 +1357,13 @@ function saveZlecenie(){
   save();closeAddModal();renderAll();
 }
 
-function deleteZlecenie(){
+async function deleteZlecenie(){
   if(!editingId||!confirm('Usunąć to zlecenie?'))return;
-  zlecenia=zlecenia.filter(z=>z.id!==editingId);
+  const z=zlecenia.find(x=>x.id===editingId);
+  if(z)await gcalDeleteZlecenie(z);
+  zlecenia=zlecenia.filter(x=>x.id!==editingId);
   save();closeAddModal();renderAll();
+  if(gdriveToken)gdriveSave();
 }
 
 // ══ DETAIL MODAL ══════════════════════════════════════════════════════════
