@@ -150,6 +150,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .card-pbar-bg{height:3px;background:var(--surface3);border-radius:2px;margin-bottom:4px}
 .card-pbar-fill{height:100%;border-radius:2px}
 .card-dots{display:flex;gap:3px;flex-wrap:wrap}
+.card-cal-retry{margin-top:6px;width:100%;background:none;border:1px dashed var(--border2);border-radius:5px;color:var(--text3);font-size:10px;padding:3px 6px;cursor:pointer;font-family:inherit;text-align:center}
+.card-cal-retry:hover{border-color:var(--chrzest);color:var(--chrzest)}
 .card-dot{width:6px;height:6px;border-radius:50%;border:1.5px solid var(--border2)}
 .card-dot.done{border-color:transparent}
 /* all events col */
@@ -398,7 +400,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <div class="drive-menu" id="drive-menu" style="display:none">
       <button class="drive-menu-btn" onclick="gdriveSave();hideDriveMenu()">⬆ Zapisz na Drive</button>
       <button class="drive-menu-btn" onclick="gdriveLoad();hideDriveMenu()">⬇ Wczytaj z Drive</button>
-      <button class="drive-menu-btn" onclick="gcalSyncAll();hideDriveMenu()">📅 Synchronizuj Kalendarz</button>
       <button class="drive-menu-btn" onclick="gdriveSetup();hideDriveMenu()">⚙ Konfiguruj Client ID</button>
       <hr style="border:none;border-top:1px solid var(--border);margin:3px 0">
       <button class="drive-menu-btn" onclick="gdriveDisconnect();hideDriveMenu()" style="color:var(--danger)">✕ Odłącz konto</button>
@@ -691,13 +692,10 @@ function loadData() {
 
 function save(){
   localStorage.setItem('foto_v4', JSON.stringify(zlecenia));
-  // auto-sync to Drive + Google Calendar after 5s idle
+  // auto-sync to Drive after 5s idle
   if(gdriveToken){
     clearTimeout(autoSyncTimer);
-    autoSyncTimer=setTimeout(async()=>{
-      await gdriveSave();
-      await gcalSyncAll();
-    },5000);
+    autoSyncTimer=setTimeout(()=>gdriveSave(),5000);
   }
 }
 function saveCols() { localStorage.setItem('foto_cols', JSON.stringify(cols)); }
@@ -956,6 +954,7 @@ function makeCard(z){
   const dotHtml=(z.tasks||[]).map(t=>`<div class="card-dot ${t.done?'done':''}" style="${t.done?'background:'+cat.color:''}"></div>`).join('');
   const card=document.createElement('div');card.className='kanban-card';card.draggable=true;card.dataset.id=z.id;
   card.style.borderLeftColor=cat.color||'#555';
+  const calRetryBtn=gdriveToken&&z.date?`<button class="card-cal-retry" onclick="event.stopPropagation();gcalRetry('${z.id}')" title="Ponów dodanie do Google Calendar">📅 Ponów termin</button>`:'';
   card.innerHTML=`
     <div class="card-cat" style="background:${cat.dim};color:${cat.color}">${cat.icon||''} ${getCatLabel(z)}</div>
     <div class="card-name">${esc(z.name)}</div>
@@ -963,6 +962,7 @@ function makeCard(z){
     ${ddHtml}${finHtml}
     ${total?`<div class="card-pbar-bg"><div class="card-pbar-fill" style="width:${pct}%;background:${cat.color}"></div></div>`:''}
     <div class="card-dots">${dotHtml}</div>
+    ${calRetryBtn}
   `;
   card.addEventListener('dragstart',()=>{draggingId=z.id;setTimeout(()=>card.classList.add('dragging'),0);});
   card.addEventListener('dragend',()=>{card.classList.remove('dragging');draggingId=null;});
@@ -1352,7 +1352,9 @@ function saveZlecenie(){
     const i=zlecenia.findIndex(z=>z.id===editingId);
     if(i>=0)zlecenia[i]={...zlecenia[i],...obj};
   } else {
-    zlecenia.push({id:uid(),orderedItems:[],daySchedule:[],...obj});
+    const newZ={id:uid(),orderedItems:[],daySchedule:[],...obj};
+    zlecenia.push(newZ);
+    if(gdriveToken&&newZ.date) gcalCreateZlecenie(newZ);
   }
   save();closeAddModal();renderAll();
 }
@@ -1711,10 +1713,9 @@ function initGIS(){
     callback:async(r)=>{
       if(r.error){showDriveToast('Błąd logowania: '+r.error,true);return;}
       gdriveToken=r.access_token;
-      showDriveToast('✅ Połączono z Google (Drive + Kalendarz)');updateDriveBtn();
-      // initial sync after connect
+      showDriveToast('✅ Połączono z Google Drive');updateDriveBtn();
+      // initial save after connect
       await gdriveSave();
-      await gcalSyncAll();
     }
   });
 }
@@ -1841,64 +1842,28 @@ async function gcalRequest(url,method='GET',body=null){
   return r;
 }
 
-async function gcalFindExisting(z){
-  // Szukaj wszystkich eventów w kalendarzu na tej dacie z tą samą nazwą
-  const dayStart=encodeURIComponent(z.date+'T00:00:00Z');
-  const dayEnd=encodeURIComponent(z.date+'T23:59:59Z');
-  const r=await gcalRequest(`${GCAL_API}?timeMin=${dayStart}&timeMax=${dayEnd}&singleEvents=true&maxResults=100`);
-  if(!r.ok)return null;
-  const data=await r.json();
-  const cat=CATS[z.cat]||{};
-  const label=getCatLabel(z);
-  const expectedSummary=`${cat.icon||''} ${z.name} [${label}]`;
-  const matches=(data.items||[]).filter(e=>e.summary===expectedSummary);
-  // Jeśli duplikaty — usuń nadmiarowe, zostaw jeden
-  if(matches.length>1){
-    for(let i=1;i<matches.length;i++){
-      try{await gcalRequest(`${GCAL_API}/${matches[i].id}`,'DELETE');}catch(e){}
-    }
-  }
-  return matches[0]||null;
+async function gcalRetry(id){
+  const z=zlecenia.find(x=>x.id===id);if(!z)return;
+  showDriveToast('📅 Dodaję termin do kalendarza...');
+  await gcalCreateZlecenie(z);
+  showDriveToast('📅 Termin dodany do Google Calendar!');
+  renderKanban();
 }
 
-async function gcalSyncZlecenie(z){
+// Jednorazowe dodanie nowego zlecenia do Google Calendar (tylko przy tworzeniu)
+async function gcalCreateZlecenie(z){
   if(!gdriveToken||!z.date)return;
   try{
     const body=gcalEventBody(z);
-    // Zawsze sprawdź duplikaty na tej dacie (usuwa nadmiarowe, zwraca jeden lub null)
-    const existing=await gcalFindExisting(z);
-    if(existing){
-      // Zaktualizuj znaleziony event i zapisz jego ID
-      z.gcalEventId=existing.id;
-      await gcalRequest(`${GCAL_API}/${z.gcalEventId}`,'PUT',body);
-      localStorage.setItem('foto_v4',JSON.stringify(zlecenia));
-    } else {
-      // Brak w kalendarzu — utwórz nowy
-      const r=await gcalRequest(GCAL_API,'POST',body);
-      const json=await r.json();
-      if(json.id){z.gcalEventId=json.id;localStorage.setItem('foto_v4',JSON.stringify(zlecenia));}
-    }
-  }catch(e){console.warn('gcalSync error:',e.message);}
+    const r=await gcalRequest(GCAL_API,'POST',body);
+    const json=await r.json();
+    if(json.id){z.gcalEventId=json.id;localStorage.setItem('foto_v4',JSON.stringify(zlecenia));}
+  }catch(e){console.warn('gcalCreate error:',e.message);}
 }
 
 async function gcalDeleteZlecenie(z){
   if(!gdriveToken||!z.gcalEventId)return;
   try{await gcalRequest(`${GCAL_API}/${z.gcalEventId}`,'DELETE');}catch(e){}
-}
-
-async function gcalSyncAll(){
-  if(!gdriveToken)return;
-  showDriveToast('📅 Synchronizuję z Google Calendar...');
-  const withDates=zlecenia.filter(z=>z.date);
-  let newIds=false;
-  for(const z of withDates){
-    const hadId=!!z.gcalEventId;
-    await gcalSyncZlecenie(z);
-    if(!hadId&&z.gcalEventId)newIds=true;
-  }
-  // Jeśli pojawiły się nowe ID eventów — zapisz na Drive żeby inne urządzenia nie tworzyły duplikatów
-  if(newIds) await gdriveSave();
-  showDriveToast(`📅 Zsynchronizowano ${withDates.length} zdarzeń z Google Calendar`);
 }
 
 // ══ PWA — MANIFEST + INSTALL PROMPT (#19) ══════════════════════════════════
