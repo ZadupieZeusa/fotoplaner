@@ -967,7 +967,8 @@ function makeCard(z){
   let finHtml='';
   if(z.price){
     const price=Number(z.price),dep=Number(z.deposit)||0,rem=price-dep;
-    if(dep>0&&rem>0) finHtml=`<div class="card-finance partial">💳 Pozostało: ${rem.toLocaleString('pl')} zł</div>`;
+    if(z.paid) finHtml=`<div class="card-finance">✓ Opłacone ${price.toLocaleString('pl')} zł</div>`;
+    else if(dep>0&&rem>0) finHtml=`<div class="card-finance partial">💳 Pozostało: ${rem.toLocaleString('pl')} zł</div>`;
     else if(dep>0&&rem<=0) finHtml=`<div class="card-finance">✓ Opłacone ${price.toLocaleString('pl')} zł</div>`;
     else finHtml=`<div class="card-finance partial">💰 ${price.toLocaleString('pl')} zł · brak zaliczki</div>`;
   }
@@ -1439,7 +1440,7 @@ function renderDetailModal(id){
     <div class="detail-meta">
       ${z.date?`📅 ${formatDate(z.date)}<br>`:''}
       ${dlText?`${dlText}<br>`:''}
-      ${z.price?(()=>{const p=Number(z.price),d=Number(z.deposit)||0,r=p-d;return `💰 ${p.toLocaleString('pl')} zł${d?` · Zaliczka: <b style="color:var(--sesja)">${d.toLocaleString('pl')} zł</b> · Pozostało: <b style="color:${r>0?'var(--warn)':'#4ade80'}">${r.toLocaleString('pl')} zł</b>`:' · <span style="color:var(--warn);font-size:11px">brak zaliczki</span>'}<br>`;})():''}
+      ${z.price?(()=>{const p=Number(z.price),d=Number(z.deposit)||0,r=p-d;if(z.paid)return `💰 ${p.toLocaleString('pl')} zł · <b style="color:#4ade80">✓ Opłacone</b><br>`;return `💰 ${p.toLocaleString('pl')} zł${d?` · Zaliczka: <b style="color:var(--sesja)">${d.toLocaleString('pl')} zł</b> · Pozostało: <b style="color:${r>0?'var(--warn)':'#4ade80'}">${r.toLocaleString('pl')} zł</b>`:' · <span style="color:var(--warn);font-size:11px">brak zaliczki</span>'}<br>`;})():''}
     </div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
       <button class="card-paid-btn ${z.paid?'paid':''}" style="flex:1;margin-top:0" onclick="togglePaidDetail('${id}')">${z.paid?'✓ Zapłacone':'○ Oznacz jako zapłacone'}</button>
