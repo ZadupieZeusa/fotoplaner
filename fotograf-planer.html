@@ -538,7 +538,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
         <input class="form-input" id="f-date" type="date" />
       </div>
       <div class="form-group" id="deadline-row" style="display:none">
-        <label class="form-label">Termin oddania materiałów</label>
+        <label class="form-label">Zakończenie obróbki</label>
         <input class="form-input" id="f-deadline" type="date" />
       </div>
     </div>
@@ -1373,9 +1373,14 @@ function saveZlecenie(){
     const taskTemplate=CAT_TASKS[cat]||DEFAULT_TASKS;
     tasks=taskTemplate.map(t=>({id:t.id,label:t.label,done:!!taskStates[t.id]}));
   }
+  let deliveryDeadline=document.getElementById('f-deadline').value;
+  if(!deliveryDeadline&&selStatus==='edycja_st'){
+    const dateVal=document.getElementById('f-date').value;
+    if(dateVal){const days=EDIT_DAYS[cat]||30;const d=new Date(dateVal);d.setDate(d.getDate()+days);deliveryDeadline=d.toISOString().slice(0,10);}
+  }
   const obj={
     name,date:document.getElementById('f-date').value,cat,status:selStatus,
-    deliveryDeadline:document.getElementById('f-deadline').value,
+    deliveryDeadline,
     customCat:document.getElementById('f-custom-cat').value.trim(),
     price:Number(document.getElementById('f-price').value)||null,
     deposit:Number(document.getElementById('f-deposit').value)||null,
@@ -1419,7 +1424,7 @@ function renderDetailModal(id){
   const done=(z.tasks||[]).filter(t=>t.done).length,total=(z.tasks||[]).length,pct=total?Math.round(done/total*100):0;
   const mapsUrl=z.location?`https://maps.google.com/?q=${encodeURIComponent(z.location)}`:null;
   const dl=(z.status==='edycja_st'&&z.deliveryDeadline)?daysUntil(z.deliveryDeadline):null;
-  const dlText=dl===null?'':`Termin oddania: <b style="color:${dl<0?'var(--danger)':dl<=7?'var(--warn)':'#4ade80'}">${formatDate(z.deliveryDeadline)}${dl<0?' (przekroczony '+Math.abs(dl)+'d)':dl===0?' (dziś!)':' (za '+dl+'d)'}</b>`;
+  const dlText=dl===null?'':`🎬 Zakończenie obróbki: <b style="color:${dl<0?'var(--danger)':dl<=7?'var(--warn)':'#4ade80'}">${formatDate(z.deliveryDeadline)}${dl<0?' (przekroczony '+Math.abs(dl)+'d)':dl===0?' (dziś!)':' (za '+dl+'d)'}</b>`;
 
   const statusChips=`<span class="s-chip ${!z.status||z.status===''?'active':''}" onclick="setStatus('${id}','')">📋 Wszystkie</span>`+cols.map(c=>`<span class="s-chip ${z.status===c.id?'active':''}" onclick="setStatus('${id}','${c.id}')">${c.icon} ${c.name}</span>`).join('');
   const tasksHtml=(z.tasks||[]).map(t=>`<div class="task-row"><div class="chk ${t.done?'on':''}" onclick="toggleTask('${id}','${t.id}')"></div><div class="task-lbl ${t.done?'done':''}">${esc(t.label)}</div><button class="task-del-btn" onclick="deleteDetailTask('${id}','${t.id}')" title="Usuń zadanie">✕</button></div>`).join('');
@@ -1440,6 +1445,11 @@ function renderDetailModal(id){
       ${dlText?`${dlText}<br>`:''}
       ${z.price?(()=>{const p=Number(z.price),d=Number(z.deposit)||0,r=p-d;return `💰 ${p.toLocaleString('pl')} zł${d?` · Zaliczka: <b style="color:var(--sesja)">${d.toLocaleString('pl')} zł</b> · Pozostało: <b style="color:${r>0?'var(--warn)':'#4ade80'}">${r.toLocaleString('pl')} zł</b>`:' · <span style="color:var(--warn);font-size:11px">brak zaliczki</span>'}<br>`;})():''}
     </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+      <button class="card-paid-btn ${z.paid?'paid':''}" style="flex:1;margin-top:0" onclick="togglePaidDetail('${id}')">${z.paid?'✓ Zapłacone':'○ Oznacz jako zapłacone'}</button>
+      ${z.status==='edycja_st'?`<button class="card-edit-done ${z.editingFinished?'done':'btn'}" style="flex:1;margin-top:0" onclick="${z.editingFinished?'':'markEditingDoneDetail(\''+id+'\')'}">${z.editingFinished?'✓ Obróbka zakończona '+formatDate(z.editingFinished):'🎬 Zakończ obróbkę'}</button>`:''}
+    </div>
+    ${z.status==='edycja_st'?`<div style="margin-bottom:10px;font-size:12px;color:var(--text3)">Zakończenie obróbki: <b style="color:var(--text)">${z.deliveryDeadline?formatDate(z.deliveryDeadline):'nie ustawiono'}</b> <button class="btn-ghost" style="font-size:11px;padding:2px 8px;margin-left:6px" onclick="editDeadlineDetail('${id}')">✏ Zmień</button></div>`:''}
 
     <div class="detail-tabs">
       <button class="dtab ${detailTab==='info'?'active':''}" onclick="switchDetailTab('${id}','info')">Zadania</button>
@@ -1569,7 +1579,13 @@ function deleteDetailTask(zId,tId){
 
 function setStatus(zId,status){
   const z=zlecenia.find(x=>x.id===zId);if(!z)return;
-  z.status=status;save();renderDetailModal(zId);renderKanban();
+  z.status=status;
+  if(status==='edycja_st'&&z.date&&!z.deliveryDeadline){
+    const days=EDIT_DAYS[z.cat]||30;
+    const d=new Date(z.date);d.setDate(d.getDate()+days);
+    z.deliveryDeadline=d.toISOString().slice(0,10);
+  }
+  save();renderDetailModal(zId);renderKanban();
 }
 
 function closeDetail(){document.getElementById('modal-detail').classList.remove('open');}
@@ -1718,6 +1734,24 @@ function togglePaid(id){
   const z=zlecenia.find(x=>x.id===id);if(!z)return;
   z.paid=!z.paid;
   save();renderKanban();
+}
+function togglePaidDetail(id){
+  const z=zlecenia.find(x=>x.id===id);if(!z)return;
+  z.paid=!z.paid;
+  save();renderDetailModal(id);renderKanban();
+}
+function markEditingDoneDetail(id){
+  const z=zlecenia.find(x=>x.id===id);if(!z)return;
+  z.editingFinished=new Date().toISOString().slice(0,10);
+  save();renderDetailModal(id);renderKanban();
+}
+function editDeadlineDetail(id){
+  const z=zlecenia.find(x=>x.id===id);if(!z)return;
+  const inp=document.createElement('input');inp.type='date';inp.value=z.deliveryDeadline||'';
+  inp.style.cssText='position:fixed;opacity:0;pointer-events:none';
+  document.body.appendChild(inp);inp.focus();inp.showPicker?.();
+  inp.addEventListener('change',()=>{z.deliveryDeadline=inp.value;save();renderDetailModal(id);renderKanban();inp.remove();});
+  inp.addEventListener('blur',()=>setTimeout(()=>inp.remove(),200));
 }
 
 function markEditingDone(id){
