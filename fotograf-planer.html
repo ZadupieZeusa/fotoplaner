@@ -977,16 +977,12 @@ function makeCard(z){
   card.style.borderLeftColor=cat.color||'#555';
   const calRetryBtn=gdriveToken&&z.date?`<button class="card-cal-retry" onclick="event.stopPropagation();gcalRetry('${z.id}')" title="Ponów dodanie do Google Calendar">📅 Ponów termin</button>`:'';
   const paidBtn=z.status?`<button class="card-paid-btn ${z.paid?'paid':''}" onclick="event.stopPropagation();togglePaid('${z.id}')">${z.paid?'✓ Zapłacone':'○ Oznacz jako zapłacone'}</button>`:'';
-  // Termin oddania + zakończenie edycji — tylko w kolumnie "W edycji"
+  // Termin zakończenia obróbki — tylko w kolumnie "W edycji"
   let editDoneBtn='';
   if(z.status==='edycja_st'){
-    const deadlineDisplay=z.deliveryDeadline
-      ?`<div class="card-edit-deadline" onclick="event.stopPropagation();editDeadlineInline('${z.id}',this)">📦 Termin: <b>${formatDate(z.deliveryDeadline)}</b> <span style="font-size:9px;opacity:.6">✏</span></div>`
-      :`<button class="card-edit-done btn" onclick="event.stopPropagation();editDeadlineInline('${z.id}',this)">📦 Ustaw termin oddania</button>`;
-    const donePart=z.editingFinished
-      ?`<div class="card-edit-done done">✓ Edycja zakończona: ${formatDate(z.editingFinished)}</div>`
-      :`<button class="card-edit-done btn" onclick="event.stopPropagation();markEditingDone('${z.id}')">🎬 Zakończ edycję</button>`;
-    editDoneBtn=deadlineDisplay+donePart;
+    editDoneBtn=z.deliveryDeadline
+      ?`<div class="card-edit-deadline" onclick="event.stopPropagation();editDeadlineInline('${z.id}',this)">🎬 Obróbka do: <b>${formatDate(z.deliveryDeadline)}</b> <span style="font-size:9px;opacity:.6">✏</span></div>`
+      :`<button class="card-edit-done btn" onclick="event.stopPropagation();editDeadlineInline('${z.id}',this)">🎬 Ustaw termin obróbki</button>`;
   }
   card.innerHTML=`
     <div class="card-cat" style="background:${cat.dim};color:${cat.color}">${cat.icon||''} ${getCatLabel(z)}</div>
@@ -1447,7 +1443,6 @@ function renderDetailModal(id){
     </div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
       <button class="card-paid-btn ${z.paid?'paid':''}" style="flex:1;margin-top:0" onclick="togglePaidDetail('${id}')">${z.paid?'✓ Zapłacone':'○ Oznacz jako zapłacone'}</button>
-      ${z.status==='edycja_st'?`<button class="card-edit-done ${z.editingFinished?'done':'btn'}" style="flex:1;margin-top:0" onclick="${z.editingFinished?'':'markEditingDoneDetail(\''+id+'\')'}">${z.editingFinished?'✓ Obróbka zakończona '+formatDate(z.editingFinished):'🎬 Zakończ obróbkę'}</button>`:''}
     </div>
     ${z.status==='edycja_st'?`<div style="margin-bottom:10px;font-size:12px;color:var(--text3)">Zakończenie obróbki: <b style="color:var(--text)">${z.deliveryDeadline?formatDate(z.deliveryDeadline):'nie ustawiono'}</b> <button class="btn-ghost" style="font-size:11px;padding:2px 8px;margin-left:6px" onclick="editDeadlineDetail('${id}')">✏ Zmień</button></div>`:''}
 
