@@ -415,6 +415,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     </div>
   </div>
   <button class="tb-btn" id="install-btn" style="display:none" onclick="installPWA()" title="Zainstaluj jako aplikację">📱 Zainstaluj</button>
+  <button class="tb-btn" onclick="openSettings()" title="Ustawienia">⚙</button>
   <button class="tb-btn" onclick="exportData()">⬆ Export</button>
   <button class="tb-btn" onclick="importData()">⬇ Import</button>
   <button class="btn-add" onclick="openAddModal()">+ Dodaj</button>
@@ -578,6 +579,18 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   <div class="modal" id="modal-detail-body"></div>
 </div>
 
+<!-- ── SETTINGS MODAL ── -->
+<div class="modal-overlay" id="modal-settings" onclick="if(event.target===this)closeSettings()">
+  <div class="modal" style="max-width:420px">
+    <h2 style="margin:0 0 16px">⚙ Ustawienia</h2>
+    <h3 style="margin:0 0 10px;font-size:13px;opacity:.7;font-weight:500;text-transform:uppercase;letter-spacing:.05em">Czas obróbki (dni od daty zlecenia)</h3>
+    <div id="settings-edit-days" style="display:grid;grid-template-columns:1fr 1fr;gap:8px 16px;margin-bottom:20px"></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button class="btn-cancel" onclick="closeSettings()">Anuluj</button>
+      <button class="btn btn-add" style="padding:8px 20px" onclick="saveSettings()">Zapisz</button>
+    </div>
+  </div>
+</div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 <script>
@@ -629,8 +642,8 @@ const CAT_ADDR = {
   inne:     [{id:'adres',label:'Adres'}],
 };
 
-// Domyślne czasy obróbki (dni od daty zlecenia)
-const EDIT_DAYS = {
+// Domyślne czasy obróbki (dni od daty zlecenia) — ładowane z localStorage
+const EDIT_DAYS_DEFAULTS = {
   wesele:   90,
   urodziny: 60,
   chrzest:  21,
@@ -638,6 +651,10 @@ const EDIT_DAYS = {
   sesja:    30,
   inne:     30,
 };
+let EDIT_DAYS = (()=>{
+  try{const s=localStorage.getItem('foto_edit_days');return s?Object.assign({},EDIT_DAYS_DEFAULTS,JSON.parse(s)):Object.assign({},EDIT_DAYS_DEFAULTS);}
+  catch{return Object.assign({},EDIT_DAYS_DEFAULTS);}
+})();
 
 const WEDDING_SCHEDULE_TEMPLATE = [
   {id:'s1',time:'09:00',activity:'Sesja przygotowań Panny Młodej'},
@@ -1585,6 +1602,27 @@ function setStatus(zId,status){
 }
 
 function closeDetail(){document.getElementById('modal-detail').classList.remove('open');}
+
+// ══ SETTINGS ════════════════════════════════════════════════════════════════
+function openSettings(){
+  const container=document.getElementById('settings-edit-days');
+  container.innerHTML='';
+  const labels={wesele:'💒 Wesele',urodziny:'🎂 Urodziny',chrzest:'👶 Chrzest',komunia:'✝️ Komunia',sesja:'📸 Sesja',inne:'📷 Inne'};
+  Object.keys(labels).forEach(key=>{
+    container.innerHTML+=`<label style="display:flex;flex-direction:column;gap:4px;font-size:13px"><span style="opacity:.8">${labels[key]}</span><div style="display:flex;align-items:center;gap:6px"><input type="number" id="sett-${key}" value="${EDIT_DAYS[key]||30}" min="1" max="365" style="width:70px;padding:6px 8px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:14px;text-align:center"><span style="opacity:.5;font-size:12px">dni</span></div></label>`;
+  });
+  document.getElementById('modal-settings').classList.add('open');
+}
+function closeSettings(){document.getElementById('modal-settings').classList.remove('open');}
+function saveSettings(){
+  ['wesele','urodziny','chrzest','komunia','sesja','inne'].forEach(key=>{
+    const v=parseInt(document.getElementById('sett-'+key).value,10);
+    if(v>0)EDIT_DAYS[key]=v;
+  });
+  localStorage.setItem('foto_edit_days',JSON.stringify(EDIT_DAYS));
+  closeSettings();
+  showDriveToast('✅ Ustawienia zapisane');
+}
 
 // ══ QUICK ADD (#20) ════════════════════════════════════════════════════════
 let qaCat=null;
