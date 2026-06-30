@@ -885,24 +885,21 @@ function renderKanban(){
 }
 
 function renderAllEventsCol(container){
-  const sorted=[...zlecenia].sort((a,b)=>(a.date||'9999').localeCompare(b.date||'9999'));
-  const groups={};
-  sorted.forEach(z=>{const key=z.date?z.date.slice(0,7):'x';if(!groups[key])groups[key]=[];groups[key].push(z);});
-  const col=document.createElement('div');col.className='kanban-col all-events-col';
+  // Pokazuje tylko zlecenia bez przypisanej kolumny (inbox)
+  const inbox=zlecenia.filter(z=>!z.status||z.status==='').sort((a,b)=>(a.date||'9999').localeCompare(b.date||'9999'));
+  const col=document.createElement('div');col.className='kanban-col all-events-col';col.dataset.status='';
   const header=document.createElement('div');header.className='col-header';
-  header.innerHTML=`<span class="col-icon">📋</span><span class="col-name">Wszystkie zlecenia</span><span class="col-badge">${zlecenia.length}</span>`;
+  header.innerHTML=`<span class="col-icon">📋</span><span class="col-name">Wszystkie zlecenia</span><span class="col-badge">${inbox.length}</span>`;
   col.appendChild(header);
-  const cardsEl=document.createElement('div');cardsEl.className='col-cards';
-  if(!zlecenia.length){cardsEl.innerHTML='<div class="ae-empty">Brak zleceń<br><small>Kliknij + Dodaj</small></div>';}
-  else {
-    Object.entries(groups).sort(([a],[b])=>a.localeCompare(b)).forEach(([key,items])=>{
-      const [y,m]=key.split('-');
-      const label=key==='x'?'Bez daty':`${MONTHS_PL[Number(m)-1]} ${y}`;
-      const lbl=document.createElement('div');lbl.className='ae-month-label';lbl.textContent=label;cardsEl.appendChild(lbl);
-      items.forEach(z=>cardsEl.appendChild(makeCard(z)));
-    });
-  }
-  col.appendChild(cardsEl);container.appendChild(col);
+  const cardsEl=document.createElement('div');cardsEl.className='col-cards';cardsEl.id='col-';
+  if(!inbox.length){cardsEl.innerHTML='<div class="ae-empty">Brak nowych zleceń<br><small>Kliknij + Dodaj</small></div>';}
+  else inbox.forEach(z=>cardsEl.appendChild(makeCard(z)));
+  col.appendChild(cardsEl);
+  // Drop target: wróć do inboxu (status='')
+  col.addEventListener('dragover',e=>{e.preventDefault();col.classList.add('drag-over');});
+  col.addEventListener('dragleave',()=>col.classList.remove('drag-over'));
+  col.addEventListener('drop',e=>{e.preventDefault();col.classList.remove('drag-over');if(draggingId){const z=zlecenia.find(x=>x.id===draggingId);if(z){z.status='';save();renderKanban();renderDayStrip();}}});
+  container.appendChild(col);
 }
 
 function renderStatusCol(container,col){
