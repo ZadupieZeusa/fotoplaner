@@ -1806,7 +1806,7 @@ function editDeadlineInline(id,el){
 }
 
 // ══ GOOGLE DRIVE SYNC (#18) ════════════════════════════════════════════════
-let gdriveToken=null,gdriveFileId=null,tokenClient=null;
+let gdriveToken=null,gdriveFileId=null,tokenClient=null,pendingDriveAction=null;
 const HARDCODED_CLIENT_ID='298351769527-fdtj2ij6f6s657ju43i9aka4bipb68cs.apps.googleusercontent.com';
 let GDRIVE_CLIENT_ID=localStorage.getItem('foto_gdrive_client_id')||HARDCODED_CLIENT_ID;
 const GDRIVE_SCOPE='https://www.googleapis.com/auth/drive.appdata https://www.googleapis.com/auth/calendar.events';
@@ -1840,9 +1840,9 @@ function initGIS(){
       if(r.error){showDriveToast('Błąd logowania: '+r.error,true);return;}
       gdriveToken=r.access_token;
       showDriveToast('✅ Połączono z Google Drive');updateDriveBtn();
-      // Po połączeniu: zapisz na Drive tylko jeśli mamy lokalne dane
-      // (nie nadpisuj Drive gdy localStorage jest pusty)
-      if(zlecenia.length>0) await gdriveSave();
+      const action=pendingDriveAction;pendingDriveAction=null;
+      if(action==='load') await gdriveLoad();
+      else if(action==='save'||zlecenia.length>0) await gdriveSave();
     }
   });
 }
@@ -1890,7 +1890,7 @@ async function findDriveFile(){
 }
 
 async function gdriveSave(){
-  if(!gdriveToken){const ok=await gdriveConnect();if(!ok||!gdriveToken)return;setTimeout(()=>showDriveToast('Zaloguj się, potem kliknij Zapisz ponownie'),500);return;}
+  if(!gdriveToken){pendingDriveAction='save';const ok=await gdriveConnect();if(!ok||!gdriveToken)return;return;}
   showDriveToast('☁ Zapisuję na Drive...');
   try{
     await findDriveFile();
@@ -1911,7 +1911,7 @@ async function gdriveSave(){
 }
 
 async function gdriveLoad(){
-  if(!gdriveToken){const ok=await gdriveConnect();if(!ok||!gdriveToken)return;setTimeout(()=>showDriveToast('Zaloguj się, potem kliknij Wczytaj ponownie'),500);return;}
+  if(!gdriveToken){pendingDriveAction='load';const ok=await gdriveConnect();if(!ok||!gdriveToken)return;return;}
   showDriveToast('☁ Szukam pliku na Drive...');
   try{
     const fid=await findDriveFile();
