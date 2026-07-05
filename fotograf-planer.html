@@ -1183,10 +1183,23 @@ function renderTimeline(){
   if(editedZ.length){
     const maxDays=editedZ[0].editDays;
     const avgDays=Math.round(editedZ.reduce((s,z)=>s+z.editDays,0)/editedZ.length);
-    const BAR_MAX=680; // px — max szerokość słupka
-    const avgX=maxDays>0?Math.round(avgDays/maxDays*BAR_MAX):0;
+    const BAR_MAX=680;
+
+    // Podsumowanie per kategoria
+    const catGroups={};
+    editedZ.forEach(z=>{
+      if(!catGroups[z.cat])catGroups[z.cat]=[];
+      catGroups[z.cat].push(z.editDays);
+    });
+    const catSummary=Object.entries(catGroups).map(([key,days])=>({
+      key, cat:CATS[key]||{},
+      avg:Math.round(days.reduce((s,d)=>s+d,0)/days.length),
+      count:days.length
+    })).sort((a,b)=>b.avg-a.avg);
+    const maxCatAvg=catSummary[0]?.avg||1;
 
     html+=`<div class="tl-edit-section">
+      <!-- Nagłówek -->
       <div class="tl-edit-section-header">
         <div class="tl-edit-section-label">
           <div class="tl-edit-section-title">📊 Czas obróbki</div>
@@ -1195,8 +1208,37 @@ function renderTimeline(){
         <div style="flex:1;padding:8px 12px;display:flex;align-items:center;font-size:10px;color:var(--text3)">
           dni od daty zlecenia do zakończenia edycji
         </div>
+      </div>
+
+      <!-- Podsumowanie kategorii -->
+      <div style="display:flex;align-items:stretch;background:var(--surface);border-bottom:2px solid var(--border2)">
+        <div class="tl-edit-section-label" style="background:var(--surface);justify-content:center">
+          <div style="font-size:9px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.5px">Wg kategorii</div>
+        </div>
+        <div style="flex:1;padding:10px 12px;display:flex;flex-direction:column;gap:7px">
+          ${catSummary.map(({key,cat,avg,count})=>{
+            const bw=Math.max(6,Math.round(avg/maxCatAvg*BAR_MAX));
+            return `<div style="display:flex;align-items:center;gap:10px">
+              <div style="width:140px;flex-shrink:0;font-size:11px;font-weight:600;color:${cat.color}">${cat.icon||''} ${cat.label||key} <span style="color:var(--text3);font-weight:400">(${count})</span></div>
+              <div style="height:14px;border-radius:3px;background:${cat.color};opacity:.8;width:${bw}px;flex-shrink:0"></div>
+              <div style="font-size:11px;color:var(--text2);white-space:nowrap">śr. ${avg} dni</div>
+            </div>`;
+          }).join('')}
+        </div>
       </div>`;
 
+    // Separtor przed zleceniami
+    html+=`<div style="display:flex;align-items:stretch;border-bottom:1px solid var(--border)">
+      <div class="tl-edit-section-label" style="justify-content:center">
+        <div style="font-size:9px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.5px">Zlecenia</div>
+      </div>
+      <div style="flex:1;padding:7px 12px;display:flex;align-items:center;font-size:10px;color:var(--text3)">
+        sortowane od najdłuższego
+      </div>
+    </div>`;
+
+    // Poszczególne zlecenia
+    const avgX=maxDays>0?Math.round(avgDays/maxDays*BAR_MAX):0;
     editedZ.forEach(z=>{
       const cat=CATS[z.cat]||{};
       const barW=maxDays>0?Math.max(4,Math.round(z.editDays/maxDays*BAR_MAX)):4;
@@ -1208,7 +1250,7 @@ function renderTimeline(){
         </div>
         <div class="tl-edit-track">
           <div class="tl-edit-avg-line" style="left:${avgX+12}px" title="Średnia: ${avgDays} dni"></div>
-          <div class="tl-edit-bar" style="width:${barW}px;background:${cat.color};opacity:${overAvg?'.9':'.55'}"></div>
+          <div class="tl-edit-bar" style="width:${barW}px;background:${cat.color};opacity:${overAvg?'.9':'.5'}"></div>
           <div class="tl-edit-days-lbl" style="color:${overAvg?cat.color:'var(--text2)'}">${z.editDays} dni</div>
         </div>
       </div>`;
