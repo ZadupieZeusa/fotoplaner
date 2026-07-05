@@ -198,6 +198,20 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .tl-month-grid{position:absolute;top:0;bottom:0;width:1px;background:var(--border)}
 .tl-today-line{position:absolute;top:0;bottom:0;width:2px;background:var(--wesele);opacity:.6;z-index:4}
 .tl-empty{text-align:center;padding:60px 20px;color:var(--text3);font-size:14px}
+.tl-edit-section{border-top:2px solid var(--border2);margin-top:4px}
+.tl-edit-section-header{display:flex;align-items:stretch;background:var(--panel);border-bottom:1px solid var(--border);position:sticky;top:41px;z-index:9}
+.tl-edit-section-label{width:200px;flex-shrink:0;padding:8px 12px;border-right:1px solid var(--border);position:sticky;left:0;background:var(--panel);z-index:10}
+.tl-edit-section-title{font-size:10px;font-weight:800;color:var(--wesele);text-transform:uppercase;letter-spacing:.5px}
+.tl-edit-section-sub{font-size:10px;color:var(--text3);margin-top:1px}
+.tl-edit-row{display:flex;align-items:stretch;border-bottom:1px solid var(--border);min-height:38px;cursor:pointer}
+.tl-edit-row:hover{background:var(--surface)}
+.tl-edit-label{width:200px;flex-shrink:0;padding:6px 12px;border-right:1px solid var(--border);position:sticky;left:0;background:var(--panel);z-index:5;display:flex;flex-direction:column;justify-content:center}
+.tl-edit-row:hover .tl-edit-label{background:var(--surface)}
+.tl-edit-track{flex:1;padding:0 12px;position:relative;display:flex;align-items:center;gap:8px;min-height:38px}
+.tl-edit-bar{height:16px;border-radius:4px;flex-shrink:0;min-width:4px;opacity:.8}
+.tl-edit-days-lbl{font-size:11px;color:var(--text2);white-space:nowrap;flex-shrink:0}
+.tl-edit-avg-line{position:absolute;top:4px;bottom:4px;width:2px;background:var(--wesele);opacity:.55;border-radius:1px;pointer-events:none}
+.tl-edit-avg-tip{position:absolute;top:4px;font-size:9px;color:var(--wesele);white-space:nowrap;opacity:.8;margin-left:3px}
 
 /* ── DASHBOARD VIEW ── */
 .dash-view{flex:1;display:none;flex-direction:column;overflow:hidden;background:var(--bg)}
@@ -1157,7 +1171,52 @@ function renderTimeline(){
       </div>
     </div>`;
   });
-  html+=`</div></div>`;
+  html+=`</div>`; // close tl-rows-area
+
+  // ── Sekcja: Czas obróbki ─────────────────────────────────────────────
+  const editedZ=yearZ
+    .filter(z=>z.editingFinished&&z.date)
+    .map(z=>({...z,editDays:Math.round((new Date(z.editingFinished)-new Date(z.date))/(1000*60*60*24))}))
+    .filter(z=>z.editDays>=0)
+    .sort((a,b)=>b.editDays-a.editDays);
+
+  if(editedZ.length){
+    const maxDays=editedZ[0].editDays;
+    const avgDays=Math.round(editedZ.reduce((s,z)=>s+z.editDays,0)/editedZ.length);
+    const BAR_MAX=680; // px — max szerokość słupka
+    const avgX=maxDays>0?Math.round(avgDays/maxDays*BAR_MAX):0;
+
+    html+=`<div class="tl-edit-section">
+      <div class="tl-edit-section-header">
+        <div class="tl-edit-section-label">
+          <div class="tl-edit-section-title">📊 Czas obróbki</div>
+          <div class="tl-edit-section-sub">śr. ${avgDays} dni · ${editedZ.length} zleceń</div>
+        </div>
+        <div style="flex:1;padding:8px 12px;display:flex;align-items:center;font-size:10px;color:var(--text3)">
+          dni od daty zlecenia do zakończenia edycji
+        </div>
+      </div>`;
+
+    editedZ.forEach(z=>{
+      const cat=CATS[z.cat]||{};
+      const barW=maxDays>0?Math.max(4,Math.round(z.editDays/maxDays*BAR_MAX)):4;
+      const overAvg=z.editDays>avgDays;
+      html+=`<div class="tl-edit-row" onclick="openDetail('${z.id}')">
+        <div class="tl-edit-label">
+          <div class="tl-row-name">${esc(z.name)}</div>
+          <div class="tl-row-meta" style="color:${cat.color}">${cat.icon||''} ${formatDate(z.date)}</div>
+        </div>
+        <div class="tl-edit-track">
+          <div class="tl-edit-avg-line" style="left:${avgX+12}px" title="Średnia: ${avgDays} dni"></div>
+          <div class="tl-edit-bar" style="width:${barW}px;background:${cat.color};opacity:${overAvg?'.9':'.55'}"></div>
+          <div class="tl-edit-days-lbl" style="color:${overAvg?cat.color:'var(--text2)'}">${z.editDays} dni</div>
+        </div>
+      </div>`;
+    });
+    html+=`</div>`;
+  }
+
+  html+=`</div>`; // close tl-inner
   container.innerHTML=html;
   // Scroll to today
   if(todayX) setTimeout(()=>container.scrollLeft=Math.max(0,todayX-160),50);
