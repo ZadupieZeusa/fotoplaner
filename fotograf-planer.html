@@ -1461,8 +1461,17 @@ function renderDetailModal(id){
   const cat=CATS[z.cat]||{};
   const done=(z.tasks||[]).filter(t=>t.done).length,total=(z.tasks||[]).length,pct=total?Math.round(done/total*100):0;
   const mapsUrl=z.location?`https://maps.google.com/?q=${encodeURIComponent(z.location)}`:null;
-  const dl=(z.status==='edycja_st'&&z.deliveryDeadline)?daysUntil(z.deliveryDeadline):null;
-  const dlText=dl===null?'':`🎬 Zakończenie obróbki: <b style="color:${dl<0?'var(--danger)':dl<=7?'var(--warn)':'#4ade80'}">${formatDate(z.deliveryDeadline)}${dl<0?' (przekroczony '+Math.abs(dl)+'d)':dl===0?' (dziś!)':' (za '+dl+'d)'}</b>`;
+  let dlText='';
+  if(z.status==='edycja_st'){
+    if(z.editingFinished){
+      const daysAgo=Math.round((new Date()-new Date(z.editingFinished))/(1000*60*60*24));
+      const agoTxt=daysAgo===0?'dziś':daysAgo===1?'wczoraj':`${daysAgo} dni temu`;
+      dlText=`🎬 Zakończenie edycji: <b style="color:#4ade80">${formatDate(z.editingFinished)}</b> <span style="color:var(--text3);font-size:11px">(${agoTxt})</span>`;
+    } else if(z.deliveryDeadline){
+      const dl=daysUntil(z.deliveryDeadline);
+      dlText=`🎬 Zakończenie obróbki: <b style="color:${dl<0?'var(--danger)':dl<=7?'var(--warn)':'#4ade80'}">${formatDate(z.deliveryDeadline)}${dl<0?' (przekroczony '+Math.abs(dl)+'d)':dl===0?' (dziś!)':' (za '+dl+'d)'}</b>`;
+    }
+  }
 
   const statusChips=`<span class="s-chip ${!z.status||z.status===''?'active':''}" onclick="setStatus('${id}','')">📋 Wszystkie</span>`+cols.map(c=>`<span class="s-chip ${z.status===c.id?'active':''}" onclick="setStatus('${id}','${c.id}')">${c.icon} ${c.name}</span>`).join('');
   const tasksHtml=(z.tasks||[]).map(t=>`<div class="task-row"><div class="chk ${t.done?'on':''}" onclick="toggleTask('${id}','${t.id}')"></div><div class="task-lbl ${t.done?'done':''}">${esc(t.label)}</div><button class="task-del-btn" onclick="deleteDetailTask('${id}','${t.id}')" title="Usuń zadanie">✕</button></div>`).join('');
@@ -1486,7 +1495,15 @@ function renderDetailModal(id){
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
       <button class="card-paid-btn ${z.paid?'paid':''}" style="flex:1;margin-top:0" onclick="togglePaidDetail('${id}')">${z.paid?'✓ Zapłacone':'○ Oznacz jako zapłacone'}</button>
     </div>
-    ${z.status==='edycja_st'?`<div style="margin-bottom:10px;font-size:12px;color:var(--text3)">Zakończenie obróbki: <b style="color:var(--text)">${z.deliveryDeadline?formatDate(z.deliveryDeadline):'nie ustawiono'}</b> <button class="btn-ghost" style="font-size:11px;padding:2px 8px;margin-left:6px" onclick="editDeadlineDetail('${id}')">✏ Zmień</button></div>`:''}
+    ${z.status==='edycja_st'?`<div style="margin-bottom:10px;font-size:12px;display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+      ${z.editingFinished
+        ?`<span style="color:#4ade80">✓ Zakończono edycję: <b>${formatDate(z.editingFinished)}</b></span>
+           <button class="btn-ghost" style="font-size:11px;padding:2px 8px" onclick="unmarkEditingDoneDetail('${id}')">cofnij</button>`
+        :`<span style="color:var(--text3)">Termin obróbki: <b style="color:var(--text)">${z.deliveryDeadline?formatDate(z.deliveryDeadline):'nie ustawiono'}</b></span>
+           <button class="btn-ghost" style="font-size:11px;padding:2px 8px" onclick="editDeadlineDetail('${id}')">✏ Zmień</button>
+           <button class="btn-ghost" style="font-size:11px;padding:2px 8px;color:#4ade80;border-color:#4ade8044" onclick="markEditingDoneDetail('${id}')">✓ Zakończ</button>`
+      }
+    </div>`:''}
 
     <div class="detail-tabs">
       <button class="dtab ${detailTab==='info'?'active':''}" onclick="switchDetailTab('${id}','info')">Zadania</button>
@@ -1800,7 +1817,16 @@ function togglePaidDetail(id){
 }
 function markEditingDoneDetail(id){
   const z=zlecenia.find(x=>x.id===id);if(!z)return;
-  z.editingFinished=new Date().toISOString().slice(0,10);
+  const inp=document.createElement('input');inp.type='date';
+  inp.value=new Date().toISOString().slice(0,10);
+  inp.style.cssText='position:fixed;opacity:0;pointer-events:none';
+  document.body.appendChild(inp);inp.focus();inp.showPicker?.();
+  inp.addEventListener('change',()=>{if(inp.value){z.editingFinished=inp.value;save();renderDetailModal(id);renderKanban();}inp.remove();});
+  inp.addEventListener('blur',()=>setTimeout(()=>inp.remove(),200));
+}
+function unmarkEditingDoneDetail(id){
+  const z=zlecenia.find(x=>x.id===id);if(!z)return;
+  z.editingFinished='';
   save();renderDetailModal(id);renderKanban();
 }
 function editDeadlineDetail(id){
