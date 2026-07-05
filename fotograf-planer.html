@@ -1572,7 +1572,7 @@ function renderDetailModal(id){
     <div class="dtab-panel ${detailTab==='info'?'active':''}">
       <div class="detail-sec">Status</div>
       <div class="status-chips">${statusChips}</div>
-      ${z.pakiet?`<div class="detail-sec">Pakiet</div><div style="background:var(--surface2);border-radius:7px;padding:8px 10px;font-size:12px;color:var(--text2)">📋 ${esc(z.pakiet)}</div>`:''}
+      ${z.pakiet?`<div class="detail-sec">Pakiet</div><div style="background:var(--surface2);border-radius:7px;padding:8px 10px;font-size:12px;color:var(--text2);line-height:1.8">📋 ${esc(z.pakiet).replace(/\n/g,'<br>').replace(/ - /g,'<br>- ')}</div>`:''}
       ${(()=>{const fields=CAT_ADDR[z.cat]||[];const adr=z.adresy||{};const rows=fields.filter(f=>adr[f.id]).map(f=>`<div style="margin-bottom:4px"><span style="color:var(--text3);font-size:10px">${f.label}</span><br>${esc(adr[f.id])}</div>`).join('');return rows?`<div class="detail-sec">Adresy</div><div style="background:var(--surface2);border-radius:7px;padding:8px 10px;font-size:12px;color:var(--text2)">${rows}</div>`:'';})()}
       ${z.notes?`<div class="detail-sec">Notatki</div><div style="background:var(--surface2);border-radius:7px;padding:8px 10px;font-size:12px;color:var(--text2)">${esc(z.notes)}</div>`:''}
       ${total?`<div class="detail-sec">Zadania — ${done}/${total} (${pct}%)</div><div class="pbar-bg"><div class="pbar-fill" style="width:${pct}%;background:${cat.color}"></div></div>`:''}
