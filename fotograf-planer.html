@@ -734,8 +734,8 @@ function loadData() {
 
 function save(){
   localStorage.setItem('foto_v4', JSON.stringify(zlecenia));
-  // auto-sync to Drive after 5s idle
-  if(gdriveToken){
+  // auto-sync to Drive after 5s idle (tylko gdy lista niepusta)
+  if(gdriveToken && zlecenia.length>0){
     clearTimeout(autoSyncTimer);
     autoSyncTimer=setTimeout(()=>gdriveSave(),5000);
   }
@@ -1799,8 +1799,12 @@ function editDeadlineDetail(id){
 
 function markEditingDone(id){
   const z=zlecenia.find(x=>x.id===id);if(!z)return;
-  z.editingFinished=new Date().toISOString().slice(0,10);
-  save();renderKanban();
+  const inp=document.createElement('input');inp.type='date';
+  inp.value=new Date().toISOString().slice(0,10);
+  inp.style.cssText='position:fixed;opacity:0;pointer-events:none';
+  document.body.appendChild(inp);inp.focus();inp.showPicker?.();
+  inp.addEventListener('change',()=>{if(inp.value){z.editingFinished=inp.value;save();renderKanban();}inp.remove();});
+  inp.addEventListener('blur',()=>setTimeout(()=>inp.remove(),200));
 }
 function unmarkEditingDone(id){
   const z=zlecenia.find(x=>x.id===id);if(!z)return;
@@ -1905,6 +1909,10 @@ async function findDriveFile(){
 
 async function gdriveSave(){
   if(!gdriveToken){pendingDriveAction='save';const ok=await gdriveConnect();if(!ok||!gdriveToken)return;return;}
+  // Zabezpieczenie: nie nadpisuj Drive pustą listą
+  if(zlecenia.length===0){
+    if(!confirm('Lokalnie nie ma żadnych zleceń.\nCzy na pewno chcesz nadpisać Drive pustymi danymi?'))return;
+  }
   showDriveToast('☁ Zapisuję na Drive...');
   try{
     await findDriveFile();
@@ -1932,10 +1940,23 @@ async function gdriveLoad(){
     if(!fid){showDriveToast('Brak pliku na Drive — najpierw zapisz dane.');return;}
     const r=await driveRequest(`https://www.googleapis.com/drive/v3/files/${fid}?alt=media`);
     const data=await r.json();
-    if(!confirm(`Wczytać ${data.zlecenia?.length||0} zleceń z Drive?\nEksport z: ${data.exported?new Date(data.exported).toLocaleString('pl'):'nieznana data'}\n\nObecne dane zostaną zastąpione.`))return;
-    zlecenia=data.zlecenia||[];if(data.cols)cols=data.cols;
-    save();saveCols();renderAll();
-    showDriveToast('☁ Wczytano z Drive! ('+zlecenia.length+' zleceń)');
+    const driveZ=data.zlecenia||[];
+    if(!driveZ.length){showDriveToast('Brak zleceń w pliku Drive.');return;}
+    const localIds=new Set(zlecenia.map(z=>z.id));
+    const newOnes=driveZ.filter(z=>!localIds.has(z.id));
+    const overlap=driveZ.length-newOnes.length;
+    const exportDate=data.exported?new Date(data.exported).toLocaleString('pl'):'nieznana data';
+    const msg=`Drive: ${driveZ.length} zleceń (${exportDate})\nLokalnie: ${zlecenia.length} zleceń\n\nNowe do dodania: ${newOnes.length}\nJuż istniejące lokalnie: ${overlap}\n\nOK = Scal (dodaj tylko nowe, zachowaj lokalne)\nAnuluj = Zastąp wszystkie dane z Drive`;
+    const doMerge=confirm(msg);
+    if(doMerge){
+      if(!newOnes.length){showDriveToast('Brak nowych zleceń na Drive.');return;}
+      zlecenia=[...zlecenia,...newOnes];
+    } else {
+      if(!confirm(`Zastąpić ${zlecenia.length} lokalnych zleceń → ${driveZ.length} z Drive?\nTej operacji nie można cofnąć.`))return;
+      zlecenia=driveZ;if(data.cols)cols=data.cols;saveCols();
+    }
+    save();renderAll();
+    showDriveToast(doMerge?`☁ Scalono! Dodano ${newOnes.length} nowych zleceń.`:`☁ Wczytano z Drive! (${zlecenia.length} zleceń)`);
   }catch(e){showDriveToast('Błąd odczytu: '+e.message,true);}
 }
 
