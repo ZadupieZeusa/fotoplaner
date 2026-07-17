@@ -1085,6 +1085,7 @@ function clearZakonczone(){
   const count=zlecenia.filter(z=>z.status==='zakonczone').length;
   if(!count){alert('Brak zakończonych zleceń.');return;}
   if(!confirm(`Usunąć ${count} zakończonych zleceń? Tej operacji nie można cofnąć.`))return;
+  markDeleted(zlecenia.filter(z=>z.status==='zakonczone').map(z=>z.id));
   zlecenia=zlecenia.filter(z=>z.status!=='zakonczone');
   save();renderKanban();renderDayStrip();
   if(gdriveToken)gdriveSave();
@@ -1542,6 +1543,7 @@ async function deleteZlecenie(){
   if(!editingId||!confirm('Usunąć to zlecenie?'))return;
   const z=zlecenia.find(x=>x.id===editingId);
   if(z)await gcalDeleteZlecenie(z);
+  markDeleted([editingId]);
   zlecenia=zlecenia.filter(x=>x.id!==editingId);
   save();closeAddModal();renderAll();
   if(gdriveToken)gdriveSave();
@@ -1890,6 +1892,7 @@ function importData(){
         const data=JSON.parse(ev.target.result);
         if(!confirm(`Importować ${data.zlecenia?.length||0} zleceń? Obecne dane zostaną zastąpione.`))return;
         zlecenia=data.zlecenia||[];if(data.cols)cols=data.cols;
+        deletedIds=deletedIds.filter(id=>!zlecenia.some(z=>z.id===id));localStorage.setItem('foto_deleted',JSON.stringify(deletedIds));
         save();saveCols();renderAll();
       }catch(e){alert('Błąd: nieprawidłowy plik JSON.');}
     };
@@ -1972,6 +1975,10 @@ let GDRIVE_CLIENT_ID=localStorage.getItem('foto_gdrive_client_id')||HARDCODED_CL
 const GDRIVE_SCOPE='https://www.googleapis.com/auth/drive.appdata https://www.googleapis.com/auth/calendar.events';
 const GDRIVE_FNAME='fotoplaner-sync.json';
 let autoSyncTimer=null;
+// Lista usuniętych zleceń (tombstones) — żeby skasowane nie wracały przy scalaniu z Drive
+let deletedIds=[];
+try{deletedIds=JSON.parse(localStorage.getItem('foto_deleted')||'[]');}catch(e){deletedIds=[];}
+function markDeleted(ids){deletedIds=[...new Set([...deletedIds,...ids])].slice(-500);localStorage.setItem('foto_deleted',JSON.stringify(deletedIds));}
 
 function toggleDriveMenu(){const m=document.getElementById('drive-menu');m.style.display=m.style.display==='none'?'':'none';}
 function hideDriveMenu(){const m=document.getElementById('drive-menu');if(m)m.style.display='none';}
@@ -2002,7 +2009,8 @@ function initGIS(){
       showDriveToast('✅ Połączono z Google Drive');updateDriveBtn();
       const action=pendingDriveAction;pendingDriveAction=null;
       if(action==='load') await gdriveLoad();
-      else if(action==='save'||zlecenia.length>0) await gdriveSave();
+      else if(action==='save') await gdriveSave();
+      else await gdriveAutoSync();
     }
   });
 }
@@ -2058,7 +2066,7 @@ async function gdriveSave(){
   showDriveToast('☁ Zapisuję na Drive...');
   try{
     await findDriveFile();
-    const content=JSON.stringify({zlecenia,cols,exported:new Date().toISOString(),version:4},null,2);
+    const content=JSON.stringify({zlecenia,cols,deleted:deletedIds,exported:new Date().toISOString(),version:4},null,2);
     const bnd='---fotoplaner---boundary---';
     const method=gdriveFileId?'PATCH':'POST';
     const metaObj=gdriveFileId?{name:GDRIVE_FNAME}:{name:GDRIVE_FNAME,parents:['appDataFolder']};
@@ -2084,8 +2092,10 @@ async function gdriveLoad(){
     const data=await r.json();
     const driveZ=data.zlecenia||[];
     if(!driveZ.length){showDriveToast('Brak zleceń w pliku Drive.');return;}
+    markDeleted(data.deleted||[]);
+    const delSet=new Set(deletedIds);
     const localIds=new Set(zlecenia.map(z=>z.id));
-    const newOnes=driveZ.filter(z=>!localIds.has(z.id));
+    const newOnes=driveZ.filter(z=>!localIds.has(z.id)&&!delSet.has(z.id));
     const overlap=driveZ.length-newOnes.length;
     const exportDate=data.exported?new Date(data.exported).toLocaleString('pl'):'nieznana data';
     const msg=`Drive: ${driveZ.length} zleceń (${exportDate})\nLokalnie: ${zlecenia.length} zleceń\n\nNowe do dodania: ${newOnes.length}\nJuż istniejące lokalnie: ${overlap}\n\nOK = Scal (dodaj tylko nowe, zachowaj lokalne)\nAnuluj = Zastąp wszystkie dane z Drive`;
@@ -2096,10 +2106,37 @@ async function gdriveLoad(){
     } else {
       if(!confirm(`Zastąpić ${zlecenia.length} lokalnych zleceń → ${driveZ.length} z Drive?\nTej operacji nie można cofnąć.`))return;
       zlecenia=driveZ;if(data.cols)cols=data.cols;saveCols();
+      deletedIds=deletedIds.filter(id=>!driveZ.some(z=>z.id===id));localStorage.setItem('foto_deleted',JSON.stringify(deletedIds));
     }
     save();renderAll();
     showDriveToast(doMerge?`☁ Scalono! Dodano ${newOnes.length} nowych zleceń.`:`☁ Wczytano z Drive! (${zlecenia.length} zleceń)`);
   }catch(e){showDriveToast('Błąd odczytu: '+e.message,true);}
+}
+
+// Cicha synchronizacja przy starcie: najpierw wczytaj i scal dane z Drive, dopiero potem zapisz.
+// Naprawia błąd nadpisywania Drive starą lokalną kopią z innego urządzenia.
+async function gdriveAutoSync(){
+  if(!gdriveToken)return;
+  try{
+    const fid=await findDriveFile();
+    if(!fid){if(zlecenia.length>0)await gdriveSave();return;}
+    const r=await driveRequest(`https://www.googleapis.com/drive/v3/files/${fid}?alt=media`);
+    const data=await r.json();
+    const driveZ=data.zlecenia||[];
+    markDeleted(data.deleted||[]);
+    const delSet=new Set(deletedIds);
+    const localIds=new Set(zlecenia.map(z=>z.id));
+    const newOnes=driveZ.filter(z=>!localIds.has(z.id)&&!delSet.has(z.id));
+    const before=zlecenia.length;
+    zlecenia=zlecenia.filter(z=>!delSet.has(z.id));
+    const removed=before-zlecenia.length;
+    if(newOnes.length)zlecenia=[...zlecenia,...newOnes];
+    localStorage.setItem('foto_v4',JSON.stringify(zlecenia));
+    if(data.cols&&!localStorage.getItem('foto_cols')){cols=data.cols;saveCols();}
+    renderAll();
+    if(zlecenia.length>0)await gdriveSave();
+    if(newOnes.length||removed)showDriveToast(`☁ Zsynchronizowano: ${newOnes.length?'+'+newOnes.length+' z Drive':''}${newOnes.length&&removed?', ':''}${removed?removed+' usuniętych':''}`);
+  }catch(e){showDriveToast('Błąd synchronizacji: '+e.message,true);}
 }
 
 function gdriveSetup(){
