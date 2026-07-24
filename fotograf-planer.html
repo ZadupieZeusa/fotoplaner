@@ -1971,7 +1971,7 @@ function editDeadlineInline(id,el){
 // ══ GOOGLE DRIVE SYNC (#18) ════════════════════════════════════════════════
 let gdriveToken=null,gdriveFileId=null,tokenClient=null,pendingDriveAction=null;
 const HARDCODED_CLIENT_ID='298351769527-fdtj2ij6f6s657ju43i9aka4bipb68cs.apps.googleusercontent.com';
-let GDRIVE_CLIENT_ID=localStorage.getItem('foto_gdrive_client_id')||HARDCODED_CLIENT_ID;
+let GDRIVE_CLIENT_ID=HARDCODED_CLIENT_ID||localStorage.getItem('foto_gdrive_client_id');
 const GDRIVE_SCOPE='https://www.googleapis.com/auth/drive.appdata https://www.googleapis.com/auth/calendar.events';
 const GDRIVE_FNAME='fotoplaner-sync.json';
 let autoSyncTimer=null;
@@ -2140,8 +2140,13 @@ async function gdriveAutoSync(){
 }
 
 function gdriveSetup(){
-  const id=prompt('Obecny Client ID:\n'+(GDRIVE_CLIENT_ID||'brak')+'\n\nWklej nowy Client ID (lub pozostaw puste aby zachować):');
-  if(id&&id.trim()){GDRIVE_CLIENT_ID=id.trim();localStorage.setItem('foto_gdrive_client_id',GDRIVE_CLIENT_ID);gdriveToken=null;gdriveFileId=null;tokenClient=null;updateDriveBtn();showDriveToast('Client ID zapisany. Kliknij Zapisz/Wczytaj aby się zalogować.');}
+  const id=prompt('Obecny Client ID:\n'+(GDRIVE_CLIENT_ID||'brak')+'\n\nWklej nowy Client ID, wpisz RESET aby przywrócić domyślny (puste = zachowaj):');
+  if(id===null)return;
+  const v=id.trim();if(!v)return;
+  if(v.toUpperCase()==='RESET'){GDRIVE_CLIENT_ID=HARDCODED_CLIENT_ID;localStorage.removeItem('foto_gdrive_client_id');}
+  else{GDRIVE_CLIENT_ID=v;localStorage.setItem('foto_gdrive_client_id',GDRIVE_CLIENT_ID);}
+  gdriveToken=null;gdriveFileId=null;tokenClient=null;updateDriveBtn();
+  showDriveToast('Client ID zapisany. Kliknij Zapisz/Wczytaj aby się zalogować.');
 }
 
 function gdriveDisconnect(){
