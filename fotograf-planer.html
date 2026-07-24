@@ -749,7 +749,41 @@ function loadData() {
   }
 }
 
+// ── Znaczniki modyfikacji zleceń (scalanie: najnowsza wersja rekordu wygrywa) ──
+let recSigMap={};
+try{recSigMap=JSON.parse(localStorage.getItem('foto_sig')||'{}');}catch(e){recSigMap={};}
+function recSig(z){const o={};for(const k in z){if(k!=='updatedAt')o[k]=z[k];}return JSON.stringify(o);}
+function stampUpdated(){
+  const ids=new Set();
+  zlecenia.forEach(z=>{
+    ids.add(z.id);
+    const sig=recSig(z);
+    if(recSigMap[z.id]===undefined){if(!z.updatedAt)z.updatedAt=Date.now();}
+    else if(recSigMap[z.id]!==sig){z.updatedAt=Date.now();}
+    recSigMap[z.id]=sig;
+  });
+  Object.keys(recSigMap).forEach(k=>{if(!ids.has(k))delete recSigMap[k];});
+  localStorage.setItem('foto_sig',JSON.stringify(recSigMap));
+}
+function syncSignatures(){
+  recSigMap={};
+  zlecenia.forEach(z=>{recSigMap[z.id]=recSig(z);});
+  localStorage.setItem('foto_sig',JSON.stringify(recSigMap));
+}
+function mergeByNewest(localArr,driveArr,delSet){
+  const map={};
+  localArr.forEach(z=>{if(!delSet.has(z.id))map[z.id]=z;});
+  let added=0,updated=0;
+  driveArr.forEach(z=>{
+    if(delSet.has(z.id))return;
+    const cur=map[z.id];
+    if(!cur){map[z.id]=z;added++;return;}
+    if((z.updatedAt||0)>(cur.updatedAt||0)){map[z.id]=z;updated++;}
+  });
+  return {list:Object.values(map),added,updated};
+}
 function save(){
+  stampUpdated();
   localStorage.setItem('foto_v4', JSON.stringify(zlecenia));
   // auto-sync to Drive after 5s idle (tylko gdy lista niepusta)
   if(gdriveToken && zlecenia.length>0){
@@ -2094,22 +2128,21 @@ async function gdriveLoad(){
     if(!driveZ.length){showDriveToast('Brak zleceń w pliku Drive.');return;}
     markDeleted(data.deleted||[]);
     const delSet=new Set(deletedIds);
-    const localIds=new Set(zlecenia.map(z=>z.id));
-    const newOnes=driveZ.filter(z=>!localIds.has(z.id)&&!delSet.has(z.id));
-    const overlap=driveZ.length-newOnes.length;
+    const localClean=zlecenia.filter(z=>!delSet.has(z.id));
+    const {list,added,updated}=mergeByNewest(localClean,driveZ,delSet);
     const exportDate=data.exported?new Date(data.exported).toLocaleString('pl'):'nieznana data';
-    const msg=`Drive: ${driveZ.length} zleceń (${exportDate})\nLokalnie: ${zlecenia.length} zleceń\n\nNowe do dodania: ${newOnes.length}\nJuż istniejące lokalnie: ${overlap}\n\nOK = Scal (dodaj tylko nowe, zachowaj lokalne)\nAnuluj = Zastąp wszystkie dane z Drive`;
+    const msg=`Drive: ${driveZ.length} zleceń (${exportDate})\nLokalnie: ${zlecenia.length} zleceń\n\nNowe do dodania: ${added}\nDo zaktualizowania: ${updated}\n\nOK = Scal (najnowsza wersja wygrywa)\nAnuluj = Zastąp wszystko danymi z Drive`;
     const doMerge=confirm(msg);
     if(doMerge){
-      if(!newOnes.length){showDriveToast('Brak nowych zleceń na Drive.');return;}
-      zlecenia=[...zlecenia,...newOnes];
+      if(!added&&!updated){showDriveToast('Wszystko już aktualne.');return;}
+      zlecenia=list;syncSignatures();
     } else {
       if(!confirm(`Zastąpić ${zlecenia.length} lokalnych zleceń → ${driveZ.length} z Drive?\nTej operacji nie można cofnąć.`))return;
-      zlecenia=driveZ;if(data.cols)cols=data.cols;saveCols();
+      zlecenia=driveZ;syncSignatures();if(data.cols)cols=data.cols;saveCols();
       deletedIds=deletedIds.filter(id=>!driveZ.some(z=>z.id===id));localStorage.setItem('foto_deleted',JSON.stringify(deletedIds));
     }
     save();renderAll();
-    showDriveToast(doMerge?`☁ Scalono! Dodano ${newOnes.length} nowych zleceń.`:`☁ Wczytano z Drive! (${zlecenia.length} zleceń)`);
+    showDriveToast(doMerge?`☁ Scalono! +${added} nowych, ${updated} zaktualizowanych.`:`☁ Wczytano z Drive! (${zlecenia.length} zleceń)`);
   }catch(e){showDriveToast('Błąd odczytu: '+e.message,true);}
 }
 
@@ -2125,17 +2158,17 @@ async function gdriveAutoSync(){
     const driveZ=data.zlecenia||[];
     markDeleted(data.deleted||[]);
     const delSet=new Set(deletedIds);
-    const localIds=new Set(zlecenia.map(z=>z.id));
-    const newOnes=driveZ.filter(z=>!localIds.has(z.id)&&!delSet.has(z.id));
     const before=zlecenia.length;
-    zlecenia=zlecenia.filter(z=>!delSet.has(z.id));
-    const removed=before-zlecenia.length;
-    if(newOnes.length)zlecenia=[...zlecenia,...newOnes];
+    const localClean=zlecenia.filter(z=>!delSet.has(z.id));
+    const removed=before-localClean.length;
+    const {list,added,updated}=mergeByNewest(localClean,driveZ,delSet);
+    zlecenia=list;
+    syncSignatures();
     localStorage.setItem('foto_v4',JSON.stringify(zlecenia));
     if(data.cols&&!localStorage.getItem('foto_cols')){cols=data.cols;saveCols();}
     renderAll();
     if(zlecenia.length>0)await gdriveSave();
-    if(newOnes.length||removed)showDriveToast(`☁ Zsynchronizowano: ${newOnes.length?'+'+newOnes.length+' z Drive':''}${newOnes.length&&removed?', ':''}${removed?removed+' usuniętych':''}`);
+    if(added||updated||removed)showDriveToast(`☁ Zsynchronizowano:${added?' +'+added+' nowych':''}${updated?' '+updated+' zaktualizowanych':''}${removed?' '+removed+' usuniętych':''}`);
   }catch(e){showDriveToast('Błąd synchronizacji: '+e.message,true);}
 }
 
