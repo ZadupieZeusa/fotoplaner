@@ -657,8 +657,6 @@ const STANDARD_TASKS = [
   {id:'obrobka',     label:'Obróbka'},
   {id:'pendrive',    label:'Pendrive'},
   {id:'fotoksiazka', label:'Fotoksiążka'},
-  {id:'zamowienie',  label:'Zamówienie'},
-  {id:'oddanie',     label:'Oddanie materiału'},
 ];
 const WESELE_TASKS = [
   {id:'selekcja',         label:'Selekcja zdjęć'},
@@ -667,8 +665,6 @@ const WESELE_TASKS = [
   {id:'pendrive',         label:'Pendrive'},
   {id:'fotoksiazka_prem', label:'Fotoksiążka Premium'},
   {id:'fotoksiazka_bas',  label:'Fotoksiążka Basic'},
-  {id:'zamowienie',       label:'Zamówienie'},
-  {id:'oddanie',          label:'Oddanie materiału'},
 ];
 const CAT_TASKS = {
   wesele:   [...WESELE_TASKS],
@@ -714,7 +710,7 @@ const TASK_LABELS = {
   sesja_inny:'Sesja ślubna (w inny dzień)', mini_sesja:'Mini sesja w dniu Komunii',
   fks_basic:'Fotoksiążka BASIC 30x30', fks_pro:'Fotoksiążka PRO 30x30',
   fotoksiazka:'Fotoksiążka 30x30', etui_pro:'Etui PRO na fotoksiążkę',
-  zamowienie:'Zamówienie', kopia:'Zabezpieczona kopia (2 lata)', oddanie:'Oddanie materiału',
+  kopia:'Zabezpieczona kopia (2 lata)',
 };
 const T = ids => ids.map(i=>({id:i,label:TASK_LABELS[i]||i}));
 
@@ -723,75 +719,75 @@ const PACKAGES_DEFAULTS = {
     {id:'w_mini', name:'MINI', price:3600, items:[
       'Reportaż ze ślubu','Reportaż z wesela do 4h','Galeria internetowa - 2 miesiące',
       'Pakiet 250 zdjęć','Pendrive w drewnianym boxie'],
-      tasks:T(['selekcja','obrobka','galeria','pendrive','oddanie'])},
+      tasks:T(['selekcja','obrobka','galeria','pendrive'])},
     {id:'w_silver', name:'SILVER', price:4200, items:[
       'Reportaż z Przygotowań','Reportaż ze Ślubu','Reportaż z Wesela (do 1:00)',
       'Sesja ślubna w dzień ślubu','Galeria internetowa - 2 miesiące','Pakiet 500 zdjęć',
       'Pendrive w drewnianym boxie'],
-      tasks:T(['selekcja','obrobka','sesja_dzien','galeria','pendrive','oddanie'])},
+      tasks:T(['selekcja','obrobka','sesja_dzien','galeria','pendrive'])},
     {id:'w_gold', name:'GOLD', price:4400, items:[
       'Reportaż z Przygotowań','Reportaż ze Ślubu','Reportaż z Wesela (do 1:00)',
       'Sesja ślubna w inny dzień','Galeria internetowa - 6 miesięcy','Pakiet 600 zdjęć',
       'Pendrive w drewnianym boxie','Fotoksiążka BASIC 30x30cm - 28 str'],
-      tasks:T(['selekcja','obrobka','sesja_inny','galeria','pendrive','fks_basic','zamowienie','oddanie'])},
+      tasks:T(['selekcja','obrobka','sesja_inny','galeria','pendrive','fks_basic'])},
     {id:'w_platinum', name:'PLATINUM', price:4700, items:[
       'Reportaż z Przygotowań','Reportaż ze Ślubu','Reportaż z Wesela (do 1:00)',
       'Sesja ślubna w inny dzień','Galeria internetowa - 6 miesięcy','Pakiet 700 zdjęć',
       'Pendrive w drewnianym boxie','Fotoksiążka PRO 30x30cm - 28 str.',
       'Etui PRO na Fotoksiążkę 30x30cm'],
-      tasks:T(['selekcja','obrobka','sesja_inny','galeria','pendrive','fks_pro','etui_pro','zamowienie','oddanie'])},
+      tasks:T(['selekcja','obrobka','sesja_inny','galeria','pendrive','fks_pro','etui_pro'])},
   ],
   chrzest: [
     {id:'ch_silver', name:'SILVER', price:800, items:[
       'Reportaż z Mszy','Reportaż z Przyjęcia - 2h','Galeria internetowa - 1 miesiąc','Pakiet 100 zdjęć'],
-      tasks:T(['selekcja','obrobka','galeria','oddanie'])},
+      tasks:T(['selekcja','obrobka','galeria'])},
     {id:'ch_gold', name:'GOLD', price:900, items:[
       'Reportaż z Mszy','Reportaż z Przyjęcia - 2h','Pendrive z materiałem',
       'Galeria internetowa - 2 miesiące','Pakiet 130 zdjęć'],
-      tasks:T(['selekcja','obrobka','galeria','pendrive','oddanie'])},
+      tasks:T(['selekcja','obrobka','galeria','pendrive'])},
     {id:'ch_platinum', name:'PLATINUM', price:1100, items:[
       'Reportaż z Przygotowań - ok. 1h','Reportaż z Mszy','Reportaż z Przyjęcia - 2h',
       'Pendrive z materiałem','Galeria internetowa - 2 miesiące','Pakiet min. 150 zdjęć',
       'Fotoksiążka 30x30cm 28 str.'],
-      tasks:T(['selekcja','obrobka','galeria','pendrive','fotoksiazka','zamowienie','oddanie'])},
+      tasks:T(['selekcja','obrobka','galeria','pendrive','fotoksiazka'])},
   ],
   komunia: [
     {id:'k_silver', name:'SILVER', price:800, items:[
       'Reportaż z Przyjęcia na sali 2h','Pendrive z materiałem',
       'Galeria internetowa - 2 miesiące','Pakiet 100 zdjęć'],
-      tasks:T(['selekcja','obrobka','galeria','pendrive','oddanie'])},
+      tasks:T(['selekcja','obrobka','galeria','pendrive'])},
     {id:'k_gold', name:'GOLD', price:1000, items:[
       'Reportaż z Przyjęcia na sali 2h','Mini Sesja w dniu Komunii','Pendrive z materiałem',
       'Galeria internetowa - 2 miesiące','Pakiet 150 zdjęć','Fotoksiążka 30x30cm 28 str.'],
-      tasks:T(['selekcja','obrobka','mini_sesja','galeria','pendrive','fotoksiazka','zamowienie','oddanie'])},
+      tasks:T(['selekcja','obrobka','mini_sesja','galeria','pendrive','fotoksiazka'])},
     {id:'k_platinum', name:'PLATINUM', price:1200, items:[
       'Reportaż z Mszy','Reportaż z Przyjęcia na sali 2h','Mini Sesja w dniu Komunii',
       'Pendrive z materiałem','Galeria internetowa - 2 miesiące','Pakiet min. 150 zdjęć',
       'Fotoksiążka 30x30cm 28 str.'],
-      tasks:T(['selekcja','obrobka','mini_sesja','galeria','pendrive','fotoksiazka','zamowienie','oddanie'])},
+      tasks:T(['selekcja','obrobka','mini_sesja','galeria','pendrive','fotoksiazka'])},
   ],
   roczek: [
     {id:'r_gold', name:'GOLD', price:800, items:[
       'Reportaż z Przyjęcia - 2,5-3h','Galeria internetowa - 1 miesiąc','Pakiet min. 80 zdjęć'],
-      tasks:T(['selekcja','obrobka','galeria','oddanie'])},
+      tasks:T(['selekcja','obrobka','galeria'])},
     {id:'r_platinum', name:'PLATINUM', price:900, items:[
       'Reportaż z Przyjęcia - 2,5-3h','Pendrive z materiałem','Galeria internetowa - 2 miesiące',
       'Pakiet min. 80 zdjęć','Fotoksiążka 30x30cm 28 str.'],
-      tasks:T(['selekcja','obrobka','galeria','pendrive','fotoksiazka','zamowienie','oddanie'])},
+      tasks:T(['selekcja','obrobka','galeria','pendrive','fotoksiazka'])},
   ],
   urodziny: [],
   inne: [
     {id:'e_mini', name:'MINI (Event)', price:1100, items:[
       'Reportaż z Przyjęcia do 3h','Galeria internetowa - 1 miesiąc','Pakiet 150 zdjęć'],
-      tasks:T(['selekcja','obrobka','galeria','oddanie'])},
+      tasks:T(['selekcja','obrobka','galeria'])},
     {id:'e_silver', name:'SILVER (Event)', price:1300, items:[
       'Reportaż z Przyjęcia do 5h','Pendrive z materiałem','Galeria internetowa - 2 miesiące',
       'Pakiet 300 zdjęć'],
-      tasks:T(['selekcja','obrobka','galeria','pendrive','oddanie'])},
+      tasks:T(['selekcja','obrobka','galeria','pendrive'])},
     {id:'e_gold', name:'GOLD (Event)', price:1500, items:[
       'Reportaż z Przyjęcia do 5h','Pendrive z materiałem','Galeria internetowa - 2 miesiące',
       'Pakiet 300 zdjęć','Fotoksiążka 30x30cm 28 str','Zabezpieczona kopia materiału - 2 lata'],
-      tasks:T(['selekcja','obrobka','galeria','pendrive','fotoksiazka','zamowienie','kopia','oddanie'])},
+      tasks:T(['selekcja','obrobka','galeria','pendrive','fotoksiazka','kopia'])},
   ],
   sesja: [],
 };
@@ -1649,11 +1645,7 @@ function toggleTeledysk(){
   selTeledysk=!selTeledysk;
   // zadanie „Teledysk" pojawia się/znika razem z dodatkiem (jeśli nieodhaczone)
   if(selTeledysk){
-    if(!formTasks.some(t=>t.id==='teledysk')){
-      const i=formTasks.findIndex(t=>t.id==='oddanie');
-      const task={id:'teledysk',label:'Teledysk'};
-      i>=0?formTasks.splice(i,0,{...task,done:false}):formTasks.push({...task,done:false});
-    }
+    if(!formTasks.some(t=>t.id==='teledysk'))formTasks.push({id:'teledysk',label:'Teledysk',done:false});
   } else {
     const t=formTasks.find(x=>x.id==='teledysk');
     if(t&&!t.done)formTasks=formTasks.filter(x=>x.id!=='teledysk');
@@ -2152,7 +2144,7 @@ function readPkgEditor(){
 function addPackageToDraft(){
   readPkgEditor();
   if(!pkgDraft[pkgTab])pkgDraft[pkgTab]=[];
-  pkgDraft[pkgTab].push({id:'p_'+uid(),name:'Nowy pakiet',price:null,items:[],tasks:T(['selekcja','obrobka','oddanie'])});
+  pkgDraft[pkgTab].push({id:'p_'+uid(),name:'Nowy pakiet',price:null,items:[],tasks:T(['selekcja','obrobka'])});
   renderPkgCatTabs();renderPkgEditor();
 }
 
