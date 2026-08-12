@@ -633,6 +633,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 // ══ CONSTANTS ══════════════════════════════════════════════════════════════
 const CATS = {
   wesele:   {label:'Wesele',   icon:'💒',color:'#e84393',dim:'#e8439325'},
+  roczek:   {label:'Roczek',   icon:'🎈',color:'#fbbf24',dim:'#fbbf2425'},
   urodziny: {label:'Urodziny', icon:'🎂',color:'#ff7a2f',dim:'#ff7a2f25'},
   chrzest:  {label:'Chrzest',  icon:'👶',color:'#38bdf8',dim:'#38bdf825'},
   komunia:  {label:'Komunia',  icon:'✝️',color:'#a78bfa',dim:'#a78bfa25'},
@@ -661,6 +662,7 @@ const WESELE_TASKS = [
 ];
 const CAT_TASKS = {
   wesele:   [...WESELE_TASKS],
+  roczek:   [...STANDARD_TASKS],
   urodziny: [...STANDARD_TASKS],
   chrzest:  [...STANDARD_TASKS],
   komunia:  [...STANDARD_TASKS],
@@ -671,6 +673,7 @@ const DEFAULT_TASKS = STANDARD_TASKS;
 
 const CAT_ADDR = {
   wesele:   [{id:'kosciol',label:'Adres kościoła'},{id:'pan',label:'Adres Pana Młodego'},{id:'pani',label:'Adres Pani Młodej'},{id:'sala',label:'Adres sali weselnej'}],
+  roczek:   [{id:'sala',label:'Adres sali'}],
   urodziny: [{id:'sala',label:'Adres sali'}],
   chrzest:  [{id:'kosciol',label:'Adres kościoła'},{id:'sala',label:'Adres sali'}],
   komunia:  [{id:'kosciol',label:'Adres kościoła'},{id:'sala',label:'Adres sali'}],
@@ -681,6 +684,7 @@ const CAT_ADDR = {
 // Domyślne czasy obróbki (dni od daty zlecenia) — ładowane z localStorage
 const EDIT_DAYS_DEFAULTS = {
   wesele:   90,
+  roczek:   30,
   urodziny: 60,
   chrzest:  21,
   komunia:  21,
@@ -756,15 +760,16 @@ const PACKAGES_DEFAULTS = {
       'Fotoksiążka 30x30cm 28 str.'],
       tasks:T(['selekcja','obrobka','mini_sesja','galeria','pendrive','fotoksiazka','zamowienie','oddanie'])},
   ],
-  urodziny: [
-    {id:'r_gold', name:'GOLD (Roczek)', price:800, items:[
+  roczek: [
+    {id:'r_gold', name:'GOLD', price:800, items:[
       'Reportaż z Przyjęcia - 2,5-3h','Galeria internetowa - 1 miesiąc','Pakiet min. 80 zdjęć'],
       tasks:T(['selekcja','obrobka','galeria','oddanie'])},
-    {id:'r_platinum', name:'PLATINUM (Roczek)', price:900, items:[
+    {id:'r_platinum', name:'PLATINUM', price:900, items:[
       'Reportaż z Przyjęcia - 2,5-3h','Pendrive z materiałem','Galeria internetowa - 2 miesiące',
       'Pakiet min. 80 zdjęć','Fotoksiążka 30x30cm 28 str.'],
       tasks:T(['selekcja','obrobka','galeria','pendrive','fotoksiazka','zamowienie','oddanie'])},
   ],
+  urodziny: [],
   inne: [
     {id:'e_mini', name:'MINI (Event)', price:1100, items:[
       'Reportaż z Przyjęcia do 3h','Galeria internetowa - 1 miesiąc','Pakiet 150 zdjęć'],
@@ -2006,7 +2011,7 @@ function closeDetail(){document.getElementById('modal-detail').classList.remove(
 function openSettings(){
   const container=document.getElementById('settings-edit-days');
   container.innerHTML='';
-  const labels={wesele:'💒 Wesele',urodziny:'🎂 Urodziny',chrzest:'👶 Chrzest',komunia:'✝️ Komunia',sesja:'📸 Sesja',inne:'📷 Inne'};
+  const labels={};Object.entries(CATS).forEach(([k,v])=>labels[k]=v.icon+' '+v.label);
   Object.keys(labels).forEach(key=>{
     container.innerHTML+=`<label style="display:flex;flex-direction:column;gap:4px;font-size:13px"><span style="opacity:.8">${labels[key]}</span><div style="display:flex;align-items:center;gap:6px"><input type="number" id="sett-${key}" value="${EDIT_DAYS[key]||30}" min="1" max="365" style="width:70px;padding:6px 8px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:14px;text-align:center"><span style="opacity:.5;font-size:12px">dni</span></div></label>`;
   });
@@ -2017,8 +2022,9 @@ function openSettings(){
 }
 function closeSettings(){document.getElementById('modal-settings').classList.remove('open');}
 function saveSettings(){
-  ['wesele','urodziny','chrzest','komunia','sesja','inne'].forEach(key=>{
-    const v=parseInt(document.getElementById('sett-'+key).value,10);
+  Object.keys(CATS).forEach(key=>{
+    const el=document.getElementById('sett-'+key);if(!el)return;
+    const v=parseInt(el.value,10);
     if(v>0)EDIT_DAYS[key]=v;
   });
   localStorage.setItem('foto_edit_days',JSON.stringify(EDIT_DAYS));
