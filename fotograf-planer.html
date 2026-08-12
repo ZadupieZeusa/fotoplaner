@@ -714,6 +714,21 @@ const TASK_LABELS = {
 };
 const T = ids => ids.map(i=>({id:i,label:TASK_LABELS[i]||i}));
 
+// Oferta „Eventy okolicznościowe" — obsługuje Urodziny oraz kategorię Inne
+const EVENT_PACKAGES = pfx => [
+  {id:pfx+'_mini', name:'MINI', price:1100, items:[
+    'Reportaż z Przyjęcia do 3h','Galeria internetowa - 1 miesiąc','Pakiet 150 zdjęć'],
+    tasks:T(['selekcja','obrobka','galeria'])},
+  {id:pfx+'_silver', name:'SILVER', price:1300, items:[
+    'Reportaż z Przyjęcia do 5h','Pendrive z materiałem','Galeria internetowa - 2 miesiące',
+    'Pakiet 300 zdjęć'],
+    tasks:T(['selekcja','obrobka','galeria','pendrive'])},
+  {id:pfx+'_gold', name:'GOLD', price:1500, items:[
+    'Reportaż z Przyjęcia do 5h','Pendrive z materiałem','Galeria internetowa - 2 miesiące',
+    'Pakiet 300 zdjęć','Fotoksiążka 30x30cm 28 str','Zabezpieczona kopia materiału - 2 lata'],
+    tasks:T(['selekcja','obrobka','galeria','pendrive','fotoksiazka','kopia'])},
+];
+
 const PACKAGES_DEFAULTS = {
   wesele: [
     {id:'w_mini', name:'MINI', price:3600, items:[
@@ -775,25 +790,13 @@ const PACKAGES_DEFAULTS = {
       'Pakiet min. 80 zdjęć','Fotoksiążka 30x30cm 28 str.'],
       tasks:T(['selekcja','obrobka','galeria','pendrive','fotoksiazka'])},
   ],
-  urodziny: [],
-  inne: [
-    {id:'e_mini', name:'MINI (Event)', price:1100, items:[
-      'Reportaż z Przyjęcia do 3h','Galeria internetowa - 1 miesiąc','Pakiet 150 zdjęć'],
-      tasks:T(['selekcja','obrobka','galeria'])},
-    {id:'e_silver', name:'SILVER (Event)', price:1300, items:[
-      'Reportaż z Przyjęcia do 5h','Pendrive z materiałem','Galeria internetowa - 2 miesiące',
-      'Pakiet 300 zdjęć'],
-      tasks:T(['selekcja','obrobka','galeria','pendrive'])},
-    {id:'e_gold', name:'GOLD (Event)', price:1500, items:[
-      'Reportaż z Przyjęcia do 5h','Pendrive z materiałem','Galeria internetowa - 2 miesiące',
-      'Pakiet 300 zdjęć','Fotoksiążka 30x30cm 28 str','Zabezpieczona kopia materiału - 2 lata'],
-      tasks:T(['selekcja','obrobka','galeria','pendrive','fotoksiazka','kopia'])},
-  ],
+  urodziny: EVENT_PACKAGES('u'),
+  inne:     EVENT_PACKAGES('e'),
   sesja: [],
 };
 
 // ── Dodatki płatne (kategoria → sugerowana cena z oferty) ──
-const ADDON_TELEDYSK = {wesele:1500, inne:600};
+const ADDON_TELEDYSK = {wesele:1500, urodziny:600, inne:600};
 function hasTeledysk(cat){return ADDON_TELEDYSK[cat]!==undefined;}
 // Kwota całkowita zlecenia = pakiet + dodatki
 function zTotal(z){return (Number(z.price)||0)+(z.teledysk?(Number(z.teledyskPrice)||0):0);}
@@ -812,6 +815,11 @@ let PACKAGES = (()=>{
 function savePackages(){localStorage.setItem('foto_packages',JSON.stringify(PACKAGES));}
 function getPackages(cat){return PACKAGES[cat]||[];}
 function findPackage(cat,pkgId){return getPackages(cat).find(p=>p.id===pkgId)||null;}
+// szukaj pakietu też poza własną kategorią (stare karty, roczek zapisany jako urodziny itp.)
+function findPackageAnywhere(pkgId){
+  for(const c of Object.keys(PACKAGES)){const p=findPackage(c,pkgId);if(p)return {cat:c,pkg:p};}
+  return null;
+}
 // Tekst pakietu zapisywany w zleceniu: 1. linia = nazwa, kolejne = "- pozycja"
 function packageToText(p){return p?[p.name,...(p.items||[]).map(i=>'- '+i)].join('\n'):'';}
 
