@@ -568,12 +568,22 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <div class="form-row">
       <div class="form-group">
         <label class="form-label">Wynagrodzenie (PLN)</label>
-        <input class="form-input" id="f-price" type="number" placeholder="0" min="0" />
+        <input class="form-input" id="f-price" type="number" placeholder="0" min="0" oninput="updateTotalNote()" />
       </div>
       <div class="form-group">
         <label class="form-label">Zadatek wpłacony (PLN)</label>
         <input class="form-input" id="f-deposit" type="number" placeholder="0" min="0" />
       </div>
+    </div>
+    <div class="form-group" id="addon-group" style="display:none">
+      <label class="form-label">Dodatki</label>
+      <div style="display:flex;gap:8px;align-items:center;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 10px">
+        <div class="chk" id="f-teledysk-chk" onclick="toggleTeledysk()"></div>
+        <div style="flex:1;font-size:13px;cursor:pointer" onclick="toggleTeledysk()">🎬 Teledysk</div>
+        <input class="form-input" id="f-teledysk-price" type="number" min="0" placeholder="kwota" style="width:110px;font-size:13px;padding:6px 8px" oninput="updateTotalNote()" />
+        <span style="font-size:11px;color:var(--text3)">zł</span>
+      </div>
+      <div id="total-note" style="font-size:11px;color:var(--text3);margin-top:5px"></div>
     </div>
     <div id="cat-addr-fields"></div>
     <div class="form-group">
@@ -785,6 +795,12 @@ const PACKAGES_DEFAULTS = {
   ],
   sesja: [],
 };
+
+// ── Dodatki płatne (kategoria → sugerowana cena z oferty) ──
+const ADDON_TELEDYSK = {wesele:1500, inne:600};
+function hasTeledysk(cat){return ADDON_TELEDYSK[cat]!==undefined;}
+// Kwota całkowita zlecenia = pakiet + dodatki
+function zTotal(z){return (Number(z.price)||0)+(z.teledysk?(Number(z.teledyskPrice)||0):0);}
 
 function clonePackages(src){return JSON.parse(JSON.stringify(src));}
 let PACKAGES = (()=>{
@@ -1175,8 +1191,8 @@ function makeCard(z){
 
   // Finance badge (#2)
   let finHtml='';
-  if(z.price){
-    const price=Number(z.price),dep=Number(z.deposit)||0,rem=price-dep;
+  if(zTotal(z)){
+    const price=zTotal(z),dep=Number(z.deposit)||0,rem=price-dep;
     if(z.paid) finHtml=`<div class="card-finance">✓ Opłacone ${price.toLocaleString('pl')} zł</div>`;
     else if(dep>0&&rem>0) finHtml=`<div class="card-finance partial">💳 Pozostało: ${rem.toLocaleString('pl')} zł</div>`;
     else if(dep>0&&rem<=0) finHtml=`<div class="card-finance">✓ Opłacone ${price.toLocaleString('pl')} zł</div>`;
@@ -1436,9 +1452,9 @@ function renderDashboard(){
   chartInstances=[];
 
   const yearZ=zlecenia.filter(z=>z.date&&z.date.startsWith(dashYear+''));
-  const totalIncome=yearZ.reduce((s,z)=>s+(Number(z.price)||0),0);
+  const totalIncome=yearZ.reduce((s,z)=>s+zTotal(z),0);
   const totalDeposits=yearZ.reduce((s,z)=>s+(Number(z.deposit)||0),0);
-  const totalRemaining=yearZ.reduce((s,z)=>s+Math.max(0,(Number(z.price)||0)-(Number(z.deposit)||0)),0);
+  const totalRemaining=yearZ.reduce((s,z)=>s+Math.max(0,zTotal(z)-(Number(z.deposit)||0)),0);
   const editedZ=yearZ.filter(z=>z.editingFinished&&z.date);
   const avgEdit=editedZ.length?Math.round(editedZ.reduce((s,z)=>{const days=(new Date(z.editingFinished)-new Date(z.date))/(1000*60*60*24);return s+days;},0)/editedZ.length):null;
 
@@ -1510,7 +1526,7 @@ function renderDashboard(){
 
     // Monthly income bar
     const incomeData=Array(12).fill(0);
-    yearZ.forEach(z=>{if(z.price){const mi=Number(z.date.slice(5,7))-1;incomeData[mi]+=Number(z.price);}});
+    yearZ.forEach(z=>{if(zTotal(z)){const mi=Number(z.date.slice(5,7))-1;incomeData[mi]+=zTotal(z);}});
     const ctx3=document.getElementById('chart-income');
     if(ctx3){
       chartInstances.push(new Chart(ctx3,{
@@ -1550,7 +1566,7 @@ let tasksDirty=false;            // true jeśli użytkownik ręcznie zmienił za
 function tasksFromTemplate(tpl){return (tpl||DEFAULT_TASKS).map(t=>({id:t.id,label:t.label,done:false}));}
 
 function openAddModal(defaultStatus){
-  editingId=null;selCat=null;selPkg=null;tasksDirty=false;
+  editingId=null;selCat=null;selPkg=null;tasksDirty=false;selTeledysk=false;
   selStatus=defaultStatus!==undefined&&defaultStatus!==null?defaultStatus:'';
   formTasks=tasksFromTemplate(CAT_TASKS.sesja);
   document.getElementById('modal-add-title').textContent='Nowe zlecenie';
@@ -1563,8 +1579,9 @@ function openAddModal(defaultStatus){
   document.getElementById('f-deposit').value='';
   document.getElementById('f-pakiet').value='';
   document.getElementById('f-notes').value='';
+  document.getElementById('f-teledysk-price').value='';
   document.getElementById('btn-del').style.display='none';
-  renderCatPicker();renderPkgPicker();renderStatusPicker();renderTaskForm();renderCatAddrFields();
+  renderCatPicker();renderPkgPicker();renderStatusPicker();renderTaskForm();renderCatAddrFields();renderAddons();
   document.getElementById('modal-add').classList.add('open');
 }
 
@@ -1572,7 +1589,7 @@ function openEditModal(id){
   closeDetail();
   const z=zlecenia.find(x=>x.id===id);if(!z)return;
   editingId=id;selCat=z.cat;selStatus=z.status!==undefined&&z.status!==null?z.status:'';tasksDirty=true;
-  selPkg=z.pakietId||null;
+  selPkg=z.pakietId||null;selTeledysk=!!z.teledysk;
   formTasks=(z.tasks&&z.tasks.length?z.tasks:tasksFromTemplate(CAT_TASKS[z.cat])).map(t=>({id:t.id,label:t.label,done:!!t.done}));
   document.getElementById('modal-add-title').textContent='Edytuj zlecenie';
   document.getElementById('f-name').value=z.name;
@@ -1584,8 +1601,9 @@ function openEditModal(id){
   document.getElementById('f-deposit').value=z.deposit||'';
   document.getElementById('f-pakiet').value=z.pakiet||'';
   document.getElementById('f-notes').value=z.notes||'';
+  document.getElementById('f-teledysk-price').value=z.teledyskPrice||'';
   document.getElementById('btn-del').style.display='';
-  renderCatPicker();renderPkgPicker();renderStatusPicker();renderTaskForm();renderCatAddrFields(z.adresy||{});
+  renderCatPicker();renderPkgPicker();renderStatusPicker();renderTaskForm();renderCatAddrFields(z.adresy||{});renderAddons();
   document.getElementById('modal-add').classList.add('open');
 }
 
@@ -1608,7 +1626,46 @@ function selectCat(cat){
     formTasks=tasksFromTemplate(CAT_TASKS[cat]);
     document.getElementById('tasks-auto-note').textContent='— auto-zadania dla: '+CATS[cat].label;
   }
-  renderCatPicker();renderPkgPicker();renderTaskForm();renderCatAddrFields();
+  if(changed&&!hasTeledysk(cat))selTeledysk=false;
+  renderCatPicker();renderPkgPicker();renderTaskForm();renderCatAddrFields();renderAddons();
+}
+
+// ── Dodatek: Teledysk ──
+let selTeledysk=false;
+
+function renderAddons(){
+  const g=document.getElementById('addon-group');if(!g)return;
+  if(!hasTeledysk(selCat)){g.style.display='none';updateTotalNote();return;}
+  g.style.display='';
+  document.getElementById('f-teledysk-chk').classList.toggle('on',selTeledysk);
+  const inp=document.getElementById('f-teledysk-price');
+  inp.disabled=!selTeledysk;
+  inp.style.opacity=selTeledysk?'1':'.4';
+  inp.placeholder=selTeledysk?('np. '+ADDON_TELEDYSK[selCat]):'kwota';
+  updateTotalNote();
+}
+
+function toggleTeledysk(){
+  selTeledysk=!selTeledysk;
+  // zadanie „Teledysk" pojawia się/znika razem z dodatkiem (jeśli nieodhaczone)
+  if(selTeledysk){
+    if(!formTasks.some(t=>t.id==='teledysk')){
+      const i=formTasks.findIndex(t=>t.id==='oddanie');
+      const task={id:'teledysk',label:'Teledysk'};
+      i>=0?formTasks.splice(i,0,{...task,done:false}):formTasks.push({...task,done:false});
+    }
+  } else {
+    const t=formTasks.find(x=>x.id==='teledysk');
+    if(t&&!t.done)formTasks=formTasks.filter(x=>x.id!=='teledysk');
+  }
+  renderAddons();renderTaskForm();
+}
+
+function updateTotalNote(){
+  const el=document.getElementById('total-note');if(!el)return;
+  const p=Number(document.getElementById('f-price').value)||0;
+  const t=selTeledysk?(Number(document.getElementById('f-teledysk-price').value)||0):0;
+  el.textContent=t?`Razem: ${p.toLocaleString('pl')} zł (pakiet) + ${t.toLocaleString('pl')} zł (teledysk) = ${(p+t).toLocaleString('pl')} zł`:'';
 }
 
 // ── Wybór pakietu (#pakiety) ──
@@ -1722,6 +1779,8 @@ function saveZlecenie(){
     deposit:Number(document.getElementById('f-deposit').value)||null,
     pakiet:document.getElementById('f-pakiet').value.trim(),
     pakietId:selPkg||null,
+    teledysk:hasTeledysk(cat)&&selTeledysk,
+    teledyskPrice:(hasTeledysk(cat)&&selTeledysk)?(Number(document.getElementById('f-teledysk-price').value)||null):null,
     adresy:readCatAddrFields(),
     notes:document.getElementById('f-notes').value.trim(),tasks
   };
@@ -1790,7 +1849,10 @@ function renderDetailModal(id){
     <div class="detail-meta">
       ${z.date?`📅 ${formatDate(z.date)}<br>`:''}
       ${dlText?`${dlText}<br>`:''}
-      ${z.price?(()=>{const p=Number(z.price),d=Number(z.deposit)||0,r=p-d;if(z.paid)return `💰 ${p.toLocaleString('pl')} zł · <b style="color:#4ade80">✓ Opłacone</b><br>`;return `💰 ${p.toLocaleString('pl')} zł${d?` · Zadatek: <b style="color:var(--sesja)">${d.toLocaleString('pl')} zł</b> · Pozostało: <b style="color:${r>0?'var(--warn)':'#4ade80'}">${r.toLocaleString('pl')} zł</b>`:' · <span style="color:var(--warn);font-size:11px">brak zadatku</span>'}<br>`;})():''}
+      ${zTotal(z)?(()=>{const p=zTotal(z),d=Number(z.deposit)||0,r=p-d;
+        const brk=z.teledysk&&z.teledyskPrice?`<div style="font-size:11px;color:var(--text3);margin-top:1px">↳ pakiet ${(Number(z.price)||0).toLocaleString('pl')} zł + 🎬 teledysk ${Number(z.teledyskPrice).toLocaleString('pl')} zł</div>`:'';
+        if(z.paid)return `💰 ${p.toLocaleString('pl')} zł · <b style="color:#4ade80">✓ Opłacone</b>${brk}`;
+        return `💰 ${p.toLocaleString('pl')} zł${d?` · Zadatek: <b style="color:var(--sesja)">${d.toLocaleString('pl')} zł</b> · Pozostało: <b style="color:${r>0?'var(--warn)':'#4ade80'}">${r.toLocaleString('pl')} zł</b>`:' · <span style="color:var(--warn);font-size:11px">brak zadatku</span>'}${brk}`;})():''}
     </div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
       <button class="card-paid-btn ${z.paid?'paid':''}" style="flex:1;margin-top:0" onclick="togglePaidDetail('${id}')">${z.paid?'✓ Zapłacone':'○ Oznacz jako zapłacone'}</button>
@@ -2502,7 +2564,7 @@ function gcalEventBody(z){
   const desc=[
     z.secondShooter?`2. fotograf: ${z.secondShooter}`:'',
     z.location?`Lokalizacja: ${z.location}`:'',
-    z.price?`Wynagrodzenie: ${Number(z.price).toLocaleString('pl')} zł`:'',
+    zTotal(z)?`Wynagrodzenie: ${zTotal(z).toLocaleString('pl')} zł`+(z.teledysk&&z.teledyskPrice?` (pakiet ${(Number(z.price)||0).toLocaleString('pl')} + teledysk ${Number(z.teledyskPrice).toLocaleString('pl')})`:''):'',
     z.deposit?`Zadatek: ${Number(z.deposit).toLocaleString('pl')} zł`:'',
     z.notes?`Notatki: ${z.notes}`:'',
     z.deliveryDeadline?`Termin oddania: ${z.deliveryDeadline}${z.deliveryTime?' o '+z.deliveryTime:''}`:'',
