@@ -822,6 +822,18 @@ function findPackageAnywhere(pkgId){
 }
 // Tekst pakietu zapisywany w zleceniu: 1. linia = nazwa, kolejne = "- pozycja"
 function packageToText(p){return p?[p.name,...(p.items||[]).map(i=>'- '+i)].join('\n'):'';}
+// Rozbicie zapisanego pakietu na [nazwa, ...pozycje].
+// Nowy format = jedna pozycja na linię. Stary (jednoliniowy) rozbijamy po " - ",
+// ale tylko wtedy — inaczej myślniki wewnątrz pozycji ("Galeria - 6 miesięcy") łamałyby tekst.
+function packageLines(txt){
+  const t=(txt||'').trim();
+  if(!t)return [];
+  // W starym zapisie jednoliniowym dzielimy tylko tam, gdzie po myślniku zaczyna się
+  // nowa pozycja (wielka litera). Dzięki temu „... 30x30cm - 28 str" czy
+  // „Galeria internetowa - 6 miesięcy" zostają w całości.
+  const raw = t.includes('\n') ? t.split('\n') : t.split(/\s+[-–]\s+(?=[A-ZĄĆĘŁŃÓŚŹŻ])/);
+  return raw.map(s=>s.replace(/^\s*[-–•]\s*/,'').trim()).filter(Boolean);
+}
 
 const WEDDING_SCHEDULE_TEMPLATE = [
   {id:'s1',time:'09:00',activity:'Sesja przygotowań Panny Młodej'},
@@ -847,6 +859,23 @@ const DEFAULT_COLS = [
 ];
 
 let zlecenia = [], cols = [];
+
+// Migracja: stare pakiety zapisane w jednej linii („Platinum - Pakiet 700zdj - ...")
+// przepisujemy na format „1 pozycja = 1 linia". Idempotentna — rekordy z \n są pomijane,
+// więc bezpiecznie przechodzi też po danych wciągniętych z Drive.
+function migratePackageFormat(){
+  let n=0;
+  (zlecenia||[]).forEach(z=>{
+    const t=(z.pakiet||'').trim();
+    if(!t||t.includes('\n'))return;
+    const lines=packageLines(t);
+    if(lines.length<2)return;
+    z.pakiet=[lines[0],...lines.slice(1).map(l=>'- '+l)].join('\n');
+    n++;
+  });
+  if(n){save();console.log('FotoPlaner: przepisano format pakietu w '+n+' zleceniach');}
+  return n;
+}
 
 function loadData() {
   try { cols = JSON.parse(localStorage.getItem('foto_cols')||'null') || DEFAULT_COLS.map(c=>({...c})); } catch(e) { cols=DEFAULT_COLS.map(c=>({...c})); }
@@ -882,6 +911,7 @@ function loadData() {
       save();saveCols();
     }
   }
+  migratePackageFormat();
   // Migration: rename 'Do wysyłki' → 'Zamówione'
   const wysCol=cols.find(c=>c.id==='wysylka');
   if(wysCol&&wysCol.name==='Do wysyłki'){wysCol.name='Zamówione';saveCols();}
@@ -1912,8 +1942,10 @@ function renderDetailPackage(z){
         <button class="btn-sm" onclick="saveDetailPackage('${id}')">✓ Zapisz</button>
       </div>`;
   }
-  const body=z.pakiet
-    ? `📋 ${esc(z.pakiet).replace(/\n/g,'<br>').replace(/ - /g,'<br>- ')}`
+  const lines=packageLines(z.pakiet);
+  const body=lines.length
+    ? `<div style="font-weight:600;color:var(--text);margin-bottom:4px">📋 ${esc(lines[0])}</div>`+
+      lines.slice(1).map(l=>`<div style="display:flex;gap:6px"><span style="color:var(--text3)">–</span><span>${esc(l)}</span></div>`).join('')
     : `<span style="color:var(--text3)">Brak pakietu — kliknij „Edytuj", żeby wybrać z cennika lub wpisać własny.</span>`;
   return `<div class="detail-sec" style="display:flex;align-items:center;justify-content:space-between">
       <span>Pakiet</span>
@@ -2509,6 +2541,7 @@ async function gdriveLoad(){
       zlecenia=driveZ;syncSignatures();if(data.cols)cols=data.cols;saveCols();
       deletedIds=deletedIds.filter(id=>!driveZ.some(z=>z.id===id));localStorage.setItem('foto_deleted',JSON.stringify(deletedIds));
     }
+    migratePackageFormat();
     save();renderAll();
     showDriveToast(doMerge?`☁ Scalono! +${added} nowych, ${updated} zaktualizowanych.`:`☁ Wczytano z Drive! (${zlecenia.length} zleceń)`);
   }catch(e){showDriveToast('Błąd odczytu: '+e.message,true);}
@@ -2531,6 +2564,7 @@ async function gdriveAutoSync(){
     const removed=before-localClean.length;
     const {list,added,updated}=mergeByNewest(localClean,driveZ,delSet);
     zlecenia=list;
+    migratePackageFormat();
     syncSignatures();
     localStorage.setItem('foto_v4',JSON.stringify(zlecenia));
     if(data.cols&&!localStorage.getItem('foto_cols')){cols=data.cols;saveCols();}
