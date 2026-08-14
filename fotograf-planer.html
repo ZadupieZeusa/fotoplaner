@@ -710,7 +710,6 @@ const TASK_LABELS = {
   sesja_inny:'Sesja ślubna (w inny dzień)', mini_sesja:'Mini sesja w dniu Komunii',
   fks_basic:'Fotoksiążka BASIC 30x30', fks_pro:'Fotoksiążka PRO 30x30',
   fotoksiazka:'Fotoksiążka 30x30', etui_pro:'Etui PRO na fotoksiążkę',
-  kopia:'Zabezpieczona kopia (2 lata)',
 };
 const T = ids => ids.map(i=>({id:i,label:TASK_LABELS[i]||i}));
 
@@ -726,7 +725,7 @@ const EVENT_PACKAGES = pfx => [
   {id:pfx+'_gold', name:'GOLD', price:1500, items:[
     'Reportaż z Przyjęcia do 5h','Pendrive z materiałem','Galeria internetowa - 2 miesiące',
     'Pakiet 300 zdjęć','Fotoksiążka 30x30cm 28 str','Zabezpieczona kopia materiału - 2 lata'],
-    tasks:T(['selekcja','obrobka','galeria','pendrive','fotoksiazka','kopia'])},
+    tasks:T(['selekcja','obrobka','galeria','pendrive','fotoksiazka'])},
 ];
 
 const PACKAGES_DEFAULTS = {
@@ -877,6 +876,21 @@ function migratePackageFormat(){
   return n;
 }
 
+// Migracja: usuń z istniejących kart zadania „Zamówienie" i „Oddanie materiału".
+// Te etapy śledzimy kolumnami kanbana (Zamówione / Do odbioru), więc checkbox to dubel.
+const REDUNDANT_TASK_IDS = ['zamowienie','oddanie','kopia'];
+const REDUNDANT_TASK_RE  = /^(zam[oó]wienie|oddanie materia[łl]u|zabezpieczona kopia.*)$/i;
+function migrateDropRedundantTasks(){
+  let n=0;
+  (zlecenia||[]).forEach(z=>{
+    if(!Array.isArray(z.tasks)||!z.tasks.length)return;
+    const keep=z.tasks.filter(t=>!(REDUNDANT_TASK_IDS.includes(t.id)||REDUNDANT_TASK_RE.test((t.label||'').trim())));
+    if(keep.length!==z.tasks.length){z.tasks=keep;n++;}
+  });
+  if(n){save();console.log('FotoPlaner: usunięto zbędne zadania w '+n+' zleceniach');}
+  return n;
+}
+
 function loadData() {
   try { cols = JSON.parse(localStorage.getItem('foto_cols')||'null') || DEFAULT_COLS.map(c=>({...c})); } catch(e) { cols=DEFAULT_COLS.map(c=>({...c})); }
   try { zlecenia = JSON.parse(localStorage.getItem('foto_v4')||'[]'); } catch(e) { zlecenia=[]; }
@@ -911,7 +925,7 @@ function loadData() {
       save();saveCols();
     }
   }
-  migratePackageFormat();
+  migratePackageFormat();migrateDropRedundantTasks();
   // Migration: rename 'Do wysyłki' → 'Zamówione'
   const wysCol=cols.find(c=>c.id==='wysylka');
   if(wysCol&&wysCol.name==='Do wysyłki'){wysCol.name='Zamówione';saveCols();}
@@ -2541,7 +2555,7 @@ async function gdriveLoad(){
       zlecenia=driveZ;syncSignatures();if(data.cols)cols=data.cols;saveCols();
       deletedIds=deletedIds.filter(id=>!driveZ.some(z=>z.id===id));localStorage.setItem('foto_deleted',JSON.stringify(deletedIds));
     }
-    migratePackageFormat();
+    migratePackageFormat();migrateDropRedundantTasks();
     save();renderAll();
     showDriveToast(doMerge?`☁ Scalono! +${added} nowych, ${updated} zaktualizowanych.`:`☁ Wczytano z Drive! (${zlecenia.length} zleceń)`);
   }catch(e){showDriveToast('Błąd odczytu: '+e.message,true);}
@@ -2564,7 +2578,7 @@ async function gdriveAutoSync(){
     const removed=before-localClean.length;
     const {list,added,updated}=mergeByNewest(localClean,driveZ,delSet);
     zlecenia=list;
-    migratePackageFormat();
+    migratePackageFormat();migrateDropRedundantTasks();
     syncSignatures();
     localStorage.setItem('foto_v4',JSON.stringify(zlecenia));
     if(data.cols&&!localStorage.getItem('foto_cols')){cols=data.cols;saveCols();}
