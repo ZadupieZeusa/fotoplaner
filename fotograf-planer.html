@@ -370,11 +370,36 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .sched-add-row{display:flex;gap:6px;margin-top:8px}
 .sched-add-row .form-input{font-size:12px;padding:6px 8px}
 
+/* ── LISTA ZADAŃ (pod kalendarzem) ── */
+.todo-panel{border-top:1px solid var(--border);padding:9px;flex-shrink:0;display:flex;flex-direction:column;gap:7px}
+.todo-head{display:flex;align-items:center;gap:7px}
+.todo-title{font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.6px}
+.todo-count{font-size:11px;color:var(--text3)}
+.todo-add-row{display:flex;gap:6px}
+.todo-input{flex:1;min-width:0;background:var(--surface);border:1px solid var(--border2);color:var(--text);font-size:12px;padding:7px 9px;border-radius:7px;outline:none;font-family:inherit}
+.todo-input:focus{border-color:var(--sesja)}
+.todo-input::placeholder{color:var(--text3)}
+.todo-add-btn{background:var(--sesja);border:none;color:#0d0d0d;font-size:16px;font-weight:800;line-height:1;width:32px;flex-shrink:0;border-radius:7px;cursor:pointer}
+.todo-add-btn:active{opacity:.7}
+.todo-list{display:flex;flex-direction:column;gap:4px;max-height:210px;overflow-y:auto}
+.todo-item{display:flex;align-items:flex-start;gap:8px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:8px 9px;transition:opacity .28s,transform .28s,background .15s}
+.todo-item:hover{background:var(--surface2)}
+.todo-item.leaving{opacity:0;transform:translateX(22px)}
+.todo-box{flex-shrink:0;width:17px;height:17px;margin-top:1px;border:2px solid var(--border2);border-radius:5px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:11px;color:transparent;background:none;padding:0;transition:border-color .15s,background .15s}
+.todo-box:hover{border-color:var(--sesja)}
+.todo-item.leaving .todo-box{background:var(--sesja);border-color:var(--sesja);color:#0d0d0d}
+.todo-text{flex:1;min-width:0;font-size:12.5px;line-height:1.35;color:var(--text);word-break:break-word;cursor:text}
+.todo-item.leaving .todo-text{text-decoration:line-through;color:var(--text2)}
+.todo-del{flex-shrink:0;background:none;border:none;color:var(--text3);font-size:14px;cursor:pointer;padding:0 2px;line-height:1}
+.todo-del:hover{color:var(--danger)}
+.todo-empty{font-size:12px;color:var(--text3);padding:3px 2px}
+
 /* ── MOBILE ── */
 @media(max-width:680px){
   .main-view{flex-direction:column}
   .cal-panel{width:100%;min-width:unset;border-right:none;border-bottom:1px solid var(--border);flex-shrink:0;overflow-y:auto;max-height:60vh}
   .cal-day-strip{max-height:none}
+  .todo-list{max-height:none}
   .kanban-panel{flex:1;min-height:0;display:flex;flex-direction:column}
   .kanban-toolbar{flex-shrink:0}
   .kanban-columns{overflow:auto;-webkit-overflow-scrolling:touch;touch-action:pan-x pan-y;flex-wrap:nowrap;align-items:flex-start}
@@ -431,6 +456,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <div class="drive-menu" id="drive-menu" style="display:none">
       <button class="drive-menu-btn" onclick="gdriveSave();hideDriveMenu()">⬆ Zapisz na Drive</button>
       <button class="drive-menu-btn" onclick="gdriveLoad();hideDriveMenu()">⬇ Wczytaj z Drive</button>
+      <button class="drive-menu-btn" onclick="gcalReconcile(false);hideDriveMenu()">📅 Napraw terminy w kalendarzu</button>
+      <button class="drive-menu-btn" onclick="showSyncStatus();hideDriveMenu()">ℹ Status synchronizacji</button>
       <button class="drive-menu-btn" onclick="gdriveSetup();hideDriveMenu()">⚙ Konfiguruj Client ID</button>
       <hr style="border:none;border-top:1px solid var(--border);margin:3px 0">
       <button class="drive-menu-btn" onclick="gdriveDisconnect();hideDriveMenu()" style="color:var(--danger)">✕ Odłącz konto</button>
@@ -468,6 +495,19 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       </div>
       <div class="cal-list-view" id="cal-list-view" style="display:none"></div>
       <div class="cal-day-strip" id="cal-day-strip"></div>
+      <!-- ── LISTA ZADAŃ ── -->
+      <div class="todo-panel">
+        <div class="todo-head">
+          <div class="todo-title">✅ Do zrobienia</div>
+          <div class="todo-count" id="todo-count"></div>
+        </div>
+        <div class="todo-add-row">
+          <input class="todo-input" id="todo-input" type="text" maxlength="200" placeholder="Nowe zadanie…"
+                 autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();addTodo();}" />
+          <button class="todo-add-btn" onclick="addTodo()" title="Dodaj zadanie">+</button>
+        </div>
+        <div class="todo-list" id="todo-list"></div>
+      </div>
     </div>
     <div class="kanban-panel">
       <div class="kanban-toolbar">
@@ -941,13 +981,26 @@ function loadData() {
 // ── Znaczniki modyfikacji zleceń (scalanie: najnowsza wersja rekordu wygrywa) ──
 let recSigMap={};
 try{recSigMap=JSON.parse(localStorage.getItem('foto_sig')||'{}');}catch(e){recSigMap={};}
-function recSig(z){const o={};for(const k in z){if(k!=='updatedAt')o[k]=z[k];}return JSON.stringify(o);}
+// Zmienił się format sygnatury (stabilna kolejność kluczy) — stare sygnatury
+// są nieporównywalne, więc czyścimy je, żeby nie ostemplować wszystkiego naraz.
+if(localStorage.getItem('foto_sig_v')!=='2'){recSigMap={};localStorage.setItem('foto_sig_v','2');}
+// Stabilna serializacja: kolejność kluczy nie może wpływać na sygnaturę,
+// bo JSON z Drive potrafi mieć inną kolejność pól niż lokalny obiekt.
+function stableStr(v){
+  if(v===null||typeof v!=='object')return JSON.stringify(v);
+  if(Array.isArray(v))return '['+v.map(stableStr).join(',')+']';
+  return '{'+Object.keys(v).sort().map(k=>JSON.stringify(k)+':'+stableStr(v[k])).join(',')+'}';
+}
+function recSig(z){const o={};for(const k in z){if(k!=='updatedAt')o[k]=z[k];}return stableStr(o);}
 function stampUpdated(){
   const ids=new Set();
   zlecenia.forEach(z=>{
     ids.add(z.id);
     const sig=recSig(z);
-    if(recSigMap[z.id]===undefined){if(!z.updatedAt)z.updatedAt=Date.now();}
+    // UWAGA: stary rekord bez updatedAt NIE dostaje Date.now() — inaczej samo
+    // otwarcie aplikacji na drugim urządzeniu czyniło jego kopię "najnowszą"
+    // i kasowało prawdziwą edycję z pierwszego urządzenia.
+    if(recSigMap[z.id]===undefined){if(!z.updatedAt)z.updatedAt=1;}
     else if(recSigMap[z.id]!==sig){z.updatedAt=Date.now();}
     recSigMap[z.id]=sig;
   });
@@ -971,15 +1024,34 @@ function mergeByNewest(localArr,driveArr,delSet){
   });
   return {list:Object.values(map),added,updated};
 }
+// ── Flaga „są niewysłane zmiany" — przeżywa zamknięcie aplikacji ──
+let syncDirty = localStorage.getItem('foto_dirty')==='1';
+function markDirty(){ syncDirty=true; localStorage.setItem('foto_dirty','1'); updateDriveBtn(); }
+function clearDirty(){ syncDirty=false; localStorage.removeItem('foto_dirty'); updateDriveBtn(); }
+function scheduleDriveSave(){
+  if(!gdriveToken)return;              // brak tokenu → flaga dirty wymusi zapis przy starcie
+  clearTimeout(autoSyncTimer);
+  autoSyncTimer=setTimeout(()=>gdriveSave(),2000);
+}
+// Natychmiastowy zapis, gdy aplikacja idzie w tło / jest zamykana.
+// Wcześniej 5-sekundowy timer nie zdążał się wykonać i zmiana zostawała tylko lokalnie.
+function flushSync(){
+  if(!syncDirty)return;
+  clearTimeout(autoSyncTimer);
+  if(gdriveToken && zlecenia.length>0) gdriveSave();
+}
+document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='hidden')flushSync(); });
+window.addEventListener('pagehide',flushSync);
+window.addEventListener('blur',()=>{ if(syncDirty)scheduleDriveSave(); });
+
 function save(){
   stampUpdated();
   localStorage.setItem('foto_v4', JSON.stringify(zlecenia));
-  // auto-sync to Drive after 5s idle (tylko gdy lista niepusta)
-  if(gdriveToken && zlecenia.length>0){
-    clearTimeout(autoSyncTimer);
-    autoSyncTimer=setTimeout(()=>gdriveSave(),5000);
-  }
+  markDirty();
+  if(zlecenia.length>0) scheduleDriveSave();
 }
+// zapis samego stanu lokalnego (bez stemplowania updatedAt), np. po nadaniu gcalEventId
+function persistLocal(){ localStorage.setItem('foto_v4', JSON.stringify(zlecenia)); }
 function saveCols() { localStorage.setItem('foto_cols', JSON.stringify(cols)); }
 function uid()      { return Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
 function esc(s)     { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
@@ -996,10 +1068,102 @@ function daysUntil(dateStr) {
   return Math.floor((d-t)/(1000*60*60*24));
 }
 
+// Data lokalna jako 'YYYY-MM-DD'. new Date().toISOString() zwraca UTC,
+// więc między północą a 2:00 (PL) wskazywało wczorajszy dzień.
+function toISODate(d){
+  const p=n=>String(n).padStart(2,'0');
+  return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate());
+}
+function todayISO(){ return toISODate(new Date()); }
+
 function formatDate(ds) {
   if(!ds) return '';
   const [y,m,d]=ds.split('-');
   return `${Number(d)} ${MONTHS_SHORT[Number(m)-1]} ${y}`;
+}
+
+// ══ LISTA ZADAŃ „DO ZROBIENIA" ═════════════════════════════════════════════
+// Prosta lista codzienna — bez kalendarza, bez terminów. Odhaczone znika.
+let todos=[];
+try{ todos=JSON.parse(localStorage.getItem('foto_todos')||'[]'); }catch(e){ todos=[]; }
+let todosDeleted=[];
+try{ todosDeleted=JSON.parse(localStorage.getItem('foto_todos_del')||'[]'); }catch(e){ todosDeleted=[]; }
+
+function markTodoDeleted(ids){
+  todosDeleted=[...new Set([...todosDeleted,...ids])].slice(-300);
+  localStorage.setItem('foto_todos_del',JSON.stringify(todosDeleted));
+}
+function saveTodos(){
+  localStorage.setItem('foto_todos',JSON.stringify(todos));
+  markDirty();
+  scheduleDriveSave();
+}
+function mergeTodosByNewest(localArr,driveArr,delSet){
+  const map={};
+  (localArr||[]).forEach(t=>{if(!delSet.has(t.id))map[t.id]=t;});
+  let added=0;
+  (driveArr||[]).forEach(t=>{
+    if(!t||!t.id||delSet.has(t.id))return;
+    const cur=map[t.id];
+    if(!cur){map[t.id]=t;added++;return;}
+    if((t.updatedAt||0)>(cur.updatedAt||0))map[t.id]=t;
+  });
+  const list=Object.values(map).sort((a,b)=>(a.createdAt||0)-(b.createdAt||0));
+  return {list,added};
+}
+function renderTodos(){
+  const box=document.getElementById('todo-list');
+  const cnt=document.getElementById('todo-count');
+  if(!box)return;
+  if(cnt)cnt.textContent=todos.length?todos.length+(todos.length===1?' zadanie':(todos.length<5?' zadania':' zadań')):'';
+  if(!todos.length){
+    box.innerHTML='<div class="todo-empty">Brak zadań. Dodaj pierwsze powyżej.</div>';
+    return;
+  }
+  box.innerHTML=todos.map(t=>`
+    <div class="todo-item" id="todo-${t.id}">
+      <button class="todo-box" onclick="completeTodo('${t.id}')" title="Odhacz — zadanie zniknie">✓</button>
+      <div class="todo-text" onclick="editTodo('${t.id}',this)">${esc(t.text)}</div>
+      <button class="todo-del" onclick="removeTodo('${t.id}')" title="Usuń bez odhaczania">×</button>
+    </div>`).join('');
+}
+function addTodo(){
+  const inp=document.getElementById('todo-input');
+  const txt=(inp.value||'').trim();
+  if(!txt)return;
+  todos.push({id:uid(),text:txt,createdAt:Date.now(),updatedAt:Date.now()});
+  inp.value='';
+  saveTodos();renderTodos();
+  inp.focus();
+}
+function dropTodo(id){
+  markTodoDeleted([id]);
+  todos=todos.filter(t=>t.id!==id);
+  saveTodos();renderTodos();
+}
+function completeTodo(id){
+  const el=document.getElementById('todo-'+id);
+  if(el){el.classList.add('leaving');setTimeout(()=>dropTodo(id),280);}
+  else dropTodo(id);
+}
+function removeTodo(id){ dropTodo(id); }
+function editTodo(id,el){
+  const t=todos.find(x=>x.id===id);if(!t)return;
+  const input=document.createElement('input');
+  input.className='todo-input';input.type='text';input.maxLength=200;input.value=t.text;
+  el.replaceWith(input);input.focus();input.select();
+  let done=false;
+  const commit=()=>{
+    if(done)return;done=true;
+    const v=input.value.trim();
+    if(v&&v!==t.text){t.text=v;t.updatedAt=Date.now();saveTodos();}
+    renderTodos();
+  };
+  input.addEventListener('blur',commit);
+  input.addEventListener('keydown',e=>{
+    if(e.key==='Enter'){e.preventDefault();input.blur();}
+    if(e.key==='Escape'){done=true;renderTodos();}
+  });
 }
 
 // ══ MAIN VIEW SWITCHING ════════════════════════════════════════════════════
@@ -1022,7 +1186,7 @@ let calYear, calMonth, selectedDate, calView='grid', mpYear;
 function initCal() {
   const now=new Date();
   calYear=now.getFullYear(); calMonth=now.getMonth(); mpYear=calYear;
-  selectedDate=now.toISOString().slice(0,10);
+  selectedDate=toISODate(now);
   renderAll();
 }
 
@@ -1057,7 +1221,7 @@ function fixMobileKanban(){
 function renderAll() {
   document.getElementById('month-label').textContent=MONTHS_PL[calMonth]+' '+calYear;
   if(calView==='grid'){renderCalGrid();renderDayStrip();} else renderCalList();
-  renderKanban(); updateNotifBadge();
+  renderKanban(); updateNotifBadge(); renderTodos();
   setTimeout(fixMobileKanban,50);
 }
 window.addEventListener('resize',fixMobileKanban);
@@ -1066,7 +1230,7 @@ function renderCalGrid() {
   const dowEl=document.getElementById('cal-dows');
   if(!dowEl.children.length) DAYS_SHORT.forEach(d=>{const e=document.createElement('div');e.className='cal-dow';e.textContent=d;dowEl.appendChild(e);});
   const grid=document.getElementById('cal-days'); grid.innerHTML='';
-  const today=new Date().toISOString().slice(0,10);
+  const today=todayISO();
   const firstDow=(new Date(calYear,calMonth,1).getDay()+6)%7;
   const dim=new Date(calYear,calMonth+1,0).getDate();
   for(let i=0;i<firstDow;i++){const e=document.createElement('div');e.className='cal-day empty';grid.appendChild(e);}
@@ -1217,7 +1381,7 @@ function renderStatusCol(container,col){
   const addBtn=document.createElement('button');addBtn.className='col-add-btn';addBtn.textContent='+ Dodaj';addBtn.onclick=()=>openAddModal(col.id);colEl.appendChild(addBtn);
   colEl.addEventListener('dragover',e=>{e.preventDefault();colEl.classList.add('drag-over');});
   colEl.addEventListener('dragleave',()=>colEl.classList.remove('drag-over'));
-  colEl.addEventListener('drop',e=>{e.preventDefault();colEl.classList.remove('drag-over');if(draggingId){const z=zlecenia.find(x=>x.id===draggingId);if(z){z.status=col.id;if(col.id==='edycja_st'&&z.date&&!z.deliveryDeadline){const days=EDIT_DAYS[z.cat]||30;const d=new Date(z.date);d.setDate(d.getDate()+days);z.deliveryDeadline=d.toISOString().slice(0,10);}save();renderKanban();renderDayStrip();}}});
+  colEl.addEventListener('drop',e=>{e.preventDefault();colEl.classList.remove('drag-over');if(draggingId){const z=zlecenia.find(x=>x.id===draggingId);if(z){z.status=col.id;if(col.id==='edycja_st'&&z.date&&!z.deliveryDeadline){const days=EDIT_DAYS[z.cat]||30;z.deliveryDeadline=addDaysISO(z.date,days);}save();renderKanban();renderDayStrip();}}});
   container.appendChild(colEl);
 }
 
@@ -1338,7 +1502,7 @@ function dateToX(ds,year){
 
 function monthStartX(m,year){
   const d=new Date(year,m,1);
-  const ds=d.toISOString().slice(0,10);
+  const ds=toISODate(d);
   return dateToX(ds,year);
 }
 
@@ -1358,7 +1522,7 @@ function renderTimeline(){
 
   if(!yearZ.length){container.innerHTML=`<div class="tl-empty">Brak zleceń w roku ${tlYear}<br><small style="color:var(--text3);font-size:12px">Dodaj zlecenia z datą w tym roku</small></div>`;return;}
 
-  const today=new Date().toISOString().slice(0,10);
+  const today=todayISO();
   const todayX=new Date().getFullYear()===tlYear?dateToX(today,tlYear):null;
 
   let html=`<div class="tl-inner">`;
@@ -1619,7 +1783,7 @@ function openAddModal(defaultStatus){
   formTasks=tasksFromTemplate(CAT_TASKS.sesja);
   document.getElementById('modal-add-title').textContent='Nowe zlecenie';
   document.getElementById('f-name').value='';
-  document.getElementById('f-date').value=selectedDate||new Date().toISOString().slice(0,10);
+  document.getElementById('f-date').value=selectedDate||todayISO();
   document.getElementById('f-deadline').value='';
   document.getElementById('f-custom-cat').value='';
   document.getElementById('custom-cat-group').style.display='none';
@@ -1813,7 +1977,7 @@ function saveZlecenie(){
   let deliveryDeadline=document.getElementById('f-deadline').value;
   if(!deliveryDeadline&&selStatus==='edycja_st'){
     const dateVal=document.getElementById('f-date').value;
-    if(dateVal){const days=EDIT_DAYS[cat]||30;const d=new Date(dateVal);d.setDate(d.getDate()+days);deliveryDeadline=d.toISOString().slice(0,10);}
+    if(dateVal){const days=EDIT_DAYS[cat]||30;deliveryDeadline=addDaysISO(dateVal,days);}
   }
   const obj={
     name,date:document.getElementById('f-date').value,cat,status:selStatus,
@@ -1830,11 +1994,17 @@ function saveZlecenie(){
   };
   if(editingId){
     const i=zlecenia.findIndex(z=>z.id===editingId);
-    if(i>=0)zlecenia[i]={...zlecenia[i],...obj};
+    if(i>=0){
+      const prevDate=zlecenia[i].date, prevName=zlecenia[i].name;
+      zlecenia[i]={...zlecenia[i],...obj};
+      // termin w Google Calendar musi nadążać za edycją zlecenia
+      if(zlecenia[i].date&&(prevDate!==zlecenia[i].date||prevName!==zlecenia[i].name||!zlecenia[i].gcalEventId))
+        gcalSyncZlecenie(zlecenia[i]);
+    }
   } else {
-    const newZ={id:uid(),orderedItems:[],daySchedule:[],...obj};
+    const newZ={id:uid(),orderedItems:[],daySchedule:[],...obj,updatedAt:Date.now()};
     zlecenia.push(newZ);
-    if(gdriveToken&&newZ.date) gcalCreateZlecenie(newZ);
+    if(newZ.date) gcalSyncZlecenie(newZ);
   }
   save();closeAddModal();renderAll();
 }
@@ -2019,7 +2189,7 @@ function renderOrderedItems(z){
       ${products.map(p=>`<option>${p}</option>`).join('')}
       <option value="__custom">Własna nazwa...</option>
     </select>
-    <input class="form-input" id="order-date-${z.id}" type="date" style="flex:.6" value="${new Date().toISOString().slice(0,10)}" />
+    <input class="form-input" id="order-date-${z.id}" type="date" style="flex:.6" value="${todayISO()}" />
     <button class="btn-sm" onclick="addOrderItem('${z.id}')">+ Dodaj</button>
   </div>`;
   return h;
@@ -2039,7 +2209,7 @@ function addOrderItem(zId){
 function toggleOrderReceived(zId,oId){
   const z=zlecenia.find(x=>x.id===zId);if(!z)return;
   const o=(z.orderedItems||[]).find(x=>x.id===oId);if(!o)return;
-  o.receivedDate=o.receivedDate?null:new Date().toISOString().slice(0,10);
+  o.receivedDate=o.receivedDate?null:todayISO();
   save();renderDetailModal(zId);
 }
 
@@ -2107,8 +2277,7 @@ function setStatus(zId,status){
   z.status=status;
   if(status==='edycja_st'&&z.date&&!z.deliveryDeadline){
     const days=EDIT_DAYS[z.cat]||30;
-    const d=new Date(z.date);d.setDate(d.getDate()+days);
-    z.deliveryDeadline=d.toISOString().slice(0,10);
+    z.deliveryDeadline=addDaysISO(z.date,days);
   }
   save();renderDetailModal(zId);renderKanban();
 }
@@ -2226,7 +2395,7 @@ function openQuickAdd(){
     `<button class="qa-cat-btn" data-cat="${k}" style="" onclick="selectQaCat('${k}')">${v.icon} ${v.label}</button>`
   ).join('');
   document.getElementById('qa-name').value='';
-  document.getElementById('qa-date').value=selectedDate||new Date().toISOString().slice(0,10);
+  document.getElementById('qa-date').value=selectedDate||todayISO();
   document.getElementById('qa-deadline').value='';
   document.getElementById('qa-overlay').classList.add('open');
   setTimeout(()=>document.getElementById('qa-name').focus(),80);
@@ -2254,9 +2423,11 @@ function saveQuickAdd(){
     status:cols[0]?.id||'nowe',
     deliveryDeadline:document.getElementById('qa-deadline').value,
     price:null,deposit:null,deliveryTime:'',customCat:'',secondShooter:'',location:'',notes:'',
-    orderedItems:[],daySchedule:[],editingFinished:'',tasks
+    orderedItems:[],daySchedule:[],editingFinished:'',tasks,updatedAt:Date.now()
   });
   save();closeQuickAdd();renderAll();
+  const nz=zlecenia.find(z=>z.id===id);
+  if(nz&&nz.date)gcalSyncZlecenie(nz);
   openEditModal(id);
 }
 
@@ -2309,7 +2480,7 @@ async function requestNotifPermission(){
 }
 function fireNotifications(){
   if(Notification.permission!=='granted')return;
-  const today=new Date().toISOString().slice(0,10);
+  const today=todayISO();
   const shown=JSON.parse(localStorage.getItem('foto_notif_shown')||'{}');
   getUpcoming(3).forEach(z=>{
     const key=`${z.id}_${z._alertType}_${today}`;
@@ -2325,10 +2496,10 @@ function fireNotifications(){
 
 // ══ EXPORT / IMPORT ════════════════════════════════════════════════════════
 function exportData(){
-  const data={zlecenia,cols,exported:new Date().toISOString(),version:4};
+  const data={zlecenia,cols,todos,todosDeleted,deleted:deletedIds,exported:new Date().toISOString(),version:5};
   const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
   const url=URL.createObjectURL(blob);
-  const a=document.createElement('a');a.href=url;a.download=`fotoplaner-${new Date().toISOString().slice(0,10)}.json`;a.click();URL.revokeObjectURL(url);
+  const a=document.createElement('a');a.href=url;a.download=`fotoplaner-${todayISO()}.json`;a.click();URL.revokeObjectURL(url);
 }
 function importData(){
   const input=document.createElement('input');input.type='file';input.accept='.json';
@@ -2341,6 +2512,12 @@ function importData(){
         if(!confirm(`Importować ${data.zlecenia?.length||0} zleceń? Obecne dane zostaną zastąpione.`))return;
         zlecenia=data.zlecenia||[];if(data.cols)cols=data.cols;
         deletedIds=deletedIds.filter(id=>!zlecenia.some(z=>z.id===id));localStorage.setItem('foto_deleted',JSON.stringify(deletedIds));
+        if(Array.isArray(data.todos)){
+          markTodoDeleted(data.todosDeleted||[]);
+          todos=mergeTodosByNewest(todos,data.todos,new Set(todosDeleted)).list;
+          localStorage.setItem('foto_todos',JSON.stringify(todos));
+        }
+        syncSignatures();
         save();saveCols();renderAll();
       }catch(e){alert('Błąd: nieprawidłowy plik JSON.');}
     };
@@ -2370,7 +2547,7 @@ function togglePaidDetail(id){
 function markEditingDoneDetail(id){
   const z=zlecenia.find(x=>x.id===id);if(!z)return;
   const inp=document.createElement('input');inp.type='date';
-  inp.value=new Date().toISOString().slice(0,10);
+  inp.value=todayISO();
   inp.style.cssText='position:fixed;opacity:0;pointer-events:none';
   document.body.appendChild(inp);inp.focus();inp.showPicker?.();
   inp.addEventListener('change',()=>{if(inp.value){z.editingFinished=inp.value;save();renderDetailModal(id);renderKanban();}inp.remove();});
@@ -2393,7 +2570,7 @@ function editDeadlineDetail(id){
 function markEditingDone(id){
   const z=zlecenia.find(x=>x.id===id);if(!z)return;
   const inp=document.createElement('input');inp.type='date';
-  inp.value=new Date().toISOString().slice(0,10);
+  inp.value=todayISO();
   inp.style.cssText='position:fixed;opacity:0;pointer-events:none';
   document.body.appendChild(inp);inp.focus();inp.showPicker?.();
   inp.addEventListener('change',()=>{if(inp.value){z.editingFinished=inp.value;save();renderKanban();}inp.remove();});
@@ -2418,6 +2595,7 @@ function editDeadlineInline(id,el){
 
 // ══ GOOGLE DRIVE SYNC (#18) ════════════════════════════════════════════════
 let gdriveToken=null,gdriveFileId=null,tokenClient=null,pendingDriveAction=null;
+let tokenExpiresAt=0,tokenResolve=null,tokenRefreshInFlight=null,silentStart=false;
 const HARDCODED_CLIENT_ID='298351769527-fdtj2ij6f6s657ju43i9aka4bipb68cs.apps.googleusercontent.com';
 let GDRIVE_CLIENT_ID=HARDCODED_CLIENT_ID||localStorage.getItem('foto_gdrive_client_id');
 const GDRIVE_SCOPE='https://www.googleapis.com/auth/drive.appdata https://www.googleapis.com/auth/calendar.events';
@@ -2433,9 +2611,28 @@ function hideDriveMenu(){const m=document.getElementById('drive-menu');if(m)m.st
 
 function updateDriveBtn(){
   const btn=document.getElementById('drive-btn');if(!btn)return;
-  btn.textContent=gdriveToken?'☁ Drive + 📅 ✓':'☁ Drive';
-  btn.style.color=gdriveToken?'var(--sesja)':'';
-  btn.style.borderColor=gdriveToken?'var(--sesja)':'';
+  // w trakcie cichego logowania przy starcie nie strasz użytkownika czerwonym „offline"
+  const dirty=(typeof syncDirty!=='undefined')&&syncDirty&&!silentStart;
+  btn.textContent=gdriveToken?(dirty?'☁ Drive ● …':'☁ Drive + 📅 ✓'):(dirty?'☁ Drive ● offline':'☁ Drive');
+  const col=gdriveToken?(dirty?'var(--urodziny)':'var(--sesja)'):(dirty?'var(--danger)':'');
+  btn.style.color=col;
+  btn.style.borderColor=col;
+  btn.title=gdriveToken
+    ? (dirty?'Są zmiany jeszcze niewysłane na Drive':'Połączono z Google Drive i Kalendarzem')
+    : (dirty?'UWAGA: są niezapisane zmiany, brak połączenia z Drive — kliknij i zaloguj się':'Kliknij aby połączyć z Google Drive');
+}
+
+function showSyncStatus(){
+  const last=localStorage.getItem('foto_last_sync');
+  alert(
+    'STATUS SYNCHRONIZACJI\n\n'+
+    'Połączenie z Google: '+(gdriveToken?'✅ aktywne':'❌ brak (dane tylko na tym urządzeniu)')+'\n'+
+    'Niewysłane zmiany: '+(syncDirty?'⚠ TAK':'✅ nie')+'\n'+
+    'Ostatni udany zapis na Drive: '+(last?new Date(Number(last)).toLocaleString('pl'):'nigdy')+'\n\n'+
+    'Zleceń lokalnie: '+zlecenia.length+'\n'+
+    'Zadań na liście: '+todos.length+'\n\n'+
+    (syncDirty?'Kliknij „⬆ Zapisz na Drive" aby wysłać zmiany teraz.':'Wszystko wysłane.')
+  );
 }
 
 function showDriveToast(msg,err=false){
@@ -2452,15 +2649,51 @@ function initGIS(){
   tokenClient=google.accounts.oauth2.initTokenClient({
     client_id:GDRIVE_CLIENT_ID,scope:GDRIVE_SCOPE,
     callback:async(r)=>{
-      if(r.error){showDriveToast('Błąd logowania: '+r.error,true);return;}
+      const resolver=tokenResolve; tokenResolve=null;
+      if(r.error){
+        gdriveToken=null;updateDriveBtn();
+        if(resolver){resolver(false);return;}
+        if(!silentStart)showDriveToast('Błąd logowania: '+r.error,true);
+        silentStart=false;
+        return;
+      }
       gdriveToken=r.access_token;
-      showDriveToast('✅ Połączono z Google Drive');updateDriveBtn();
+      // token GIS żyje ~1h; odświeżamy 2 min przed końcem, zanim poleci 401
+      tokenExpiresAt=Date.now()+((Number(r.expires_in)||3600)-120)*1000;
+      updateDriveBtn();
+      if(resolver){resolver(true);return;}
+      if(!silentStart)showDriveToast('✅ Połączono z Google Drive');
+      silentStart=false;
       const action=pendingDriveAction;pendingDriveAction=null;
       if(action==='load') await gdriveLoad();
       else if(action==='save') await gdriveSave();
       else await gdriveAutoSync();
     }
   });
+}
+
+// Zapewnia ważny token — po cichu, bez okienka, jeśli użytkownik już się kiedyś zalogował.
+async function ensureToken(){
+  if(gdriveToken && (!tokenExpiresAt || Date.now()<tokenExpiresAt)) return true;
+  if(tokenExpiresAt && Date.now()>=tokenExpiresAt) gdriveToken=null;
+  if(gdriveToken) return true;
+  if(!GDRIVE_CLIENT_ID) return false;
+  if(tokenRefreshInFlight) return tokenRefreshInFlight;
+  tokenRefreshInFlight=(async()=>{
+    try{
+      if(!tokenClient){ await loadGIS(); initGIS(); }
+      if(!tokenClient) return false;
+      return await new Promise(res=>{
+        let settled=false;
+        tokenResolve=(ok)=>{ if(settled)return; settled=true; res(ok); };
+        setTimeout(()=>{ if(!settled){settled=true;tokenResolve=null;res(false);} },10000);
+        try{ tokenClient.requestAccessToken({prompt:''}); }
+        catch(e){ if(!settled){settled=true;tokenResolve=null;res(false);} }
+      });
+    }catch(e){ return false; }
+    finally{ setTimeout(()=>{tokenRefreshInFlight=null;},0); }
+  })();
+  return tokenRefreshInFlight;
 }
 
 async function loadGIS(){
@@ -2490,10 +2723,15 @@ async function gdriveConnect(){
   }catch(e){showDriveToast('Błąd ładowania GIS: '+e.message,true);return false;}
 }
 
-async function driveRequest(url,opts={}){
-  opts.headers={...opts.headers,Authorization:'Bearer '+gdriveToken};
-  const r=await fetch(url,opts);
-  if(r.status===401){gdriveToken=null;updateDriveBtn();throw new Error('Token wygasł — zaloguj się ponownie');}
+async function driveRequest(url,opts={},allowRetry=true){
+  if(!await ensureToken())throw new Error('Brak połączenia z kontem Google');
+  const o={...opts,headers:{...(opts.headers||{}),Authorization:'Bearer '+gdriveToken}};
+  const r=await fetch(url,o);
+  if(r.status===401){
+    gdriveToken=null;tokenExpiresAt=0;updateDriveBtn();
+    if(allowRetry&&await ensureToken())return driveRequest(url,opts,false);
+    throw new Error('Sesja Google wygasła — kliknij ☁ Drive i zaloguj się');
+  }
   return r;
 }
 
@@ -2514,7 +2752,7 @@ async function gdriveSave(){
   showDriveToast('☁ Zapisuję na Drive...');
   try{
     await findDriveFile();
-    const content=JSON.stringify({zlecenia,cols,deleted:deletedIds,exported:new Date().toISOString(),version:4},null,2);
+    const content=JSON.stringify({zlecenia,cols,deleted:deletedIds,todos,todosDeleted,exported:new Date().toISOString(),version:5},null,2);
     const bnd='---fotoplaner---boundary---';
     const method=gdriveFileId?'PATCH':'POST';
     const metaObj=gdriveFileId?{name:GDRIVE_FNAME}:{name:GDRIVE_FNAME,parents:['appDataFolder']};
@@ -2525,9 +2763,18 @@ async function gdriveSave(){
       :'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart';
     const r=await driveRequest(url,{method,headers:{'Content-Type':'multipart/related; boundary='+bnd},body});
     const json=await r.json();
-    if(json.id){gdriveFileId=json.id;showDriveToast('☁ Zapisano na Drive! ('+new Date().toLocaleTimeString('pl')+')');}
+    if(json.id){
+      gdriveFileId=json.id;
+      localStorage.setItem('foto_last_sync',String(Date.now()));
+      clearDirty();
+      showDriveToast('☁ Zapisano na Drive! ('+new Date().toLocaleTimeString('pl')+')');
+    }
     else throw new Error(json.error?.message||JSON.stringify(json));
-  }catch(e){showDriveToast('Błąd zapisu: '+e.message,true);}
+  }catch(e){
+    // zmiany zostają oznaczone jako niewysłane → zapis ponowi się przy starcie i przy kolejnej edycji
+    markDirty();
+    showDriveToast('Błąd zapisu: '+e.message,true);
+  }
 }
 
 async function gdriveLoad(){
@@ -2555,6 +2802,10 @@ async function gdriveLoad(){
       zlecenia=driveZ;syncSignatures();if(data.cols)cols=data.cols;saveCols();
       deletedIds=deletedIds.filter(id=>!driveZ.some(z=>z.id===id));localStorage.setItem('foto_deleted',JSON.stringify(deletedIds));
     }
+    // lista zadań — zawsze scalamy (odhaczone zostają odhaczone dzięki tombstone'om)
+    markTodoDeleted(data.todosDeleted||[]);
+    todos=mergeTodosByNewest(todos,data.todos||[],new Set(todosDeleted)).list;
+    localStorage.setItem('foto_todos',JSON.stringify(todos));
     migratePackageFormat();migrateDropRedundantTasks();
     save();renderAll();
     showDriveToast(doMerge?`☁ Scalono! +${added} nowych, ${updated} zaktualizowanych.`:`☁ Wczytano z Drive! (${zlecenia.length} zleceń)`);
@@ -2564,7 +2815,7 @@ async function gdriveLoad(){
 // Cicha synchronizacja przy starcie: najpierw wczytaj i scal dane z Drive, dopiero potem zapisz.
 // Naprawia błąd nadpisywania Drive starą lokalną kopią z innego urządzenia.
 async function gdriveAutoSync(){
-  if(!gdriveToken)return;
+  if(!await ensureToken())return;
   try{
     const fid=await findDriveFile();
     if(!fid){if(zlecenia.length>0)await gdriveSave();return;}
@@ -2582,9 +2833,20 @@ async function gdriveAutoSync(){
     syncSignatures();
     localStorage.setItem('foto_v4',JSON.stringify(zlecenia));
     if(data.cols&&!localStorage.getItem('foto_cols')){cols=data.cols;saveCols();}
+    // lista zadań
+    markTodoDeleted(data.todosDeleted||[]);
+    const tm=mergeTodosByNewest(todos,data.todos||[],new Set(todosDeleted));
+    todos=tm.list;
+    localStorage.setItem('foto_todos',JSON.stringify(todos));
     renderAll();
     if(zlecenia.length>0)await gdriveSave();
-    if(added||updated||removed)showDriveToast(`☁ Zsynchronizowano:${added?' +'+added+' nowych':''}${updated?' '+updated+' zaktualizowanych':''}${removed?' '+removed+' usuniętych':''}`);
+    if(added||updated||removed||tm.added)showDriveToast(`☁ Zsynchronizowano:${added?' +'+added+' nowych':''}${updated?' '+updated+' zaktualizowanych':''}${removed?' '+removed+' usuniętych':''}${tm.added?' +'+tm.added+' zadań':''}`);
+    // raz na dobę sprawdź, czy terminy faktycznie są w Google Calendar
+    const lastRec=Number(localStorage.getItem('foto_gcal_check')||0);
+    if(Date.now()-lastRec>20*3600*1000){
+      localStorage.setItem('foto_gcal_check',String(Date.now()));
+      gcalReconcile(true);
+    }
   }catch(e){showDriveToast('Błąd synchronizacji: '+e.message,true);}
 }
 
@@ -2621,44 +2883,209 @@ function gcalEventBody(z){
     summary:`${cat.icon||''} ${z.name} [${label}]`,
     description:desc||undefined,
   };
-  // session date
+  // Znacznik własnościowy — po nim rozpoznajemy „nasze" wydarzenie nawet wtedy,
+  // gdy urządzenie zgubiło gcalEventId. Klucz do walki z duplikatami.
+  if(z.id)body.extendedProperties={private:{fpid:z.id}};
+  // Wydarzenie całodniowe: end.date w Google Calendar jest WYŁĄCZNY (exclusive).
+  // start==end dawało wydarzenie o zerowej długości — właśnie takie potrafią
+  // znikać i wracać w widokach Google Calendar. Poprawnie: koniec = dzień później.
   if(z.date){
     body.start={date:z.date};
-    body.end={date:z.date};
+    body.end={date:addDaysISO(z.date,1)};
   }
   return body;
 }
 
-async function gcalRequest(url,method='GET',body=null){
+// bezpieczne dodawanie dni do 'YYYY-MM-DD' (bez pułapek stref czasowych)
+function addDaysISO(ds,n){
+  const [y,m,d]=ds.split('-').map(Number);
+  const dt=new Date(Date.UTC(y,m-1,d));
+  dt.setUTCDate(dt.getUTCDate()+n);
+  return dt.toISOString().slice(0,10);
+}
+
+async function gcalRequest(url,method='GET',body=null,allowRetry=true){
+  if(!await ensureToken())throw new Error('Brak połączenia z kontem Google');
   const opts={method,headers:{Authorization:'Bearer '+gdriveToken,'Content-Type':'application/json'}};
   if(body)opts.body=JSON.stringify(body);
   const r=await fetch(url,opts);
-  if(r.status===401){gdriveToken=null;updateDriveBtn();throw new Error('Token wygasł');}
+  if(r.status===401){
+    gdriveToken=null;tokenExpiresAt=0;updateDriveBtn();
+    if(allowRetry&&await ensureToken())return gcalRequest(url,method,body,false);
+    throw new Error('Sesja Google wygasła');
+  }
   return r;
 }
 
 async function gcalRetry(id){
   const z=zlecenia.find(x=>x.id===id);if(!z)return;
-  showDriveToast('📅 Dodaję termin do kalendarza...');
-  await gcalCreateZlecenie(z);
-  showDriveToast('📅 Termin dodany do Google Calendar!');
-  renderKanban();
+  showDriveToast('📅 Wysyłam termin do kalendarza...');
+  const ok=await gcalSyncZlecenie(z);
+  showDriveToast(ok?'📅 Termin jest w Google Calendar!':'Nie udało się dodać terminu',!ok);
+  save();renderKanban();
 }
 
-// Jednorazowe dodanie nowego zlecenia do Google Calendar (tylko przy tworzeniu)
-async function gcalCreateZlecenie(z){
-  if(!gdriveToken||!z.date)return;
-  try{
-    const body=gcalEventBody(z);
-    const r=await gcalRequest(GCAL_API,'POST',body);
-    const json=await r.json();
-    if(json.id){z.gcalEventId=json.id;localStorage.setItem('foto_v4',JSON.stringify(zlecenia));}
-  }catch(e){console.warn('gcalCreate error:',e.message);}
+// ── OCHRONA PRZED DUPLIKATAMI ──────────────────────────────────────────────
+// Deterministyczne ID wydarzenia liczone ze zlecenia. Dwa urządzenia policzą
+// to samo ID, więc drugie dostanie od Google 409 (już istnieje) zamiast
+// stworzyć bliźniaka. Google wymaga alfabetu base32hex: 0-9 oraz a-v.
+function gcalDetId(z){
+  const enc=Array.from(String(z.id||'')).map(c=>c.charCodeAt(0).toString(32).padStart(2,'0')).join('');
+  return ('fp'+enc).padEnd(8,'0').slice(0,1024);   // Google wymaga min. 5 znaków
 }
+const gcalInFlight=new Set();   // blokada: jedno zlecenie = jedna operacja naraz
+
+function gcalEventMatches(ev,z,want){
+  if(!ev||ev.status==='cancelled')return false;
+  const fpid=ev.extendedProperties?.private?.fpid;
+  if(fpid)return fpid===z.id;                    // znacznik rozstrzyga
+  if(ev.id===z.gcalEventId||ev.id===gcalDetId(z))return true;
+  // stare wydarzenia bez znacznika: ta sama data i dokładnie ten sam tytuł
+  return !!ev.start?.date && ev.start.date===z.date && ev.summary===want.summary;
+}
+
+// Szuka wszystkich wydarzeń należących do zlecenia (żeby nie tworzyć kolejnego).
+async function gcalFindAll(z,want){
+  const out=[],seen=new Set();
+  const push=e=>{if(e&&!seen.has(e.id)&&gcalEventMatches(e,z,want)){seen.add(e.id);out.push(e);}};
+  try{
+    const r=await gcalRequest(`${GCAL_API}?privateExtendedProperty=${encodeURIComponent('fpid='+z.id)}&showDeleted=false&maxResults=50`);
+    if(r.ok)(await r.json()).items?.forEach(push);
+  }catch(e){}
+  if(z.date){
+    try{
+      const r2=await gcalRequest(`${GCAL_API}?timeMin=${z.date}T00:00:00Z&timeMax=${addDaysISO(z.date,2)}T00:00:00Z&showDeleted=false&maxResults=100`);
+      if(r2.ok)(await r2.json()).items?.forEach(push);
+    }catch(e){}
+  }
+  return out;
+}
+
+// Tworzy LUB aktualizuje wydarzenie. Nigdy nie duplikuje; skasowane przywraca.
+async function gcalSyncZlecenie(z){
+  if(!z||!z.date)return false;
+  if(gcalInFlight.has(z.id))return false;
+  if(!await ensureToken())return false;
+  gcalInFlight.add(z.id);
+  try{
+    const want=gcalEventBody(z);
+    // 1. znamy ID → zwykła aktualizacja
+    if(z.gcalEventId){
+      const r=await gcalRequest(`${GCAL_API}/${encodeURIComponent(z.gcalEventId)}`,'PATCH',{...want,status:'confirmed'});
+      if(r.ok)return true;
+      if(r.status===404||r.status===410||r.status===403){ z.gcalEventId=null; }
+      else return false;
+    }
+    // 2. nie znamy ID → NAJPIERW sprawdź, czy wydarzenie już tam nie jest
+    //    (np. utworzone przez drugie urządzenie). Bez tego powstawał duplikat.
+    const found=await gcalFindAll(z,want);
+    if(found.length){
+      const keep=found.find(e=>e.id===z.gcalEventId)||found.find(e=>e.id===gcalDetId(z))||found[0];
+      for(const e of found){ if(e.id!==keep.id){ try{await gcalRequest(`${GCAL_API}/${encodeURIComponent(e.id)}`,'DELETE');}catch(err){} } }
+      z.gcalEventId=keep.id;
+      await gcalRequest(`${GCAL_API}/${encodeURIComponent(keep.id)}`,'PATCH',{...want,status:'confirmed'});
+      save();                       // ID musi trafić na Drive, inaczej drugie urządzenie znów zgadnie źle
+      return true;
+    }
+    // 3. tworzymy z deterministycznym ID — wyścig dwóch urządzeń kończy się 409, nie duplikatem
+    const detId=gcalDetId(z);
+    const r2=await gcalRequest(GCAL_API,'POST',{...want,id:detId});
+    if(r2.status===409){
+      z.gcalEventId=detId;
+      await gcalRequest(`${GCAL_API}/${detId}`,'PATCH',{...want,status:'confirmed'});
+      save();return true;
+    }
+    if(r2.ok){
+      const json=await r2.json();
+      if(json.id){ z.gcalEventId=json.id; save(); return true; }
+    }
+    // awaryjnie: gdyby Google odrzucił nasze ID, twórz bez niego
+    const r3=await gcalRequest(GCAL_API,'POST',want);
+    const j3=await r3.json();
+    if(j3.id){ z.gcalEventId=j3.id; save(); return true; }
+    return false;
+  }catch(e){ console.warn('gcalSync error:',e.message); return false; }
+  finally{ gcalInFlight.delete(z.id); }
+}
+// zgodność wstecz
+async function gcalCreateZlecenie(z){ return gcalSyncZlecenie(z); }
 
 async function gcalDeleteZlecenie(z){
-  if(!gdriveToken||!z.gcalEventId)return;
-  try{await gcalRequest(`${GCAL_API}/${z.gcalEventId}`,'DELETE');}catch(e){}
+  if(!z)return;
+  if(!await ensureToken())return;
+  const ids=[...new Set([z.gcalEventId,gcalDetId(z)].filter(Boolean))];
+  for(const id of ids){
+    try{await gcalRequest(`${GCAL_API}/${encodeURIComponent(id)}`,'DELETE');}catch(e){}
+  }
+}
+
+// Przegląd wszystkich terminów naraz: brakujące dodaje, zmienione poprawia,
+// skasowane przywraca, DUPLIKATY kasuje. Jedno listowanie kalendarza na całość.
+async function gcalReconcile(silent){
+  if(!await ensureToken()){ if(!silent)showDriveToast('Najpierw połącz się z Google',true); return; }
+  const from=new Date(); from.setDate(from.getDate()-30);
+  const fromISO=toISODate(from);
+  const list=zlecenia.filter(z=>z.date&&z.date>=fromISO).sort((a,b)=>a.date.localeCompare(b.date));
+  if(!list.length){ if(!silent)showDriveToast('Brak terminów do sprawdzenia.'); return; }
+  if(!silent)showDriveToast('📅 Sprawdzam '+list.length+' terminów...');
+
+  // 1. pobierz wszystkie wydarzenia z okna czasowego (z paginacją)
+  const maxISO=addDaysISO(list[list.length-1].date,2);
+  const events=[];
+  try{
+    let page='';
+    for(let i=0;i<20;i++){
+      const r=await gcalRequest(`${GCAL_API}?timeMin=${fromISO}T00:00:00Z&timeMax=${maxISO}T00:00:00Z&showDeleted=false&maxResults=2500${page?'&pageToken='+page:''}`);
+      if(!r.ok)break;
+      const d=await r.json();
+      (d.items||[]).forEach(e=>events.push(e));
+      if(!d.nextPageToken)break;
+      page=d.nextPageToken;
+    }
+  }catch(e){ if(!silent)showDriveToast('Nie udało się pobrać kalendarza: '+e.message,true); return; }
+
+  // 2. dopasuj wydarzenia do zleceń; jedno wydarzenie może należeć tylko do jednego
+  const claimed=new Set();
+  let fixed=0,dups=0,created=0,failed=0;
+  for(const z of list){
+    try{
+      const want=gcalEventBody(z);
+      const mine=events.filter(e=>!claimed.has(e.id)&&gcalEventMatches(e,z,want));
+      mine.forEach(e=>claimed.add(e.id));
+      if(mine.length){
+        const keep=mine.find(e=>e.id===z.gcalEventId)||mine.find(e=>e.id===gcalDetId(z))||mine[0];
+        for(const e of mine){
+          if(e.id===keep.id)continue;
+          try{ await gcalRequest(`${GCAL_API}/${encodeURIComponent(e.id)}`,'DELETE'); dups++; }catch(err){ failed++; }
+        }
+        const bad = keep.start?.date!==want.start.date
+                 || keep.end?.date!==want.end.date
+                 || keep.summary!==want.summary
+                 || keep.extendedProperties?.private?.fpid!==z.id;
+        if(bad){ await gcalRequest(`${GCAL_API}/${encodeURIComponent(keep.id)}`,'PATCH',{...want,status:'confirmed'}); fixed++; }
+        if(z.gcalEventId!==keep.id){ z.gcalEventId=keep.id; fixed++; }
+        continue;
+      }
+      // brak wydarzenia → utwórz (deterministyczne ID chroni przed wyścigiem)
+      const detId=gcalDetId(z);
+      const r2=await gcalRequest(GCAL_API,'POST',{...want,id:detId});
+      if(r2.status===409){
+        await gcalRequest(`${GCAL_API}/${detId}`,'PATCH',{...want,status:'confirmed'});
+        z.gcalEventId=detId; created++;
+      } else if(r2.ok){
+        const j2=await r2.json();
+        if(j2.id){ z.gcalEventId=j2.id; created++; } else failed++;
+      } else failed++;
+    }catch(e){ failed++; break; }
+  }
+  if(fixed||created||dups)save();
+  const summary=`📅 Sprawdzono ${list.length}`+
+    (created?`, dodano ${created}`:'')+
+    (fixed?`, poprawiono ${fixed}`:'')+
+    (dups?`, usunięto ${dups} duplikat(ów)`:'')+
+    (failed?`, błędów ${failed}`:'')+'.';
+  if(!silent)showDriveToast(summary,failed>0);
+  else if(created||dups)showDriveToast(summary);
 }
 
 // ══ PWA — MANIFEST + INSTALL PROMPT (#19) ══════════════════════════════════
@@ -2748,16 +3175,28 @@ async function installPWA(){
 
 // ══ INIT ═══════════════════════════════════════════════════════════════════
 loadData();
+syncSignatures();   // punkt odniesienia dla wykrywania zmian w tej sesji
 initCal();
 initPWA();
+updateDriveBtn();
 if(Notification.permission==='granted')fireNotifications();
 // Auto-reconnect Drive silently (no popup) if user already authorized before
 if(GDRIVE_CLIENT_ID){
+  silentStart=true;
   loadGIS().then(()=>{
     initGIS();
     if(tokenClient)tokenClient.requestAccessToken({prompt:''});
-  }).catch(()=>{});
+    // jeśli ciche logowanie nie przejdzie, a mamy niewysłane zmiany — powiedz o tym wprost
+    setTimeout(()=>{
+      silentStart=false;
+      updateDriveBtn();
+      if(!gdriveToken&&syncDirty)
+        showDriveToast('⚠ Zmiany nie trafiły jeszcze na Drive — kliknij ☁ Drive i zaloguj się',true);
+    },12000);
+  }).catch(()=>{silentStart=false;});
 }
+// Sieć wróciła — dokończ zaległy zapis
+window.addEventListener('online',()=>{ if(syncDirty)scheduleDriveSave(); });
 </script>
 </body>
 </html>
