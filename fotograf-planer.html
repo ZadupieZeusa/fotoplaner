@@ -1157,6 +1157,14 @@ function editStartDate(z){ return (z&&hasSessions(z.cat)&&z.sesjaSlub)?z.sesjaSl
 function editDaysFor(cat){ return EDIT_DAYS[cat]||30; }
 function suggestedDeadline(z){ const st=editStartDate(z); return st?addDaysISO(st,editDaysFor(z.cat)):''; }
 
+// ══ ARCHIWUM ZLECEŃ ════════════════════════════════════════════════════════
+// Zakończone zlecenia chowamy (z.archived), nigdy nie kasujemy — Dashboard musi
+// widzieć cały rok, żeby policzyć, ile zostało do zarobienia. Archiwum jest
+// odwracalne: każde zlecenie wraca jednym kliknięciem.
+function isArchived(z){ return !!z && !!z.archived; }
+// Zlecenia widoczne w kalendarzu, na kanbanie, na osi czasu i w powiadomieniach.
+function visibleZ(){ return zlecenia.filter(z=>!z.archived); }
+
 // Etapy PO obróbce — takie zlecenia znikają z osi czasu.
 const POST_EDIT_STATUSES=['wysylka','odbior','zakonczone'];
 function leftEditingStage(z){
@@ -1338,7 +1346,7 @@ window.addEventListener('resize',fixMobileKanban);
 // Pozycje kalendarza dla dnia: zlecenia + osobne terminy sesji.
 function calItemsForDate(ds){
   const out=[];
-  zlecenia.forEach(z=>{
+  visibleZ().forEach(z=>{
     if(z.date===ds) out.push({z,kind:null,name:z.name,icon:CATS[z.cat]?.icon||''});
     sessionEntries(z).forEach(sx=>{ if(sx.date===ds) out.push({z,kind:sx.kind,name:sx.title,icon:sx.icon}); });
   });
@@ -1347,7 +1355,7 @@ function calItemsForDate(ds){
 // Wszystkie pozycje w danym miesiącu ('YYYY-MM'), chronologicznie.
 function calItemsForMonth(prefix){
   const out=[];
-  zlecenia.forEach(z=>{
+  visibleZ().forEach(z=>{
     if(z.date&&z.date.startsWith(prefix)) out.push({z,kind:null,date:z.date,name:z.name,icon:CATS[z.cat]?.icon||''});
     sessionEntries(z).forEach(sx=>{ if(sx.date.startsWith(prefix)) out.push({z,kind:sx.kind,date:sx.date,name:sx.title,icon:sx.icon}); });
   });
@@ -1455,7 +1463,8 @@ let draggingId=null;
 
 function renderKanban(){
   const c=document.getElementById('kanban-columns');c.innerHTML='';
-  document.getElementById('kanban-count').textContent=zlecenia.length+' zleceń';
+  const arch=zlecenia.length-visibleZ().length;
+  document.getElementById('kanban-count').textContent=visibleZ().length+' zleceń'+(arch?` · ${arch} w archiwum`:'');
   renderAllEventsCol(c);
   cols.forEach(col=>renderStatusCol(c,col));
   const btn=document.createElement('div');btn.className='add-col-card';
@@ -1465,7 +1474,7 @@ function renderKanban(){
 
 function renderAllEventsCol(container){
   // Pokazuje tylko zlecenia bez przypisanej kolumny (inbox)
-  const inbox=zlecenia.filter(z=>!z.status||z.status==='').sort((a,b)=>(a.date||'9999').localeCompare(b.date||'9999'));
+  const inbox=visibleZ().filter(z=>!z.status||z.status==='').sort((a,b)=>(a.date||'9999').localeCompare(b.date||'9999'));
   const col=document.createElement('div');col.className='kanban-col all-events-col';col.dataset.status='';
   const header=document.createElement('div');header.className='col-header';
   header.innerHTML=`<span class="col-icon">📋</span><span class="col-name">Wszystkie zlecenia</span><span class="col-badge">${inbox.length}</span>`;
@@ -1494,7 +1503,7 @@ function renderAllEventsCol(container){
 }
 
 function renderStatusCol(container,col){
-  let cards=zlecenia.filter(z=>z.status===col.id);
+  let cards=visibleZ().filter(z=>z.status===col.id);
   // Kolumna "W edycji" sortowana po terminie oddania (najwcześniejszy na górze)
   if(col.id==='edycja_st'){
     cards=[...cards].sort((a,b)=>(a.deliveryDeadline||'9999').localeCompare(b.deliveryDeadline||'9999'));
@@ -1507,7 +1516,15 @@ function renderStatusCol(container,col){
   const badge=document.createElement('span');badge.className='col-badge';badge.textContent=cards.length;
   const delBtn=document.createElement('button');delBtn.className='col-del-btn';delBtn.textContent='✕';delBtn.title='Usuń';delBtn.onclick=()=>deleteCol(col.id);
   header.appendChild(iconEl);header.appendChild(nameEl);header.appendChild(badge);
-  if(col.id==='zakonczone'){const clrBtn=document.createElement('button');clrBtn.className='col-del-btn';clrBtn.textContent='🗑';clrBtn.title='Wyczyść zakończone';clrBtn.style.marginRight='2px';clrBtn.onclick=()=>clearZakonczone();header.appendChild(clrBtn);}
+  if(col.id==='zakonczone'){
+    const arcBtn=document.createElement('button');arcBtn.className='col-del-btn';
+    const n=zlecenia.filter(z=>z.archived).length;
+    arcBtn.textContent='🗄';arcBtn.title=`Archiwum zleceń (${n})`;arcBtn.style.marginRight='2px';
+    arcBtn.onclick=e=>{e.stopPropagation();openArchive();};header.appendChild(arcBtn);
+    const clrBtn=document.createElement('button');clrBtn.className='col-del-btn';
+    clrBtn.textContent='📥';clrBtn.title='Schowaj zakończone do archiwum';clrBtn.style.marginRight='2px';
+    clrBtn.onclick=e=>{e.stopPropagation();clearZakonczone();};header.appendChild(clrBtn);
+  }
   header.appendChild(delBtn);colEl.appendChild(header);
   const cardsEl=document.createElement('div');cardsEl.className='col-cards';cardsEl.id='col-'+col.id;
   cards.forEach(z=>cardsEl.appendChild(makeCard(z)));colEl.appendChild(cardsEl);
@@ -1612,15 +1629,73 @@ function deleteCol(id){
 }
 
 function clearZakonczone(){
-  const count=zlecenia.filter(z=>z.status==='zakonczone').length;
-  if(!count){alert('Brak zakończonych zleceń.');return;}
-  if(!confirm(`Usunąć ${count} zakończonych zleceń? Tej operacji nie można cofnąć.`))return;
-  const doKasacji=zlecenia.filter(z=>z.status==='zakonczone');
-  archiveEditStats(doKasacji);           // historia czasu obróbki zostaje
-  markDeleted(doKasacji.map(z=>z.id));
-  zlecenia=zlecenia.filter(z=>z.status!=='zakonczone');
-  save();renderKanban();renderDayStrip();
+  const lista=zlecenia.filter(z=>z.status==='zakonczone'&&!z.archived);
+  if(!lista.length){alert('Brak zakończonych zleceń do schowania.');return;}
+  if(!confirm(`Schować ${lista.length} zakończonych zleceń do archiwum?\n\nZnikną z tablicy i kalendarza, ale zostaną w statystykach i w każdej chwili możesz je przywrócić (🗄 Archiwum).`))return;
+  const teraz=Date.now();
+  lista.forEach(z=>{z.archived=true;z.archivedAt=teraz;});
+  save();renderAll();
   if(gdriveToken)gdriveSave();
+  showDriveToast(`🗄 Schowano ${lista.length} zleceń do archiwum`);
+}
+
+// ── Okno archiwum ──────────────────────────────────────────────────────────
+function openArchive(){
+  let box=document.getElementById('modal-archive');
+  if(!box){
+    box=document.createElement('div');
+    box.className='modal-overlay';box.id='modal-archive';
+    box.onclick=e=>{if(e.target===box)closeArchive();};
+    box.innerHTML='<div class="modal" style="max-width:620px" id="modal-archive-body"></div>';
+    document.body.appendChild(box);
+  }
+  renderArchive();
+  box.classList.add('open');
+}
+function closeArchive(){document.getElementById('modal-archive')?.classList.remove('open');}
+
+function renderArchive(){
+  const el=document.getElementById('modal-archive-body');if(!el)return;
+  const lista=zlecenia.filter(z=>z.archived).sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+  const suma=lista.reduce((s,z)=>s+zTotal(z),0);
+  const doZaplaty=lista.reduce((s,z)=>s+Math.max(0,zTotal(z)-zPaidAmount(z)),0);
+  let h=`<div class="modal-top">
+      <div class="modal-title">🗄 Archiwum zleceń <span style="font-size:12px;color:var(--text3);font-weight:400">(${lista.length})</span></div>
+      <button class="modal-close" onclick="closeArchive()">✕</button>
+    </div>
+    <div style="font-size:12px;color:var(--text2);margin-bottom:12px;line-height:1.6">
+      Zlecenia schowane z tablicy. <b>Nie są skasowane</b> — liczą się w Dashboardzie i w historii
+      czasu obróbki, a ich terminy zostają w Google Calendar.
+      ${lista.length?`<br>Razem: <b style="color:var(--sesja)">${suma.toLocaleString('pl')} zł</b>${doZaplaty?` · niezapłacone: <b style="color:var(--warn)">${doZaplaty.toLocaleString('pl')} zł</b>`:''}`:''}
+    </div>`;
+  if(!lista.length){
+    h+=`<div style="text-align:center;color:var(--text3);padding:30px 10px;font-size:13px">
+      Archiwum jest puste.<br><small>Kolumna „Zakończone" → 📥 chowa zlecenia tutaj.</small></div>`;
+  } else {
+    let rok=null;
+    lista.forEach(z=>{
+      const y=(z.date||'—').slice(0,4);
+      if(y!==rok){rok=y;h+=`<div class="detail-sec">${y}</div>`;}
+      const cat=CATS[z.cat]||{};
+      const reszta=Math.max(0,zTotal(z)-zPaidAmount(z));
+      h+=`<div style="display:flex;align-items:center;gap:10px;background:var(--surface2);border-radius:8px;padding:8px 10px;margin-bottom:6px">
+        <div style="width:4px;align-self:stretch;border-radius:2px;background:${cat.color||'#888'}"></div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:13px;font-weight:600">${esc(z.name)}</div>
+          <div style="font-size:11px;color:var(--text3)">${cat.icon||''} ${esc(getCatLabel(z))} · ${z.date?formatDate(z.date):'bez daty'}${zTotal(z)?` · ${zTotal(z).toLocaleString('pl')} zł`:''}${reszta?` · <span style="color:var(--warn)">do zapłaty ${reszta.toLocaleString('pl')} zł</span>`:''}</div>
+        </div>
+        <button class="btn-ghost" style="font-size:11px;padding:4px 10px;white-space:nowrap" onclick="restoreFromArchive('${z.id}')">↩ Przywróć</button>
+      </div>`;
+    });
+  }
+  el.innerHTML=h;
+}
+
+function restoreFromArchive(id){
+  const z=zlecenia.find(x=>x.id===id);if(!z)return;
+  z.archived=false;delete z.archivedAt;
+  save();renderAll();renderArchive();
+  showDriveToast('↩ Zlecenie wróciło na tablicę');
 }
 
 // ══ TIMELINE VIEW (#9) ════════════════════════════════════════════════════
@@ -1660,7 +1735,7 @@ function renderTimeline(){
   const container=document.getElementById('tl-container');
   // Na osi czasu tylko to, co jest jeszcze w obróbce. Zlecenia zamówione,
   // do odbioru, zakończone i te z odhaczoną obróbką znikają z wykresu.
-  const yearZ=zlecenia.filter(z=>{
+  const yearZ=visibleZ().filter(z=>{
     if(!z.date)return false;
     if(leftEditingStage(z))return false;
     const y=Number(z.date.slice(0,4));
@@ -1825,6 +1900,14 @@ function renderDashboard(){
   const totalIncome=yearZ.reduce((s,z)=>s+zTotal(z),0);
   const totalDeposits=yearZ.reduce((s,z)=>s+zPaidAmount(z),0);
   const totalRemaining=yearZ.reduce((s,z)=>s+Math.max(0,zTotal(z)-zPaidAmount(z)),0);
+  // Zlecenia jeszcze do wykonania w tym roku (dzień sesji dziś lub w przyszłości)
+  // — i pieniądze, które z nich realnie wpadną (kontrakt minus to, co już wpłacone).
+  const dzis=todayISO();
+  const przedToba=yearZ.filter(z=>z.date>=dzis);
+  const przedTobaKontrakty=przedToba.reduce((s,z)=>s+zTotal(z),0);
+  const doZarobienia=przedToba.reduce((s,z)=>s+Math.max(0,zTotal(z)-zPaidAmount(z)),0);
+  const juzWykonane=yearZ.length-przedToba.length;
+  const zaleglosci=yearZ.filter(z=>z.date<dzis).reduce((s,z)=>s+Math.max(0,zTotal(z)-zPaidAmount(z)),0);
   // z archiwum — usunięte zlecenia też liczą się do historii obróbki
   const editedZ=editStatsSource().filter(z=>z.date.startsWith(dashYear+''));
   const avgEdit=editedZ.length?Math.round(editedZ.reduce((s,z)=>{const st=z.startDate||editStartDate(z)||z.date;const days=(new Date(z.editingFinished)-new Date(st))/(1000*60*60*24);return s+days;},0)/editedZ.length):null;
@@ -1839,7 +1922,8 @@ function renderDashboard(){
     <div class="stat-grid">
       <div class="stat-card"><div class="stat-num" style="color:var(--wesele)">${yearZ.length}</div><div class="stat-lbl">Zleceń w ${dashYear}</div></div>
       <div class="stat-card"><div class="stat-num" style="color:var(--sesja)">${totalIncome?totalIncome.toLocaleString('pl')+' zł':'—'}</div><div class="stat-lbl">Kontrakty</div><div class="stat-sub">${totalDeposits?'Wpłacono: '+totalDeposits.toLocaleString('pl')+' zł':'brak wpłat'}</div></div>
-      <div class="stat-card"><div class="stat-num" style="color:${totalRemaining?'var(--warn)':'var(--sesja)'}">${totalRemaining?totalRemaining.toLocaleString('pl')+' zł':'✓'}</div><div class="stat-lbl">Pozostało do zapłaty</div><div class="stat-sub">${totalRemaining?'od klientów':totalIncome?'wszystko opłacone':'brak zleceń'}</div></div>
+      <div class="stat-card"><div class="stat-num" style="color:${doZarobienia?'var(--wesele)':'var(--text3)'}">${doZarobienia?doZarobienia.toLocaleString('pl')+' zł':'—'}</div><div class="stat-lbl">Do zarobienia w ${dashYear}</div><div class="stat-sub">${przedToba.length?`z ${przedToba.length} zleceń przed Tobą · kontrakty ${przedTobaKontrakty.toLocaleString('pl')} zł`:'wszystkie zlecenia roku wykonane'}</div></div>
+      <div class="stat-card"><div class="stat-num" style="color:${totalRemaining?'var(--warn)':'var(--sesja)'}">${totalRemaining?totalRemaining.toLocaleString('pl')+' zł':'✓'}</div><div class="stat-lbl">Pozostało do zapłaty</div><div class="stat-sub">${zaleglosci?`w tym ${zaleglosci.toLocaleString('pl')} zł za wykonane (${juzWykonane})`:totalRemaining?'wszystko z przyszłych zleceń':totalIncome?'wszystko opłacone':'brak zleceń'}</div></div>
       <div class="stat-card"><div class="stat-num" style="color:var(--urodziny)">${avgEdit!==null?avgEdit+' dni':'—'}</div><div class="stat-lbl">Śr. czas edycji</div></div>
       <div class="stat-card"><div class="stat-num" style="color:var(--chrzest)">${yearZ.length?MONTHS_SHORT[busiestM]:'—'}</div><div class="stat-lbl">Najzapełniony miesiąc</div></div>
     </div>
@@ -2240,7 +2324,7 @@ function saveZlecenie(){
 async function deleteZlecenie(){
   if(!editingId||!confirm('Usunąć to zlecenie?'))return;
   const z=zlecenia.find(x=>x.id===editingId);
-  if(z){ await gcalDeleteZlecenie(z); archiveEditStats([z]); }
+  if(z){ archiveEditStats([z]); }   // terminu w Google Calendar NIE kasujemy — zostaje jako zapis
   markDeleted([editingId]);
   zlecenia=zlecenia.filter(x=>x.id!==editingId);
   save();closeAddModal();renderAll();
@@ -2683,7 +2767,7 @@ function getUpcoming(days=7){
   const limit=new Date(today);limit.setDate(limit.getDate()+days);
   // Include both event dates AND delivery deadlines
   const results=[];
-  zlecenia.forEach(z=>{
+  visibleZ().forEach(z=>{
     if(z.date){const d=new Date(z.date);if(d>=today&&d<=limit)results.push({...z,_alertDate:z.date,_alertType:'sesja'});}
     sessionEntries(z).forEach(sx=>{const d=new Date(sx.date);if(d>=today&&d<=limit)results.push({...z,name:sx.title,_alertDate:sx.date,_alertType:'sesjaDod',_sesIcon:sx.icon});});
     if(z.deliveryDeadline&&z.deliveryDeadline!==z.date){const d=new Date(z.deliveryDeadline);if(d>=today&&d<=limit)results.push({...z,_alertDate:z.deliveryDeadline,_alertType:'dostawa'});}
@@ -3272,7 +3356,8 @@ async function gcalSyncSessions(z){
     const has=hasSessions(z.cat)&&z[k.field];
     const px=sessionProxy(z,k);
     if(has){ await gcalSyncZlecenie(px); }
-    else if(z[k.ev]){ await gcalDeleteZlecenie(px); z[k.ev]=null; save(); }
+    // Wyczyszczona data sesji nie kasuje wydarzenia — zostaje w kalendarzu.
+    // ID trzymamy dalej, żeby ponowne wpisanie daty zaktualizowało to samo wydarzenie.
   }
 }
 
@@ -3351,19 +3436,12 @@ async function gcalSyncZlecenie(z){
 // zgodność wstecz
 async function gcalCreateZlecenie(z){ return gcalSyncZlecenie(z); }
 
-async function gcalDeleteZlecenie(z){
-  if(!z)return;
-  if(!await ensureToken())return;
-  if(!z._session){                      // razem ze zleceniem znikają jego sesje
-    for(const px of sessionProxies(z)){
-      if(px.gcalEventId||px.date) await gcalDeleteZlecenie(px);
-    }
-  }
-  const ids=[...new Set([z.gcalEventId,gcalDetId(z)].filter(Boolean))];
-  for(const id of ids){
-    try{await gcalRequest(`${GCAL_API}/${encodeURIComponent(id)}`,'DELETE');}catch(e){}
-  }
-}
+// ZASADA: FotoPlaner nigdy nie kasuje terminów z Google Calendar. Wydarzenie raz
+// wpisane zostaje — także po usunięciu zlecenia z aplikacji. Kasujemy wyłącznie
+// własne DUPLIKATY (druga kopia tego samego terminu), co robią gcalSyncZlecenie
+// i gcalReconcile. Funkcja zostawiona pusta celowo, żeby nikt jej nie przywrócił
+// przez przypadek.
+async function gcalDeleteZlecenie(z){ return; }
 
 // Przegląd wszystkich terminów naraz: brakujące dodaje, zmienione poprawia,
 // skasowane przywraca, DUPLIKATY kasuje. Jedno listowanie kalendarza na całość.
