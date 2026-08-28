@@ -868,8 +868,17 @@ function zTotal(z){return (Number(z.price)||0)+(z.teledysk?(Number(z.teledyskPri
 // a po oznaczeniu „opłacona" wchodzi do wpłaconych — tak jak zadatek.
 function sesjaNarzKwota(z){ return (z&&hasSessions(z.cat)&&z.sesjaNarz)?(Number(z.sesjaNarzPrice)||0):0; }
 function sesjaNarzOplacona(z){ return sesjaNarzKwota(z)>0&&!!z.sesjaNarzPaid; }
-// Wszystko, co klient już wpłacił.
-function zPaidAmount(z){ return (Number(z.deposit)||0)+(sesjaNarzOplacona(z)?sesjaNarzKwota(z):0); }
+// Wszystko, co klient już wpłacił. Przycisk „✓ Zapłacone" oznacza całość rozliczoną —
+// wcześniej Dashboard tego nie widział i pokazywał takie zlecenia jako niezapłacone.
+function zPaidAmount(z){
+  if(z && z.paid) return zTotal(z);
+  return (Number(z.deposit)||0)+(sesjaNarzOplacona(z)?sesjaNarzKwota(z):0);
+}
+// Ile jeszcze zostało do zainkasowania z tego zlecenia.
+function zDueAmount(z){ return Math.max(0,zTotal(z)-zPaidAmount(z)); }
+// Zlecenie „przed Tobą" = jeszcze niewykonane: siedzi w kolumnie „Wszystkie zlecenia",
+// czyli nie trafiło jeszcze do żadnego etapu pracy (edycja / zamówione / odbiór / zakończone).
+function czekaNaWykonanie(z){ return !z.archived && (!z.status || z.status===''); }
 
 function clonePackages(src){return JSON.parse(JSON.stringify(src));}
 let PACKAGES = (()=>{
@@ -1897,17 +1906,20 @@ function renderDashboard(){
   chartInstances=[];
 
   const yearZ=zlecenia.filter(z=>z.date&&z.date.startsWith(dashYear+''));
-  const totalIncome=yearZ.reduce((s,z)=>s+zTotal(z),0);
-  const totalDeposits=yearZ.reduce((s,z)=>s+zPaidAmount(z),0);
-  const totalRemaining=yearZ.reduce((s,z)=>s+Math.max(0,zTotal(z)-zPaidAmount(z)),0);
-  // Zlecenia jeszcze do wykonania w tym roku (dzień sesji dziś lub w przyszłości)
-  // — i pieniądze, które z nich realnie wpadną (kontrakt minus to, co już wpłacone).
-  const dzis=todayISO();
-  const przedToba=yearZ.filter(z=>z.date>=dzis);
-  const przedTobaKontrakty=przedToba.reduce((s,z)=>s+zTotal(z),0);
-  const doZarobienia=przedToba.reduce((s,z)=>s+Math.max(0,zTotal(z)-zPaidAmount(z)),0);
-  const juzWykonane=yearZ.length-przedToba.length;
-  const zaleglosci=yearZ.filter(z=>z.date<dzis).reduce((s,z)=>s+Math.max(0,zTotal(z)-zPaidAmount(z)),0);
+  const sumaK=l=>l.reduce((s,z)=>s+zTotal(z),0);          // wartość kontraktów
+  const sumaW=l=>l.reduce((s,z)=>s+zPaidAmount(z),0);      // już wpłacone
+  const sumaD=l=>l.reduce((s,z)=>s+zDueAmount(z),0);       // jeszcze do zapłaty
+
+  // Rok dzieli się na dwie rozłączne części: to, co przed Tobą, i to, co zrobione.
+  const przedToba=yearZ.filter(czekaNaWykonanie);
+  const wykonane =yearZ.filter(z=>!czekaNaWykonanie(z));
+
+  const totalIncome=sumaK(yearZ), totalDeposits=sumaW(yearZ), totalRemaining=sumaD(yearZ);
+  const przedKontrakty=sumaK(przedToba), przedZadatki=sumaW(przedToba), przedDoZaplaty=sumaD(przedToba);
+  const zrobKontrakty=sumaK(wykonane),  zrobZadatki=sumaW(wykonane),  zrobDoZaplaty=sumaD(wykonane);
+  const zl=n=>n.toLocaleString('pl')+' zł';
+  // polska odmiana: 1 zlecenie / 2 zlecenia / 5 zleceń
+  const odm=(n,a,b,c)=>{const d=n%10,s=n%100;return n+' '+(n===1?a:(d>=2&&d<=4&&!(s>=12&&s<=14)?b:c));};
   // z archiwum — usunięte zlecenia też liczą się do historii obróbki
   const editedZ=editStatsSource().filter(z=>z.date.startsWith(dashYear+''));
   const avgEdit=editedZ.length?Math.round(editedZ.reduce((s,z)=>{const st=z.startDate||editStartDate(z)||z.date;const days=(new Date(z.editingFinished)-new Date(st))/(1000*60*60*24);return s+days;},0)/editedZ.length):null;
@@ -1920,12 +1932,23 @@ function renderDashboard(){
   const body=document.getElementById('dash-body');
   body.innerHTML=`
     <div class="stat-grid">
-      <div class="stat-card"><div class="stat-num" style="color:var(--wesele)">${yearZ.length}</div><div class="stat-lbl">Zleceń w ${dashYear}</div></div>
-      <div class="stat-card"><div class="stat-num" style="color:var(--sesja)">${totalIncome?totalIncome.toLocaleString('pl')+' zł':'—'}</div><div class="stat-lbl">Kontrakty</div><div class="stat-sub">${totalDeposits?'Wpłacono: '+totalDeposits.toLocaleString('pl')+' zł':'brak wpłat'}</div></div>
-      <div class="stat-card"><div class="stat-num" style="color:${doZarobienia?'var(--wesele)':'var(--text3)'}">${doZarobienia?doZarobienia.toLocaleString('pl')+' zł':'—'}</div><div class="stat-lbl">Do zarobienia w ${dashYear}</div><div class="stat-sub">${przedToba.length?`z ${przedToba.length} zleceń przed Tobą · kontrakty ${przedTobaKontrakty.toLocaleString('pl')} zł`:'wszystkie zlecenia roku wykonane'}</div></div>
-      <div class="stat-card"><div class="stat-num" style="color:${totalRemaining?'var(--warn)':'var(--sesja)'}">${totalRemaining?totalRemaining.toLocaleString('pl')+' zł':'✓'}</div><div class="stat-lbl">Pozostało do zapłaty</div><div class="stat-sub">${zaleglosci?`w tym ${zaleglosci.toLocaleString('pl')} zł za wykonane (${juzWykonane})`:totalRemaining?'wszystko z przyszłych zleceń':totalIncome?'wszystko opłacone':'brak zleceń'}</div></div>
-      <div class="stat-card"><div class="stat-num" style="color:var(--urodziny)">${avgEdit!==null?avgEdit+' dni':'—'}</div><div class="stat-lbl">Śr. czas edycji</div></div>
-      <div class="stat-card"><div class="stat-num" style="color:var(--chrzest)">${yearZ.length?MONTHS_SHORT[busiestM]:'—'}</div><div class="stat-lbl">Najzapełniony miesiąc</div></div>
+      <div class="stat-card"><div class="stat-num" style="color:var(--wesele)">${yearZ.length}</div><div class="stat-lbl">Zleceń w ${dashYear}</div>
+        <div class="stat-sub">${przedToba.length} przed Tobą · ${wykonane.length} w robocie/zrobione</div></div>
+
+      <div class="stat-card"><div class="stat-num" style="color:var(--sesja)">${totalIncome?zl(totalIncome):'—'}</div><div class="stat-lbl">Kontrakty ${dashYear}</div>
+        <div class="stat-sub">${totalIncome?`wpłacone ${zl(totalDeposits)} · do zapłaty ${zl(totalRemaining)}`:'brak zleceń'}</div></div>
+
+      <div class="stat-card"><div class="stat-num" style="color:${przedKontrakty?'var(--warn)':'var(--text3)'}">${przedKontrakty?zl(przedKontrakty):'—'}</div><div class="stat-lbl">Do zarobienia w ${dashYear}</div>
+        <div class="stat-sub">${przedToba.length?`z ${odm(przedToba.length,'zlecenia','zleceń','zleceń')} · zadatki ${zl(przedZadatki)} · zostaje ${zl(przedDoZaplaty)}`:'nic nie czeka na wykonanie'}</div></div>
+
+      <div class="stat-card"><div class="stat-num" style="color:var(--chrzest)">${zrobKontrakty?zl(zrobKontrakty):'—'}</div><div class="stat-lbl">Zarobione w ${dashYear}</div>
+        <div class="stat-sub">${wykonane.length?`z ${odm(wykonane.length,'zlecenia','zleceń','zleceń')} · wpłacone ${zl(zrobZadatki)} · zaległości ${zl(zrobDoZaplaty)}`:'brak wykonanych zleceń'}</div></div>
+
+      <div class="stat-card"><div class="stat-num" style="color:var(--urodziny)">${avgEdit!==null?avgEdit+' dni':'—'}</div><div class="stat-lbl">Śr. czas edycji</div>
+        <div class="stat-sub">${editedZ.length?odm(editedZ.length,'zakończona obróbka','zakończone obróbki','zakończonych obróbek'):'brak danych'}</div></div>
+
+      <div class="stat-card"><div class="stat-num" style="color:var(--komunia)">${yearZ.length?MONTHS_SHORT[busiestM]:'—'}</div><div class="stat-lbl">Najzapełniony miesiąc</div>
+        <div class="stat-sub">${yearZ.length?odm(monthlyCounts[busiestM],'zlecenie','zlecenia','zleceń'):''}</div></div>
     </div>
     <div class="charts-grid">
       <div class="chart-card chart-full"><div class="chart-title">Zlecenia per miesiąc</div><div class="chart-wrap"><canvas id="chart-monthly"></canvas></div></div>
@@ -1933,7 +1956,11 @@ function renderDashboard(){
       <div class="chart-card"><div class="chart-title">Przychód per miesiąc (PLN)</div><div class="chart-wrap"><canvas id="chart-income"></canvas></div></div>
     </div>
     <div class="chart-card" style="margin-bottom:14px">
-      <div class="chart-title">Czas edycji per zlecenie (#16)</div>
+      <div class="chart-title">Średni czas obróbki wg kategorii</div>
+      <div id="edit-cat-summary" style="padding:2px 0 4px"></div>
+    </div>
+    <div class="chart-card" style="margin-bottom:14px">
+      <div class="chart-title">Czas obróbki per zlecenie</div>
       <table class="edit-table">
         <thead><tr><th>Zlecenie</th><th>Kategoria</th><th>Data sesji</th><th>Edycja zakończona</th><th>Dni</th></tr></thead>
         <tbody id="edit-table-body"></tbody>
@@ -1990,6 +2017,36 @@ function renderDashboard(){
         options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{color:'#2a2a2a'}},y:{grid:{color:'#2a2a2a'},ticks:{callback:v=>v?v.toLocaleString('pl'):0}}}}
       }));
     }
+  }
+
+  // Średnie per kategoria — te same dane co tabela niżej, tylko zgrupowane
+  const catBox=document.getElementById('edit-cat-summary');
+  if(catBox){
+    const grupy={};
+    editedZ.forEach(z=>{
+      const st=z.startDate||editStartDate(z)||z.date;
+      const d=Math.round((new Date(z.editingFinished)-new Date(st))/(1000*60*60*24));
+      if(d<0)return;
+      (grupy[z.cat]=grupy[z.cat]||[]).push(d);
+    });
+    const wiersze=Object.entries(grupy).map(([k,dni])=>({
+      k, cat:CATS[k]||{},
+      avg:Math.round(dni.reduce((a,b)=>a+b,0)/dni.length),
+      min:Math.min(...dni), max:Math.max(...dni), n:dni.length
+    })).sort((a,b)=>b.avg-a.avg);
+    const maxAvg=wiersze[0]?.avg||1;
+    catBox.innerHTML=wiersze.length?wiersze.map(({k,cat,avg,min,max,n})=>{
+      const w=Math.max(3,Math.round(avg/maxAvg*100));
+      return `<div style="display:flex;align-items:center;gap:10px;margin-bottom:7px">
+        <div style="width:150px;flex-shrink:0;font-size:12px;font-weight:600;color:${cat.color||'#888'}">${cat.icon||''} ${esc(cat.label||k)} <span style="color:var(--text3);font-weight:400">(${n})</span></div>
+        <div style="flex:1;min-width:60px;background:var(--surface2);border-radius:4px;height:16px;overflow:hidden">
+          <div style="height:100%;width:${w}%;background:${cat.color||'#888'};opacity:.85;border-radius:4px"></div>
+        </div>
+        <div style="width:150px;flex-shrink:0;text-align:right;font-size:12px;color:var(--text2)">
+          <b style="color:var(--text)">śr. ${avg} dni</b> <span style="color:var(--text3);font-size:11px">(${min}–${max})</span>
+        </div>
+      </div>`;}).join('')
+      :'<div style="font-size:12px;color:var(--text3);padding:6px 2px">Brak zakończonych obróbek w tym roku.</div>';
   }
 
   // Editing time table
