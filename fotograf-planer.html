@@ -1932,8 +1932,11 @@ function renderDashboard(){
   const body=document.getElementById('dash-body');
   body.innerHTML=`
     <div class="stat-grid">
-      <div class="stat-card"><div class="stat-num" style="color:var(--wesele)">${yearZ.length}</div><div class="stat-lbl">Zleceń w ${dashYear}</div>
-        <div class="stat-sub">${przedToba.length} przed Tobą · ${wykonane.length} w robocie/zrobione</div></div>
+      <div class="stat-card"><div class="stat-num" style="color:var(--wesele)">${przedToba.length}</div><div class="stat-lbl">Do zrobienia w ${dashYear}</div>
+        <div class="stat-sub">${przedToba.length?odm(wykonane.length,'zlecenie już w robocie','zlecenia już w robocie','zleceń już w robocie'):'wszystko wykonane'}</div></div>
+
+      <div class="stat-card"><div class="stat-num" style="color:var(--roczek,#fbbf24)">${yearZ.length}</div><div class="stat-lbl">Zleceń w ${dashYear}</div>
+        <div class="stat-sub">łącznie w bazie: ${zlecenia.length}${zlecenia.length-visibleZ().length?` (w tym ${zlecenia.length-visibleZ().length} w archiwum)`:''}</div></div>
 
       <div class="stat-card"><div class="stat-num" style="color:var(--sesja)">${totalIncome?zl(totalIncome):'—'}</div><div class="stat-lbl">Kontrakty ${dashYear}</div>
         <div class="stat-sub">${totalIncome?`wpłacone ${zl(totalDeposits)} · do zapłaty ${zl(totalRemaining)}`:'brak zleceń'}</div></div>
