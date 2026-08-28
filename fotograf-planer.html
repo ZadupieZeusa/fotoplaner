@@ -1938,8 +1938,8 @@ function renderDashboard(){
       <div class="stat-card"><div class="stat-num" style="color:var(--sesja)">${totalIncome?zl(totalIncome):'—'}</div><div class="stat-lbl">Kontrakty ${dashYear}</div>
         <div class="stat-sub">${totalIncome?`wpłacone ${zl(totalDeposits)} · do zapłaty ${zl(totalRemaining)}`:'brak zleceń'}</div></div>
 
-      <div class="stat-card"><div class="stat-num" style="color:${przedKontrakty?'var(--warn)':'var(--text3)'}">${przedKontrakty?zl(przedKontrakty):'—'}</div><div class="stat-lbl">Do zarobienia w ${dashYear}</div>
-        <div class="stat-sub">${przedToba.length?`z ${odm(przedToba.length,'zlecenia','zleceń','zleceń')} · zadatki ${zl(przedZadatki)} · zostaje ${zl(przedDoZaplaty)}`:'nic nie czeka na wykonanie'}</div></div>
+      <div class="stat-card"><div class="stat-num" style="color:${przedDoZaplaty?'var(--warn)':'var(--text3)'}">${przedToba.length?zl(przedDoZaplaty):'—'}</div><div class="stat-lbl">Do zarobienia w ${dashYear}</div>
+        <div class="stat-sub">${przedToba.length?`z ${odm(przedToba.length,'zlecenia','zleceń','zleceń')} · z zadatkami ${zl(przedKontrakty)}${przedZadatki?` (wpłacone ${zl(przedZadatki)})`:''}`:'nic nie czeka na wykonanie'}</div></div>
 
       <div class="stat-card"><div class="stat-num" style="color:var(--chrzest)">${zrobKontrakty?zl(zrobKontrakty):'—'}</div><div class="stat-lbl">Zarobione w ${dashYear}</div>
         <div class="stat-sub">${wykonane.length?`z ${odm(wykonane.length,'zlecenia','zleceń','zleceń')} · wpłacone ${zl(zrobZadatki)} · zaległości ${zl(zrobDoZaplaty)}`:'brak wykonanych zleceń'}</div></div>
