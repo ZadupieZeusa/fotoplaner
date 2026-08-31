@@ -640,15 +640,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
         <input class="form-input" id="f-deposit" type="number" placeholder="0" min="0" />
       </div>
     </div>
-    <div class="form-group" id="addon-group" style="display:none">
-      <label class="form-label">Dodatki</label>
-      <div style="display:flex;gap:8px;align-items:center;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 10px">
-        <div class="chk" id="f-teledysk-chk" onclick="toggleTeledysk()"></div>
-        <div style="flex:1;font-size:13px;cursor:pointer" onclick="toggleTeledysk()">🎬 Teledysk</div>
-        <input class="form-input" id="f-teledysk-price" type="number" min="0" placeholder="kwota" style="width:110px;font-size:13px;padding:6px 8px" oninput="updateTotalNote()" />
-        <span style="font-size:11px;color:var(--text3)">zł</span>
-      </div>
-      <div id="total-note" style="font-size:11px;color:var(--text3);margin-top:5px"></div>
+    <div class="form-group" id="addon-group">
+      <label class="form-label">Dodatki poza pakietem <span class="auto-tasks-note">— nazwę i kwotę zmienisz w każdej chwili</span></label>
+      <div id="addon-list"></div>
+      <div id="addon-suggest" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:7px"></div>
+      <div id="total-note" style="font-size:11px;color:var(--text3);margin-top:6px"></div>
     </div>
     <div id="cat-addr-fields"></div>
     <div class="form-group">
@@ -859,11 +855,27 @@ const PACKAGES_DEFAULTS = {
   sesja: [],
 };
 
-// ── Dodatki płatne (kategoria → sugerowana cena z oferty) ──
-const ADDON_TELEDYSK = {wesele:1500, urodziny:600, inne:600};
-function hasTeledysk(cat){return ADDON_TELEDYSK[cat]!==undefined;}
-// Kwota całkowita zlecenia = pakiet + dodatki
-function zTotal(z){return (Number(z.price)||0)+(z.teledysk?(Number(z.teledyskPrice)||0):0)+sesjaNarzKwota(z);}
+// ══ DODATKI PŁATNE ════════════════════════════════════════════════════════
+// Wszystko poza pakietem z cennika: teledysk, fotoksiążka dla rodziców, dodruki…
+// Format: z.dodatki = [{id, name, price}]. Edytowalne w dowolnym momencie zlecenia.
+const ADDON_TELEDYSK = {wesele:1500, urodziny:600, inne:600};   // stare, zostawione dla migracji
+// Podpowiedzi po kategorii — jeden klik wstawia gotowy wiersz, nazwę i kwotę można zmienić.
+const ADDON_SUGGEST = {
+  wesele:  [{name:'🎬 Teledysk',price:1500},{name:'📕 Fotoksiążka dla rodziców',price:600},
+            {name:'📕 Dodatkowa fotoksiążka',price:500},{name:'🖼 Odbitki / dodruki',price:200},
+            {name:'💾 Dodatkowy pendrive',price:100}],
+  urodziny:[{name:'🎬 Teledysk',price:600},{name:'📕 Fotoksiążka',price:400},{name:'🖼 Odbitki / dodruki',price:150}],
+  inne:    [{name:'🎬 Teledysk',price:600},{name:'📕 Fotoksiążka',price:400},{name:'🖼 Odbitki / dodruki',price:150}],
+  chrzest: [{name:'📕 Fotoksiążka dla rodziców',price:400},{name:'🖼 Odbitki / dodruki',price:150},{name:'💾 Dodatkowy pendrive',price:100}],
+  komunia: [{name:'📕 Fotoksiążka dla rodziców',price:400},{name:'🖼 Odbitki / dodruki',price:150},{name:'💾 Dodatkowy pendrive',price:100}],
+  roczek:  [{name:'📕 Fotoksiążka',price:400},{name:'🖼 Odbitki / dodruki',price:150}],
+  sesja:   [{name:'📕 Fotoksiążka',price:400},{name:'🖼 Odbitki / dodruki',price:150},{name:'💾 Pendrive',price:100}],
+};
+function addonSuggestions(cat){ return ADDON_SUGGEST[cat]||ADDON_SUGGEST.sesja; }
+function zDodatki(z){ return Array.isArray(z&&z.dodatki)?z.dodatki:[]; }
+function zDodatkiSuma(z){ return zDodatki(z).reduce((s,d)=>s+(Number(d.price)||0),0); }
+// Kwota całkowita zlecenia = pakiet + dodatki + sesja narzeczeńska
+function zTotal(z){return (Number(z.price)||0)+zDodatkiSuma(z)+sesjaNarzKwota(z);}
 // Sesja narzeczeńska rozliczana osobno, przed ślubem: dolicza się do sumy zlecenia,
 // a po oznaczeniu „opłacona" wchodzi do wpłaconych — tak jak zadatek.
 function sesjaNarzKwota(z){ return (z&&hasSessions(z.cat)&&z.sesjaNarz)?(Number(z.sesjaNarzPrice)||0):0; }
@@ -971,6 +983,22 @@ function migrateDropRedundantTasks(){
   return n;
 }
 
+// Migracja: pojedynczy „teledysk" (stare pole) → pozycja na liście dodatków.
+// Idempotentna — po przepisaniu stare pola znikają, więc drugi przebieg nic nie robi.
+function migrateAddons(){
+  let n=0;
+  (zlecenia||[]).forEach(z=>{
+    if(!Array.isArray(z.dodatki))z.dodatki=[];
+    if(z.teledysk&&Number(z.teledyskPrice)>0&&!z.dodatki.some(d=>d.id==='teledysk')){
+      z.dodatki.push({id:'teledysk',name:'🎬 Teledysk',price:Number(z.teledyskPrice)});
+      n++;
+    }
+    if('teledysk' in z||'teledyskPrice' in z){ delete z.teledysk; delete z.teledyskPrice; n++; }
+  });
+  if(n)save();
+  return n;
+}
+
 function loadData() {
   try { cols = JSON.parse(localStorage.getItem('foto_cols')||'null') || DEFAULT_COLS.map(c=>({...c})); } catch(e) { cols=DEFAULT_COLS.map(c=>({...c})); }
   try { zlecenia = JSON.parse(localStorage.getItem('foto_v4')||'[]'); } catch(e) { zlecenia=[]; }
@@ -1005,7 +1033,7 @@ function loadData() {
       save();saveCols();
     }
   }
-  migratePackageFormat();migrateDropRedundantTasks();
+  migratePackageFormat();migrateDropRedundantTasks();migrateAddons();
   // Migration: rename 'Do wysyłki' → 'Zamówione'
   const wysCol=cols.find(c=>c.id==='wysylka');
   if(wysCol&&wysCol.name==='Do wysyłki'){wysCol.name='Zamówione';saveCols();}
@@ -2082,7 +2110,7 @@ let tasksDirty=false;            // true jeśli użytkownik ręcznie zmienił za
 function tasksFromTemplate(tpl){return (tpl||DEFAULT_TASKS).map(t=>({id:t.id,label:t.label,done:false}));}
 
 function openAddModal(defaultStatus){
-  editingId=null;selCat=null;selPkg=null;tasksDirty=false;selTeledysk=false;
+  editingId=null;selCat=null;selPkg=null;tasksDirty=false;formDodatki=[];
   selStatus=defaultStatus!==undefined&&defaultStatus!==null?defaultStatus:'';
   formTasks=tasksFromTemplate(CAT_TASKS.sesja);
   document.getElementById('modal-add-title').textContent='Nowe zlecenie';
@@ -2099,7 +2127,6 @@ function openAddModal(defaultStatus){
   document.getElementById('f-deposit').value='';
   document.getElementById('f-pakiet').value='';
   document.getElementById('f-notes').value='';
-  document.getElementById('f-teledysk-price').value='';
   document.getElementById('btn-del').style.display='none';
   renderCatPicker();renderPkgPicker();renderStatusPicker();renderTaskForm();renderCatAddrFields();renderAddons();renderSesjeBlock();
   document.getElementById('modal-add').classList.add('open');
@@ -2109,7 +2136,8 @@ function openEditModal(id){
   closeDetail();
   const z=zlecenia.find(x=>x.id===id);if(!z)return;
   editingId=id;selCat=z.cat;selStatus=z.status!==undefined&&z.status!==null?z.status:'';tasksDirty=true;
-  selPkg=z.pakietId||null;selTeledysk=!!z.teledysk;
+  selPkg=z.pakietId||null;
+  formDodatki=zDodatki(z).map(d=>({id:d.id||('d_'+uid()),name:d.name||'',price:d.price??null}));
   formTasks=(z.tasks&&z.tasks.length?z.tasks:tasksFromTemplate(CAT_TASKS[z.cat])).map(t=>({id:t.id,label:t.label,done:!!t.done}));
   document.getElementById('modal-add-title').textContent='Edytuj zlecenie';
   document.getElementById('f-name').value=z.name;
@@ -2125,7 +2153,6 @@ function openEditModal(id){
   document.getElementById('f-deposit').value=z.deposit||'';
   document.getElementById('f-pakiet').value=z.pakiet||'';
   document.getElementById('f-notes').value=z.notes||'';
-  document.getElementById('f-teledysk-price').value=z.teledyskPrice||'';
   document.getElementById('btn-del').style.display='';
   renderCatPicker();renderPkgPicker();renderStatusPicker();renderTaskForm();renderCatAddrFields(z.adresy||{});renderAddons();renderSesjeBlock();
   document.getElementById('modal-add').classList.add('open');
@@ -2151,46 +2178,79 @@ function selectCat(cat){
     formTasks=tasksFromTemplate(CAT_TASKS[cat]);
     document.getElementById('tasks-auto-note').textContent='— auto-zadania dla: '+CATS[cat].label;
   }
-  if(changed&&!hasTeledysk(cat))selTeledysk=false;
+  // podpowiedzi dodatków zależą od kategorii — przerysuj listę
   renderCatPicker();renderPkgPicker();renderTaskForm();renderCatAddrFields();renderAddons();
 }
 
-// ── Dodatek: Teledysk ──
-let selTeledysk=false;
+// ── Dodatki poza pakietem (formularz) ──
+// Dowolna liczba pozycji: nazwa + kwota. Każdy dodatek dokłada zadanie do listy,
+// bo to zwykle osobna robota (teledysk, fotoksiążka dla rodziców…).
+let formDodatki=[];
+
+function czytajDodatkiZFormularza(){
+  const rows=document.querySelectorAll('#addon-list .addon-row');
+  rows.forEach(r=>{
+    const d=formDodatki.find(x=>x.id===r.dataset.id);if(!d)return;
+    d.name=r.querySelector('.addon-name').value;
+    d.price=Number(r.querySelector('.addon-price').value)||null;
+    // etykieta zadania nadąża za nazwą dodatku (dopóki zadanie nieodhaczone)
+    const t=formTasks.find(x=>x.id==='dod_'+d.id);
+    if(t&&!t.done&&d.name.trim())t.label=d.name.replace(/^[^\p{L}\d]+/u,'').trim()||d.name.trim();
+  });
+}
 
 function renderAddons(){
-  const g=document.getElementById('addon-group');if(!g)return;
-  if(!hasTeledysk(selCat)){g.style.display='none';updateTotalNote();return;}
-  g.style.display='';
-  document.getElementById('f-teledysk-chk').classList.toggle('on',selTeledysk);
-  const inp=document.getElementById('f-teledysk-price');
-  inp.disabled=!selTeledysk;
-  inp.style.opacity=selTeledysk?'1':'.4';
-  inp.placeholder=selTeledysk?('np. '+ADDON_TELEDYSK[selCat]):'kwota';
+  const box=document.getElementById('addon-list');if(!box)return;
+  box.innerHTML=formDodatki.length?formDodatki.map(d=>`
+    <div class="addon-row" data-id="${d.id}" style="display:flex;gap:8px;align-items:center;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:7px 10px;margin-bottom:6px">
+      <input class="form-input addon-name" value="${esc(d.name||'')}" placeholder="Nazwa dodatku" style="flex:1;font-size:13px;padding:6px 8px" oninput="czytajDodatkiZFormularza();updateTotalNote()" />
+      <input class="form-input addon-price" type="number" min="0" value="${d.price??''}" placeholder="kwota" style="width:110px;font-size:13px;padding:6px 8px" oninput="czytajDodatkiZFormularza();updateTotalNote()" />
+      <span style="font-size:11px;color:var(--text3)">zł</span>
+      <button class="task-del-btn" title="Usuń dodatek" onclick="usunDodatekZFormularza('${d.id}')">✕</button>
+    </div>`).join('')
+    :'<div style="font-size:12px;color:var(--text3);padding:2px 2px 4px">Brak dodatków. Kliknij podpowiedź poniżej albo „＋ Własny".</div>';
+
+  const sug=document.getElementById('addon-suggest');
+  if(sug){
+    sug.innerHTML=addonSuggestions(selCat).map((p,i)=>
+      `<button class="cat-btn" style="font-size:11px;padding:4px 9px" onclick="dodajDodatekZPodpowiedzi(${i})">${esc(p.name)} · ${p.price} zł</button>`).join('')
+      +`<button class="cat-btn" style="font-size:11px;padding:4px 9px" onclick="dodajWlasnyDodatek()">＋ Własny</button>`;
+  }
   updateTotalNote();
 }
 
-function toggleTeledysk(){
-  selTeledysk=!selTeledysk;
-  // zadanie „Teledysk" pojawia się/znika razem z dodatkiem (jeśli nieodhaczone)
-  if(selTeledysk){
-    if(!formTasks.some(t=>t.id==='teledysk'))formTasks.push({id:'teledysk',label:'Teledysk',done:false});
-  } else {
-    const t=formTasks.find(x=>x.id==='teledysk');
-    if(t&&!t.done)formTasks=formTasks.filter(x=>x.id!=='teledysk');
-  }
+function dodajDodatek(name,price){
+  czytajDodatkiZFormularza();
+  const d={id:'d_'+uid(),name,price:price||null};
+  formDodatki.push(d);
+  // dodatek = osobna robota, więc leci też na listę zadań
+  if(!formTasks.some(t=>t.id==='dod_'+d.id))
+    formTasks.push({id:'dod_'+d.id,label:name.replace(/^[^\p{L}\d]+/u,'').trim()||name,done:false});
+  tasksDirty=true;
+  renderAddons();renderTaskForm();
+}
+function dodajDodatekZPodpowiedzi(i){
+  const p=addonSuggestions(selCat)[i];if(!p)return;
+  dodajDodatek(p.name,p.price);
+}
+function dodajWlasnyDodatek(){ dodajDodatek('',null); setTimeout(()=>{const r=document.querySelectorAll('#addon-list .addon-name');r[r.length-1]?.focus();},30); }
+function usunDodatekZFormularza(id){
+  czytajDodatkiZFormularza();
+  formDodatki=formDodatki.filter(d=>d.id!==id);
+  const t=formTasks.find(x=>x.id==='dod_'+id);
+  if(t&&!t.done)formTasks=formTasks.filter(x=>x.id!=='dod_'+id);
   renderAddons();renderTaskForm();
 }
 
 function updateTotalNote(){
   const el=document.getElementById('total-note');if(!el)return;
   const p=Number(document.getElementById('f-price').value)||0;
-  const t=selTeledysk?(Number(document.getElementById('f-teledysk-price').value)||0):0;
+  const dod=formDodatki.reduce((s,d)=>s+(Number(d.price)||0),0);
   const sn=(hasSessions(selCat)&&document.getElementById('f-sesja-narz').value)?(Number(document.getElementById('f-sesja-narz-price').value)||0):0;
   const czesci=[`${p.toLocaleString('pl')} zł (pakiet)`];
-  if(t)czesci.push(`${t.toLocaleString('pl')} zł (teledysk)`);
+  formDodatki.filter(d=>Number(d.price)).forEach(d=>czesci.push(`${Number(d.price).toLocaleString('pl')} zł (${(d.name||'dodatek').trim()||'dodatek'})`));
   if(sn)czesci.push(`${sn.toLocaleString('pl')} zł (sesja narzeczeńska)`);
-  el.textContent=czesci.length>1?`Razem: ${czesci.join(' + ')} = ${(p+t+sn).toLocaleString('pl')} zł`:'';
+  el.textContent=czesci.length>1?`Razem: ${czesci.join(' + ')} = ${(p+dod+sn).toLocaleString('pl')} zł`:'';
 }
 
 // ── Terminy sesji (tylko wesela) ──
@@ -2355,8 +2415,9 @@ function saveZlecenie(){
     deposit:Number(document.getElementById('f-deposit').value)||null,
     pakiet:document.getElementById('f-pakiet').value.trim(),
     pakietId:selPkg||null,
-    teledysk:hasTeledysk(cat)&&selTeledysk,
-    teledyskPrice:(hasTeledysk(cat)&&selTeledysk)?(Number(document.getElementById('f-teledysk-price').value)||null):null,
+    dodatki:(czytajDodatkiZFormularza(),formDodatki
+      .map(d=>({id:d.id,name:(d.name||'').trim(),price:Number(d.price)||null}))
+      .filter(d=>d.name||d.price)),
     adresy:readCatAddrFields(),
     notes:document.getElementById('f-notes').value.trim(),tasks
   };
@@ -2443,7 +2504,7 @@ function renderDetailModal(id){
       ${dlText?`${dlText}<br>`:''}
       ${zTotal(z)?(()=>{const p=zTotal(z),d=zPaidAmount(z),r=p-d;
         const czesci=[`pakiet ${(Number(z.price)||0).toLocaleString('pl')} zł`];
-        if(z.teledysk&&z.teledyskPrice)czesci.push(`🎬 teledysk ${Number(z.teledyskPrice).toLocaleString('pl')} zł`);
+        zDodatki(z).filter(d=>Number(d.price)).forEach(d=>czesci.push(`${esc(d.name||'dodatek')} ${Number(d.price).toLocaleString('pl')} zł`));
         if(sesjaNarzKwota(z))czesci.push(`💍 sesja narzeczeńska ${sesjaNarzKwota(z).toLocaleString('pl')} zł`);
         const brk=czesci.length>1?`<div style="font-size:11px;color:var(--text3);margin-top:1px">↳ ${czesci.join(' + ')}</div>`:'';
         if(z.paid)return `💰 ${p.toLocaleString('pl')} zł · <b style="color:#4ade80">✓ Opłacone</b>${brk}`;
@@ -2471,6 +2532,7 @@ function renderDetailModal(id){
       <div class="detail-sec">Status</div>
       <div class="status-chips">${statusChips}</div>
       ${renderDetailPackage(z)}
+      ${renderDetailAddons(z)}
       ${(()=>{const fields=CAT_ADDR[z.cat]||[];const adr=z.adresy||{};const rows=fields.filter(f=>adr[f.id]).map(f=>`<div style="margin-bottom:4px"><span style="color:var(--text3);font-size:10px">${f.label}</span><br>${esc(adr[f.id])}</div>`).join('');return rows?`<div class="detail-sec">Adresy</div><div style="background:var(--surface2);border-radius:7px;padding:8px 10px;font-size:12px;color:var(--text2)">${rows}</div>`:'';})()}
       ${z.notes?`<div class="detail-sec">Notatki</div><div style="background:var(--surface2);border-radius:7px;padding:8px 10px;font-size:12px;color:var(--text2)">${esc(z.notes)}</div>`:''}
       ${total?`<div class="detail-sec">Zadania — ${done}/${total} (${pct}%)</div><div class="pbar-bg"><div class="pbar-fill" style="width:${pct}%;background:${cat.color}"></div></div>`:'<div class="detail-sec">Zadania</div>'}
@@ -2517,6 +2579,69 @@ function renderDetailPackage(z){
       <button class="btn-ghost" style="font-size:11px;padding:2px 8px" onclick="detailPkgEdit=true;renderDetailModal('${id}')">✏ Edytuj</button>
     </div>
     <div style="background:var(--surface2);border-radius:7px;padding:8px 10px;font-size:12px;color:var(--text2);line-height:1.8">${body}</div>`;
+}
+
+// ── Dodatki na karcie klienta: dopisz / zmień nazwę / zmień kwotę / usuń ──
+function renderDetailAddons(z){
+  const id=z.id;
+  const lista=zDodatki(z);
+  const suma=zDodatkiSuma(z);
+  const wiersze=lista.map(d=>`
+    <div style="display:flex;gap:6px;align-items:center;margin-bottom:6px">
+      <input class="form-input" value="${esc(d.name||'')}" placeholder="Nazwa dodatku"
+             style="flex:1;font-size:12px;padding:5px 8px"
+             onchange="zmienDodatek('${id}','${d.id}','name',this.value)" />
+      <input class="form-input" type="number" min="0" value="${d.price??''}" placeholder="kwota"
+             style="width:96px;font-size:12px;padding:5px 8px"
+             onchange="zmienDodatek('${id}','${d.id}','price',this.value)" />
+      <span style="font-size:11px;color:var(--text3)">zł</span>
+      <button class="task-del-btn" title="Usuń dodatek" onclick="usunDodatek('${id}','${d.id}')">✕</button>
+    </div>`).join('');
+  const chipsy=addonSuggestions(z.cat).map((p,i)=>
+    `<button class="cat-btn" style="font-size:11px;padding:3px 8px" onclick="dodajDodatekDoZlecenia('${id}',${i})">${esc(p.name)} · ${p.price} zł</button>`).join('')
+    +`<button class="cat-btn" style="font-size:11px;padding:3px 8px" onclick="dodajDodatekDoZlecenia('${id}',-1)">＋ Własny</button>`;
+  return `<div class="detail-sec" style="display:flex;align-items:center;justify-content:space-between">
+      <span>Dodatki poza pakietem</span>
+      ${suma?`<span style="font-size:11px;color:var(--sesja);font-weight:600">+ ${suma.toLocaleString('pl')} zł</span>`:''}
+    </div>
+    <div style="background:var(--surface2);border-radius:7px;padding:8px 10px">
+      ${wiersze||'<div style="font-size:12px;color:var(--text3);margin-bottom:6px">Brak dodatków.</div>'}
+      <div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:2px">${chipsy}</div>
+    </div>`;
+}
+
+function dodajDodatekDoZlecenia(zId,i){
+  const z=zlecenia.find(x=>x.id===zId);if(!z)return;
+  if(!Array.isArray(z.dodatki))z.dodatki=[];
+  const p=i>=0?addonSuggestions(z.cat)[i]:{name:'',price:null};
+  if(!p)return;
+  const d={id:'d_'+uid(),name:p.name,price:p.price||null};
+  z.dodatki.push(d);
+  // dodatek to osobna robota — dokładamy zadanie
+  if(p.name){
+    if(!z.tasks)z.tasks=[];
+    if(!z.tasks.some(t=>t.id==='dod_'+d.id))
+      z.tasks.push({id:'dod_'+d.id,label:p.name.replace(/^[^\p{L}\d]+/u,'').trim()||p.name,done:false});
+  }
+  save();renderDetailModal(zId);renderAll();
+}
+function zmienDodatek(zId,dId,pole,wartosc){
+  const z=zlecenia.find(x=>x.id===zId);if(!z)return;
+  const d=zDodatki(z).find(x=>x.id===dId);if(!d)return;
+  if(pole==='price')d.price=Number(wartosc)||null;
+  else {
+    d.name=(wartosc||'').trim();
+    const t=(z.tasks||[]).find(x=>x.id==='dod_'+dId);
+    if(t&&!t.done&&d.name)t.label=d.name.replace(/^[^\p{L}\d]+/u,'').trim()||d.name;
+  }
+  save();renderDetailModal(zId);renderAll();
+}
+function usunDodatek(zId,dId){
+  const z=zlecenia.find(x=>x.id===zId);if(!z)return;
+  z.dodatki=zDodatki(z).filter(d=>d.id!==dId);
+  const t=(z.tasks||[]).find(x=>x.id==='dod_'+dId);
+  if(t&&!t.done)z.tasks=z.tasks.filter(x=>x.id!=='dod_'+dId);
+  save();renderDetailModal(zId);renderAll();
 }
 
 function applyPackageToDetail(zId,pkgId){
@@ -3243,7 +3368,7 @@ async function gdriveLoad(){
     todos=mergeTodosByNewest(todos,data.todos||[],new Set(todosDeleted)).list;
     localStorage.setItem('foto_todos',JSON.stringify(todos));
     mergeEditArchive(data.editArchive||[]);   // historia obróbki — zawsze suma zbiorów
-    migratePackageFormat();migrateDropRedundantTasks();
+    migratePackageFormat();migrateDropRedundantTasks();migrateAddons();
     save();renderAll();
     showDriveToast(doMerge?`☁ Scalono! +${added} nowych, ${updated} zaktualizowanych.`:`☁ Wczytano z Drive! (${zlecenia.length} zleceń)`);
   }catch(e){showDriveToast('Błąd odczytu: '+e.message,true);}
@@ -3266,7 +3391,7 @@ async function gdriveAutoSync(){
     const removed=before-localClean.length;
     const {list,added,updated}=mergeByNewest(localClean,driveZ,delSet);
     zlecenia=list;
-    migratePackageFormat();migrateDropRedundantTasks();
+    migratePackageFormat();migrateDropRedundantTasks();migrateAddons();
     syncSignatures();
     localStorage.setItem('foto_v4',JSON.stringify(zlecenia));
     if(data.cols&&!localStorage.getItem('foto_cols')){cols=data.cols;saveCols();}
@@ -3321,7 +3446,7 @@ function gcalEventBody(z){
   const desc=[
     z.secondShooter?`2. fotograf: ${z.secondShooter}`:'',
     z.location?`Lokalizacja: ${z.location}`:'',
-    zTotal(z)?`Wynagrodzenie: ${zTotal(z).toLocaleString('pl')} zł`+(z.teledysk&&z.teledyskPrice?` (pakiet ${(Number(z.price)||0).toLocaleString('pl')} + teledysk ${Number(z.teledyskPrice).toLocaleString('pl')})`:''):'',
+    zTotal(z)?`Wynagrodzenie: ${zTotal(z).toLocaleString('pl')} zł`+(zDodatkiSuma(z)?` (pakiet ${(Number(z.price)||0).toLocaleString('pl')} + dodatki ${zDodatkiSuma(z).toLocaleString('pl')})`:''):'',
     z.deposit?`Zadatek: ${Number(z.deposit).toLocaleString('pl')} zł`:'',
     z.notes?`Notatki: ${z.notes}`:'',
     z.deliveryDeadline?`Termin oddania: ${z.deliveryDeadline}${z.deliveryTime?' o '+z.deliveryTime:''}`:'',
