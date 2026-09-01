@@ -56,6 +56,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .notif-when{font-size:10px;color:var(--text2)}
 .notif-urgency{font-size:10px;padding:2px 5px;border-radius:7px;font-weight:700;flex-shrink:0}
 .notif-empty{text-align:center;padding:18px;color:var(--text3);font-size:12px}
+.ses-pay{display:inline-block;margin-left:6px;padding:1px 7px;border-radius:20px;font-size:10px;font-weight:600;cursor:pointer;background:#ffaa3322;color:#ffaa33;border:1px solid #ffaa3355}
+.ses-pay.paid{background:#4ade8022;color:#4ade80;border-color:#4ade8055}
 .drive-menu{position:absolute;top:calc(100% + 6px);right:0;background:var(--surface);border:1px solid var(--border2);border-radius:10px;padding:5px;min-width:190px;z-index:300;box-shadow:0 8px 32px #0009}
 .drive-menu-btn{width:100%;text-align:left;background:none;border:none;color:var(--text2);font-size:12px;padding:7px 10px;border-radius:6px;cursor:pointer;display:block;font-family:inherit}
 .drive-menu-btn:hover{background:var(--surface2);color:var(--text)}
@@ -370,11 +372,36 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .sched-add-row{display:flex;gap:6px;margin-top:8px}
 .sched-add-row .form-input{font-size:12px;padding:6px 8px}
 
+/* ── LISTA ZADAŃ (pod kalendarzem) ── */
+.todo-panel{border-top:1px solid var(--border);padding:9px;flex-shrink:0;display:flex;flex-direction:column;gap:7px}
+.todo-head{display:flex;align-items:center;gap:7px}
+.todo-title{font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.6px}
+.todo-count{font-size:11px;color:var(--text3)}
+.todo-add-row{display:flex;gap:6px}
+.todo-input{flex:1;min-width:0;background:var(--surface);border:1px solid var(--border2);color:var(--text);font-size:12px;padding:7px 9px;border-radius:7px;outline:none;font-family:inherit}
+.todo-input:focus{border-color:var(--sesja)}
+.todo-input::placeholder{color:var(--text3)}
+.todo-add-btn{background:var(--sesja);border:none;color:#0d0d0d;font-size:16px;font-weight:800;line-height:1;width:32px;flex-shrink:0;border-radius:7px;cursor:pointer}
+.todo-add-btn:active{opacity:.7}
+.todo-list{display:flex;flex-direction:column;gap:4px;max-height:210px;overflow-y:auto}
+.todo-item{display:flex;align-items:flex-start;gap:8px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:8px 9px;transition:opacity .28s,transform .28s,background .15s}
+.todo-item:hover{background:var(--surface2)}
+.todo-item.leaving{opacity:0;transform:translateX(22px)}
+.todo-box{flex-shrink:0;width:17px;height:17px;margin-top:1px;border:2px solid var(--border2);border-radius:5px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:11px;color:transparent;background:none;padding:0;transition:border-color .15s,background .15s}
+.todo-box:hover{border-color:var(--sesja)}
+.todo-item.leaving .todo-box{background:var(--sesja);border-color:var(--sesja);color:#0d0d0d}
+.todo-text{flex:1;min-width:0;font-size:12.5px;line-height:1.35;color:var(--text);word-break:break-word;cursor:text}
+.todo-item.leaving .todo-text{text-decoration:line-through;color:var(--text2)}
+.todo-del{flex-shrink:0;background:none;border:none;color:var(--text3);font-size:14px;cursor:pointer;padding:0 2px;line-height:1}
+.todo-del:hover{color:var(--danger)}
+.todo-empty{font-size:12px;color:var(--text3);padding:3px 2px}
+
 /* ── MOBILE ── */
 @media(max-width:680px){
   .main-view{flex-direction:column}
   .cal-panel{width:100%;min-width:unset;border-right:none;border-bottom:1px solid var(--border);flex-shrink:0;overflow-y:auto;max-height:60vh}
   .cal-day-strip{max-height:none}
+  .todo-list{max-height:none}
   .kanban-panel{flex:1;min-height:0;display:flex;flex-direction:column}
   .kanban-toolbar{flex-shrink:0}
   .kanban-columns{overflow:auto;-webkit-overflow-scrolling:touch;touch-action:pan-x pan-y;flex-wrap:nowrap;align-items:flex-start}
@@ -431,6 +458,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <div class="drive-menu" id="drive-menu" style="display:none">
       <button class="drive-menu-btn" onclick="gdriveSave();hideDriveMenu()">⬆ Zapisz na Drive</button>
       <button class="drive-menu-btn" onclick="gdriveLoad();hideDriveMenu()">⬇ Wczytaj z Drive</button>
+      <button class="drive-menu-btn" onclick="gcalReconcile(false);hideDriveMenu()">📅 Napraw terminy w kalendarzu</button>
+      <button class="drive-menu-btn" onclick="gdriveRecoverHistory();hideDriveMenu()">⏪ Odzyskaj historię obróbki</button>
+      <button class="drive-menu-btn" onclick="showSyncStatus();hideDriveMenu()">ℹ Status synchronizacji</button>
       <button class="drive-menu-btn" onclick="gdriveSetup();hideDriveMenu()">⚙ Konfiguruj Client ID</button>
       <hr style="border:none;border-top:1px solid var(--border);margin:3px 0">
       <button class="drive-menu-btn" onclick="gdriveDisconnect();hideDriveMenu()" style="color:var(--danger)">✕ Odłącz konto</button>
@@ -468,6 +498,19 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       </div>
       <div class="cal-list-view" id="cal-list-view" style="display:none"></div>
       <div class="cal-day-strip" id="cal-day-strip"></div>
+      <!-- ── LISTA ZADAŃ ── -->
+      <div class="todo-panel">
+        <div class="todo-head">
+          <div class="todo-title">✅ Do zrobienia</div>
+          <div class="todo-count" id="todo-count"></div>
+        </div>
+        <div class="todo-add-row">
+          <input class="todo-input" id="todo-input" type="text" maxlength="200" placeholder="Nowe zadanie…"
+                 autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();addTodo();}" />
+          <button class="todo-add-btn" onclick="addTodo()" title="Dodaj zadanie">+</button>
+        </div>
+        <div class="todo-list" id="todo-list"></div>
+      </div>
     </div>
     <div class="kanban-panel">
       <div class="kanban-toolbar">
@@ -558,27 +601,56 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <div class="form-row">
       <div class="form-group">
         <label class="form-label">Data sesji / ślubu</label>
-        <input class="form-input" id="f-date" type="date" />
+        <input class="form-input" id="f-date" type="date" onchange="renderSesjeNote()" />
       </div>
       <div class="form-group" id="deadline-row" style="display:none">
         <label class="form-label">Zakończenie obróbki</label>
         <input class="form-input" id="f-deadline" type="date" />
       </div>
     </div>
+    <div id="sesje-block" style="display:none">
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">💍 Sesja narzeczeńska <span class="auto-tasks-note">— przed ślubem</span></label>
+          <input class="form-input" id="f-sesja-narz" type="date" onchange="renderSesjeBlock()" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">📸 Sesja ślubna <span class="auto-tasks-note">— po ślubie</span></label>
+          <input class="form-input" id="f-sesja-slub" type="date" onchange="renderSesjeNote()" />
+        </div>
+      </div>
+      <div class="form-group" id="sesja-narz-fin" style="display:none">
+        <label class="form-label">💍 Rozliczenie sesji narzeczeńskiej</label>
+        <div style="display:flex;gap:8px;align-items:center;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 10px">
+          <input class="form-input" id="f-sesja-narz-price" type="number" min="0" placeholder="kwota" style="width:120px;font-size:13px;padding:6px 8px" oninput="updateTotalNote();renderSesjeNote()" />
+          <span style="font-size:11px;color:var(--text3)">zł</span>
+          <div class="chk" id="f-sesja-narz-paid-chk" onclick="toggleSesjaNarzPaidForm()"></div>
+          <div style="flex:1;font-size:13px;cursor:pointer" onclick="toggleSesjaNarzPaidForm()">Opłacona</div>
+        </div>
+      </div>
+      <div id="sesje-note" style="font-size:11px;color:var(--text3);margin:-6px 0 12px;line-height:1.5"></div>
+    </div>
     <div class="form-row">
       <div class="form-group">
         <label class="form-label">Wynagrodzenie (PLN)</label>
-        <input class="form-input" id="f-price" type="number" placeholder="0" min="0" />
+        <input class="form-input" id="f-price" type="number" placeholder="0" min="0" oninput="updateTotalNote()" />
       </div>
       <div class="form-group">
-        <label class="form-label">Zaliczka wpłacona (PLN)</label>
+        <label class="form-label">Zadatek wpłacony (PLN)</label>
         <input class="form-input" id="f-deposit" type="number" placeholder="0" min="0" />
       </div>
     </div>
+    <div class="form-group" id="addon-group">
+      <label class="form-label">Dodatki poza pakietem <span class="auto-tasks-note">— nazwę i kwotę zmienisz w każdej chwili</span></label>
+      <div id="addon-list"></div>
+      <div id="addon-suggest" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:7px"></div>
+      <div id="total-note" style="font-size:11px;color:var(--text3);margin-top:6px"></div>
+    </div>
     <div id="cat-addr-fields"></div>
     <div class="form-group">
-      <label class="form-label">Pakiet</label>
-      <textarea class="form-textarea" id="f-pakiet" placeholder="np. Pakiet Premium, Srebrny, Full Day..."></textarea>
+      <label class="form-label">Pakiet <span id="pkg-note" class="auto-tasks-note"></span></label>
+      <div class="cat-picker" id="pkg-picker" style="margin-bottom:8px"></div>
+      <textarea class="form-textarea" id="f-pakiet" placeholder="Wybierz pakiet powyżej lub wpisz własną zawartość..." style="min-height:90px"></textarea>
     </div>
     <div class="form-group">
       <label class="form-label">Notatki</label>
@@ -587,6 +659,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <div class="form-group">
       <label class="form-label">Zadania <span id="tasks-auto-note" class="auto-tasks-note"></span></label>
       <div class="tasks-list" id="f-tasks"></div>
+      <div style="display:flex;gap:6px;margin-top:8px">
+        <input class="form-input" id="f-new-task" placeholder="Nowe zadanie..." style="flex:1;font-size:12px;padding:6px 8px" onkeydown="if(event.key==='Enter'){event.preventDefault();addFormTask();}" />
+        <button class="btn-sm" onclick="addFormTask()">+ Dodaj</button>
+      </div>
     </div>
     <div class="btn-row">
       <button class="btn-ghost" onclick="closeAddModal()">Anuluj</button>
@@ -603,10 +679,26 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 
 <!-- ── SETTINGS MODAL ── -->
 <div class="modal-overlay" id="modal-settings" onclick="if(event.target===this)closeSettings()">
-  <div class="modal" style="max-width:420px">
+  <div class="modal" style="max-width:620px">
     <h2 style="margin:0 0 16px">⚙ Ustawienia</h2>
-    <h3 style="margin:0 0 10px;font-size:13px;opacity:.7;font-weight:500;text-transform:uppercase;letter-spacing:.05em">Czas obróbki (dni od daty zlecenia)</h3>
-    <div id="settings-edit-days" style="display:grid;grid-template-columns:1fr 1fr;gap:8px 16px;margin-bottom:20px"></div>
+    <h3 style="margin:0 0 10px;font-size:13px;opacity:.7;font-weight:500;text-transform:uppercase;letter-spacing:.05em">Czas obróbki (dni od ostatnich zdjęć)</h3>
+    <div id="settings-edit-days" style="display:grid;grid-template-columns:1fr 1fr;gap:8px 16px;margin-bottom:22px"></div>
+
+    <h3 style="margin:0 0 10px;font-size:13px;opacity:.7;font-weight:500;text-transform:uppercase;letter-spacing:.05em">Pakiety (cennik)</h3>
+    <div class="cat-picker" id="pkg-cat-tabs" style="margin-bottom:10px"></div>
+    <div id="pkg-editor" style="margin-bottom:12px"></div>
+    <div style="display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap">
+      <button class="btn-sm" onclick="addPackageToDraft()">+ Dodaj pakiet</button>
+      <button class="btn-ghost" style="font-size:11px;padding:4px 10px" onclick="restoreDefaultPackages()">↺ Przywróć domyślne z oferty</button>
+    </div>
+
+    <h3 style="margin:0 0 4px;font-size:13px;opacity:.7;font-weight:500;text-transform:uppercase;letter-spacing:.05em">Dodatki poza pakietem — podpowiedzi</h3>
+    <div style="font-size:11px;color:var(--text3);margin-bottom:8px">Lista przycisków, które widzisz w zleceniu. Jedna pozycja = jedna linia. Cenę podajesz przy dodawaniu do zlecenia.</div>
+    <div id="addon-editor" style="margin-bottom:10px"></div>
+    <div style="display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap">
+      <button class="btn-ghost" style="font-size:11px;padding:4px 10px" onclick="restoreDefaultAddons()">↺ Przywróć domyślne dodatki</button>
+    </div>
+
     <div style="display:flex;gap:8px;justify-content:flex-end">
       <button class="btn-cancel" onclick="closeSettings()">Anuluj</button>
       <button class="btn btn-add" style="padding:8px 20px" onclick="saveSettings()">Zapisz</button>
@@ -619,6 +711,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 // ══ CONSTANTS ══════════════════════════════════════════════════════════════
 const CATS = {
   wesele:   {label:'Wesele',   icon:'💒',color:'#e84393',dim:'#e8439325'},
+  roczek:   {label:'Roczek',   icon:'🎈',color:'#fbbf24',dim:'#fbbf2425'},
   urodziny: {label:'Urodziny', icon:'🎂',color:'#ff7a2f',dim:'#ff7a2f25'},
   chrzest:  {label:'Chrzest',  icon:'👶',color:'#38bdf8',dim:'#38bdf825'},
   komunia:  {label:'Komunia',  icon:'✝️',color:'#a78bfa',dim:'#a78bfa25'},
@@ -632,8 +725,6 @@ const STANDARD_TASKS = [
   {id:'obrobka',     label:'Obróbka'},
   {id:'pendrive',    label:'Pendrive'},
   {id:'fotoksiazka', label:'Fotoksiążka'},
-  {id:'zamowienie',  label:'Zamówienie'},
-  {id:'oddanie',     label:'Oddanie materiału'},
 ];
 const WESELE_TASKS = [
   {id:'selekcja',         label:'Selekcja zdjęć'},
@@ -642,11 +733,10 @@ const WESELE_TASKS = [
   {id:'pendrive',         label:'Pendrive'},
   {id:'fotoksiazka_prem', label:'Fotoksiążka Premium'},
   {id:'fotoksiazka_bas',  label:'Fotoksiążka Basic'},
-  {id:'zamowienie',       label:'Zamówienie'},
-  {id:'oddanie',          label:'Oddanie materiału'},
 ];
 const CAT_TASKS = {
   wesele:   [...WESELE_TASKS],
+  roczek:   [...STANDARD_TASKS],
   urodziny: [...STANDARD_TASKS],
   chrzest:  [...STANDARD_TASKS],
   komunia:  [...STANDARD_TASKS],
@@ -657,6 +747,7 @@ const DEFAULT_TASKS = STANDARD_TASKS;
 
 const CAT_ADDR = {
   wesele:   [{id:'kosciol',label:'Adres kościoła'},{id:'pan',label:'Adres Pana Młodego'},{id:'pani',label:'Adres Pani Młodej'},{id:'sala',label:'Adres sali weselnej'}],
+  roczek:   [{id:'sala',label:'Adres sali'}],
   urodziny: [{id:'sala',label:'Adres sali'}],
   chrzest:  [{id:'kosciol',label:'Adres kościoła'},{id:'sala',label:'Adres sali'}],
   komunia:  [{id:'kosciol',label:'Adres kościoła'},{id:'sala',label:'Adres sali'}],
@@ -667,6 +758,7 @@ const CAT_ADDR = {
 // Domyślne czasy obróbki (dni od daty zlecenia) — ładowane z localStorage
 const EDIT_DAYS_DEFAULTS = {
   wesele:   90,
+  roczek:   30,
   urodziny: 60,
   chrzest:  21,
   komunia:  21,
@@ -677,6 +769,187 @@ let EDIT_DAYS = (()=>{
   try{const s=localStorage.getItem('foto_edit_days');return s?Object.assign({},EDIT_DAYS_DEFAULTS,JSON.parse(s)):Object.assign({},EDIT_DAYS_DEFAULTS);}
   catch{return Object.assign({},EDIT_DAYS_DEFAULTS);}
 })();
+
+// ══ PAKIETY (na podstawie ofert PDF) ══════════════════════════════════════
+// Każdy pakiet: nazwa, cena, items[] (zawartość pokazywana na karcie), tasks[] (auto-zadania)
+const TASK_LABELS = {
+  selekcja:'Selekcja zdjęć', obrobka:'Obróbka', galeria:'Galeria internetowa',
+  pendrive:'Pendrive', sesja_dzien:'Sesja ślubna (w dzień ślubu)',
+  sesja_inny:'Sesja ślubna (w inny dzień)', mini_sesja:'Mini sesja w dniu Komunii',
+  fks_basic:'Fotoksiążka BASIC 30x30', fks_pro:'Fotoksiążka PRO 30x30',
+  fotoksiazka:'Fotoksiążka 30x30', etui_pro:'Etui PRO na fotoksiążkę',
+};
+const T = ids => ids.map(i=>({id:i,label:TASK_LABELS[i]||i}));
+
+// Oferta „Eventy okolicznościowe" — obsługuje Urodziny oraz kategorię Inne
+const EVENT_PACKAGES = pfx => [
+  {id:pfx+'_mini', name:'MINI', price:1100, items:[
+    'Reportaż z Przyjęcia do 3h','Galeria internetowa - 1 miesiąc','Pakiet 150 zdjęć'],
+    tasks:T(['selekcja','obrobka','galeria'])},
+  {id:pfx+'_silver', name:'SILVER', price:1300, items:[
+    'Reportaż z Przyjęcia do 5h','Pendrive z materiałem','Galeria internetowa - 2 miesiące',
+    'Pakiet 300 zdjęć'],
+    tasks:T(['selekcja','obrobka','galeria','pendrive'])},
+  {id:pfx+'_gold', name:'GOLD', price:1500, items:[
+    'Reportaż z Przyjęcia do 5h','Pendrive z materiałem','Galeria internetowa - 2 miesiące',
+    'Pakiet 300 zdjęć','Fotoksiążka 30x30cm 28 str','Zabezpieczona kopia materiału - 2 lata'],
+    tasks:T(['selekcja','obrobka','galeria','pendrive','fotoksiazka'])},
+];
+
+const PACKAGES_DEFAULTS = {
+  wesele: [
+    {id:'w_mini', name:'MINI', price:3600, items:[
+      'Reportaż ze ślubu','Reportaż z wesela do 4h','Galeria internetowa - 2 miesiące',
+      'Pakiet 250 zdjęć','Pendrive w drewnianym boxie'],
+      tasks:T(['selekcja','obrobka','galeria','pendrive'])},
+    {id:'w_silver', name:'SILVER', price:4200, items:[
+      'Reportaż z Przygotowań','Reportaż ze Ślubu','Reportaż z Wesela (do 1:00)',
+      'Sesja ślubna w dzień ślubu','Galeria internetowa - 2 miesiące','Pakiet 500 zdjęć',
+      'Pendrive w drewnianym boxie'],
+      tasks:T(['selekcja','obrobka','sesja_dzien','galeria','pendrive'])},
+    {id:'w_gold', name:'GOLD', price:4400, items:[
+      'Reportaż z Przygotowań','Reportaż ze Ślubu','Reportaż z Wesela (do 1:00)',
+      'Sesja ślubna w inny dzień','Galeria internetowa - 6 miesięcy','Pakiet 600 zdjęć',
+      'Pendrive w drewnianym boxie','Fotoksiążka BASIC 30x30cm - 28 str'],
+      tasks:T(['selekcja','obrobka','sesja_inny','galeria','pendrive','fks_basic'])},
+    {id:'w_platinum', name:'PLATINUM', price:4700, items:[
+      'Reportaż z Przygotowań','Reportaż ze Ślubu','Reportaż z Wesela (do 1:00)',
+      'Sesja ślubna w inny dzień','Galeria internetowa - 6 miesięcy','Pakiet 700 zdjęć',
+      'Pendrive w drewnianym boxie','Fotoksiążka PRO 30x30cm - 28 str.',
+      'Etui PRO na Fotoksiążkę 30x30cm'],
+      tasks:T(['selekcja','obrobka','sesja_inny','galeria','pendrive','fks_pro','etui_pro'])},
+  ],
+  chrzest: [
+    {id:'ch_silver', name:'SILVER', price:800, items:[
+      'Reportaż z Mszy','Reportaż z Przyjęcia - 2h','Galeria internetowa - 1 miesiąc','Pakiet 100 zdjęć'],
+      tasks:T(['selekcja','obrobka','galeria'])},
+    {id:'ch_gold', name:'GOLD', price:900, items:[
+      'Reportaż z Mszy','Reportaż z Przyjęcia - 2h','Pendrive z materiałem',
+      'Galeria internetowa - 2 miesiące','Pakiet 130 zdjęć'],
+      tasks:T(['selekcja','obrobka','galeria','pendrive'])},
+    {id:'ch_platinum', name:'PLATINUM', price:1100, items:[
+      'Reportaż z Przygotowań - ok. 1h','Reportaż z Mszy','Reportaż z Przyjęcia - 2h',
+      'Pendrive z materiałem','Galeria internetowa - 2 miesiące','Pakiet min. 150 zdjęć',
+      'Fotoksiążka 30x30cm 28 str.'],
+      tasks:T(['selekcja','obrobka','galeria','pendrive','fotoksiazka'])},
+  ],
+  komunia: [
+    {id:'k_silver', name:'SILVER', price:800, items:[
+      'Reportaż z Przyjęcia na sali 2h','Pendrive z materiałem',
+      'Galeria internetowa - 2 miesiące','Pakiet 100 zdjęć'],
+      tasks:T(['selekcja','obrobka','galeria','pendrive'])},
+    {id:'k_gold', name:'GOLD', price:1000, items:[
+      'Reportaż z Przyjęcia na sali 2h','Mini Sesja w dniu Komunii','Pendrive z materiałem',
+      'Galeria internetowa - 2 miesiące','Pakiet 150 zdjęć','Fotoksiążka 30x30cm 28 str.'],
+      tasks:T(['selekcja','obrobka','mini_sesja','galeria','pendrive','fotoksiazka'])},
+    {id:'k_platinum', name:'PLATINUM', price:1200, items:[
+      'Reportaż z Mszy','Reportaż z Przyjęcia na sali 2h','Mini Sesja w dniu Komunii',
+      'Pendrive z materiałem','Galeria internetowa - 2 miesiące','Pakiet min. 150 zdjęć',
+      'Fotoksiążka 30x30cm 28 str.'],
+      tasks:T(['selekcja','obrobka','mini_sesja','galeria','pendrive','fotoksiazka'])},
+  ],
+  roczek: [
+    {id:'r_gold', name:'GOLD', price:800, items:[
+      'Reportaż z Przyjęcia - 2,5-3h','Galeria internetowa - 1 miesiąc','Pakiet min. 80 zdjęć'],
+      tasks:T(['selekcja','obrobka','galeria'])},
+    {id:'r_platinum', name:'PLATINUM', price:900, items:[
+      'Reportaż z Przyjęcia - 2,5-3h','Pendrive z materiałem','Galeria internetowa - 2 miesiące',
+      'Pakiet min. 80 zdjęć','Fotoksiążka 30x30cm 28 str.'],
+      tasks:T(['selekcja','obrobka','galeria','pendrive','fotoksiazka'])},
+  ],
+  urodziny: EVENT_PACKAGES('u'),
+  inne:     EVENT_PACKAGES('e'),
+  sesja: [],
+};
+
+// ══ DODATKI PŁATNE ════════════════════════════════════════════════════════
+// Wszystko poza pakietem z cennika: teledysk, fotoksiążka dla rodziców, dodruki…
+// Format: z.dodatki = [{id, name, price}]. Edytowalne w dowolnym momencie zlecenia.
+const ADDON_TELEDYSK = {wesele:1500, urodziny:600, inne:600};   // stare, zostawione dla migracji
+// Podpowiedzi po kategorii — same nazwy. Cenę wpisujesz przy dodawaniu,
+// bo za każdym razem bywa inna; potem i tak można ją zmienić.
+const ADDON_SUGGEST = {
+  wesele:  ['🎬 Teledysk','📕 Fotoksiążka dla rodziców','📕 Dodatkowa fotoksiążka','🖼 Odbitki / dodruki','💾 Dodatkowy pendrive','🎞 Dodatkowa godzina reportażu'],
+  urodziny:['🎬 Teledysk','📕 Fotoksiążka','🖼 Odbitki / dodruki','💾 Pendrive'],
+  inne:    ['🎬 Teledysk','📕 Fotoksiążka','🖼 Odbitki / dodruki','💾 Pendrive'],
+  chrzest: ['📕 Fotoksiążka dla rodziców','📕 Dodatkowa fotoksiążka','🖼 Odbitki / dodruki','💾 Dodatkowy pendrive'],
+  komunia: ['📕 Fotoksiążka dla rodziców','📕 Dodatkowa fotoksiążka','🖼 Odbitki / dodruki','💾 Dodatkowy pendrive'],
+  roczek:  ['📕 Fotoksiążka','🖼 Odbitki / dodruki','💾 Pendrive'],
+  sesja:   ['📕 Fotoksiążka','🖼 Odbitki / dodruki','💾 Pendrive'],
+};
+// Zapytanie o kwotę przy dodawaniu dodatku. Pusto / Anuluj = dodatek bez ceny
+// (można uzupełnić później ołówkiem).
+function zapytajOCene(nazwa,domyslna){
+  const v=prompt('Cena za: '+nazwa+'\n\n(zostaw puste, jeśli ustalisz później)', domyslna??'');
+  if(v===null)return undefined;                 // Anuluj → nie dodawaj
+  const n=Number(String(v).replace(',','.').replace(/\s/g,''));
+  return (v.trim()==='' || !isFinite(n) || n<=0) ? null : n;
+}
+// Lista podpowiedzi jest edytowalna w Ustawieniach; domyślne wpadają tylko
+// dla kategorii, których użytkownik nie ruszył.
+let ADDONS = (()=>{
+  const dom=JSON.parse(JSON.stringify(ADDON_SUGGEST));
+  try{
+    const st=JSON.parse(localStorage.getItem('foto_addons')||'null');
+    if(st&&typeof st==='object')Object.keys(dom).forEach(k=>{if(Array.isArray(st[k]))dom[k]=st[k];});
+  }catch(e){}
+  return dom;
+})();
+function saveAddons(){ localStorage.setItem('foto_addons',JSON.stringify(ADDONS)); }
+function addonSuggestions(cat){ return (ADDONS[cat]||ADDONS.sesja||[]).filter(Boolean); }
+function zDodatki(z){ return Array.isArray(z&&z.dodatki)?z.dodatki:[]; }
+function zDodatkiSuma(z){ return zDodatki(z).reduce((s,d)=>s+(Number(d.price)||0),0); }
+// Kwota całkowita zlecenia = pakiet + dodatki + sesja narzeczeńska
+function zTotal(z){return (Number(z.price)||0)+zDodatkiSuma(z)+sesjaNarzKwota(z);}
+// Sesja narzeczeńska rozliczana osobno, przed ślubem: dolicza się do sumy zlecenia,
+// a po oznaczeniu „opłacona" wchodzi do wpłaconych — tak jak zadatek.
+function sesjaNarzKwota(z){ return (z&&hasSessions(z.cat)&&z.sesjaNarz)?(Number(z.sesjaNarzPrice)||0):0; }
+function sesjaNarzOplacona(z){ return sesjaNarzKwota(z)>0&&!!z.sesjaNarzPaid; }
+// Wszystko, co klient już wpłacił. Przycisk „✓ Zapłacone" oznacza całość rozliczoną —
+// wcześniej Dashboard tego nie widział i pokazywał takie zlecenia jako niezapłacone.
+function zPaidAmount(z){
+  if(z && z.paid) return zTotal(z);
+  return (Number(z.deposit)||0)+(sesjaNarzOplacona(z)?sesjaNarzKwota(z):0);
+}
+// Ile jeszcze zostało do zainkasowania z tego zlecenia.
+function zDueAmount(z){ return Math.max(0,zTotal(z)-zPaidAmount(z)); }
+// Zlecenie „przed Tobą" = jeszcze niewykonane: siedzi w kolumnie „Wszystkie zlecenia",
+// czyli nie trafiło jeszcze do żadnego etapu pracy (edycja / zamówione / odbiór / zakończone).
+function czekaNaWykonanie(z){ return !z.archived && (!z.status || z.status===''); }
+
+function clonePackages(src){return JSON.parse(JSON.stringify(src));}
+let PACKAGES = (()=>{
+  try{
+    const s=localStorage.getItem('foto_packages');
+    if(!s)return clonePackages(PACKAGES_DEFAULTS);
+    const stored=JSON.parse(s);
+    const out=clonePackages(PACKAGES_DEFAULTS);
+    Object.keys(out).forEach(k=>{if(Array.isArray(stored[k]))out[k]=stored[k];});
+    return out;
+  }catch{return clonePackages(PACKAGES_DEFAULTS);}
+})();
+function savePackages(){localStorage.setItem('foto_packages',JSON.stringify(PACKAGES));}
+function getPackages(cat){return PACKAGES[cat]||[];}
+function findPackage(cat,pkgId){return getPackages(cat).find(p=>p.id===pkgId)||null;}
+// szukaj pakietu też poza własną kategorią (stare karty, roczek zapisany jako urodziny itp.)
+function findPackageAnywhere(pkgId){
+  for(const c of Object.keys(PACKAGES)){const p=findPackage(c,pkgId);if(p)return {cat:c,pkg:p};}
+  return null;
+}
+// Tekst pakietu zapisywany w zleceniu: 1. linia = nazwa, kolejne = "- pozycja"
+function packageToText(p){return p?[p.name,...(p.items||[]).map(i=>'- '+i)].join('\n'):'';}
+// Rozbicie zapisanego pakietu na [nazwa, ...pozycje].
+// Nowy format = jedna pozycja na linię. Stary (jednoliniowy) rozbijamy po " - ",
+// ale tylko wtedy — inaczej myślniki wewnątrz pozycji ("Galeria - 6 miesięcy") łamałyby tekst.
+function packageLines(txt){
+  const t=(txt||'').trim();
+  if(!t)return [];
+  // W starym zapisie jednoliniowym dzielimy tylko tam, gdzie po myślniku zaczyna się
+  // nowa pozycja (wielka litera). Dzięki temu „... 30x30cm - 28 str" czy
+  // „Galeria internetowa - 6 miesięcy" zostają w całości.
+  const raw = t.includes('\n') ? t.split('\n') : t.split(/\s+[-–]\s+(?=[A-ZĄĆĘŁŃÓŚŹŻ])/);
+  return raw.map(s=>s.replace(/^\s*[-–•]\s*/,'').trim()).filter(Boolean);
+}
 
 const WEDDING_SCHEDULE_TEMPLATE = [
   {id:'s1',time:'09:00',activity:'Sesja przygotowań Panny Młodej'},
@@ -702,6 +975,54 @@ const DEFAULT_COLS = [
 ];
 
 let zlecenia = [], cols = [];
+
+// Migracja: stare pakiety zapisane w jednej linii („Platinum - Pakiet 700zdj - ...")
+// przepisujemy na format „1 pozycja = 1 linia". Idempotentna — rekordy z \n są pomijane,
+// więc bezpiecznie przechodzi też po danych wciągniętych z Drive.
+function migratePackageFormat(){
+  let n=0;
+  (zlecenia||[]).forEach(z=>{
+    const t=(z.pakiet||'').trim();
+    if(!t||t.includes('\n'))return;
+    const lines=packageLines(t);
+    if(lines.length<2)return;
+    z.pakiet=[lines[0],...lines.slice(1).map(l=>'- '+l)].join('\n');
+    n++;
+  });
+  if(n){save();console.log('FotoPlaner: przepisano format pakietu w '+n+' zleceniach');}
+  return n;
+}
+
+// Migracja: usuń z istniejących kart zadania „Zamówienie" i „Oddanie materiału".
+// Te etapy śledzimy kolumnami kanbana (Zamówione / Do odbioru), więc checkbox to dubel.
+const REDUNDANT_TASK_IDS = ['zamowienie','oddanie','kopia'];
+const REDUNDANT_TASK_RE  = /^(zam[oó]wienie|oddanie materia[łl]u|zabezpieczona kopia.*)$/i;
+function migrateDropRedundantTasks(){
+  let n=0;
+  (zlecenia||[]).forEach(z=>{
+    if(!Array.isArray(z.tasks)||!z.tasks.length)return;
+    const keep=z.tasks.filter(t=>!(REDUNDANT_TASK_IDS.includes(t.id)||REDUNDANT_TASK_RE.test((t.label||'').trim())));
+    if(keep.length!==z.tasks.length){z.tasks=keep;n++;}
+  });
+  if(n){save();console.log('FotoPlaner: usunięto zbędne zadania w '+n+' zleceniach');}
+  return n;
+}
+
+// Migracja: pojedynczy „teledysk" (stare pole) → pozycja na liście dodatków.
+// Idempotentna — po przepisaniu stare pola znikają, więc drugi przebieg nic nie robi.
+function migrateAddons(){
+  let n=0;
+  (zlecenia||[]).forEach(z=>{
+    if(!Array.isArray(z.dodatki))z.dodatki=[];
+    if(z.teledysk&&Number(z.teledyskPrice)>0&&!z.dodatki.some(d=>d.id==='teledysk')){
+      z.dodatki.push({id:'teledysk',name:'🎬 Teledysk',price:Number(z.teledyskPrice)});
+      n++;
+    }
+    if('teledysk' in z||'teledyskPrice' in z){ delete z.teledysk; delete z.teledyskPrice; n++; }
+  });
+  if(n)save();
+  return n;
+}
 
 function loadData() {
   try { cols = JSON.parse(localStorage.getItem('foto_cols')||'null') || DEFAULT_COLS.map(c=>({...c})); } catch(e) { cols=DEFAULT_COLS.map(c=>({...c})); }
@@ -737,6 +1058,7 @@ function loadData() {
       save();saveCols();
     }
   }
+  migratePackageFormat();migrateDropRedundantTasks();migrateAddons();
   // Migration: rename 'Do wysyłki' → 'Zamówione'
   const wysCol=cols.find(c=>c.id==='wysylka');
   if(wysCol&&wysCol.name==='Do wysyłki'){wysCol.name='Zamówione';saveCols();}
@@ -752,13 +1074,26 @@ function loadData() {
 // ── Znaczniki modyfikacji zleceń (scalanie: najnowsza wersja rekordu wygrywa) ──
 let recSigMap={};
 try{recSigMap=JSON.parse(localStorage.getItem('foto_sig')||'{}');}catch(e){recSigMap={};}
-function recSig(z){const o={};for(const k in z){if(k!=='updatedAt')o[k]=z[k];}return JSON.stringify(o);}
+// Zmienił się format sygnatury (stabilna kolejność kluczy) — stare sygnatury
+// są nieporównywalne, więc czyścimy je, żeby nie ostemplować wszystkiego naraz.
+if(localStorage.getItem('foto_sig_v')!=='2'){recSigMap={};localStorage.setItem('foto_sig_v','2');}
+// Stabilna serializacja: kolejność kluczy nie może wpływać na sygnaturę,
+// bo JSON z Drive potrafi mieć inną kolejność pól niż lokalny obiekt.
+function stableStr(v){
+  if(v===null||typeof v!=='object')return JSON.stringify(v);
+  if(Array.isArray(v))return '['+v.map(stableStr).join(',')+']';
+  return '{'+Object.keys(v).sort().map(k=>JSON.stringify(k)+':'+stableStr(v[k])).join(',')+'}';
+}
+function recSig(z){const o={};for(const k in z){if(k!=='updatedAt')o[k]=z[k];}return stableStr(o);}
 function stampUpdated(){
   const ids=new Set();
   zlecenia.forEach(z=>{
     ids.add(z.id);
     const sig=recSig(z);
-    if(recSigMap[z.id]===undefined){if(!z.updatedAt)z.updatedAt=Date.now();}
+    // UWAGA: stary rekord bez updatedAt NIE dostaje Date.now() — inaczej samo
+    // otwarcie aplikacji na drugim urządzeniu czyniło jego kopię "najnowszą"
+    // i kasowało prawdziwą edycję z pierwszego urządzenia.
+    if(recSigMap[z.id]===undefined){if(!z.updatedAt)z.updatedAt=1;}
     else if(recSigMap[z.id]!==sig){z.updatedAt=Date.now();}
     recSigMap[z.id]=sig;
   });
@@ -782,16 +1117,121 @@ function mergeByNewest(localArr,driveArr,delSet){
   });
   return {list:Object.values(map),added,updated};
 }
+// ── Flaga „są niewysłane zmiany" — przeżywa zamknięcie aplikacji ──
+let syncDirty = localStorage.getItem('foto_dirty')==='1';
+function markDirty(){ syncDirty=true; localStorage.setItem('foto_dirty','1'); updateDriveBtn(); }
+function clearDirty(){ syncDirty=false; localStorage.removeItem('foto_dirty'); updateDriveBtn(); }
+function scheduleDriveSave(){
+  if(!gdriveToken)return;              // brak tokenu → flaga dirty wymusi zapis przy starcie
+  clearTimeout(autoSyncTimer);
+  autoSyncTimer=setTimeout(()=>gdriveSave(),2000);
+}
+// Natychmiastowy zapis, gdy aplikacja idzie w tło / jest zamykana.
+// Wcześniej 5-sekundowy timer nie zdążał się wykonać i zmiana zostawała tylko lokalnie.
+function flushSync(){
+  if(!syncDirty)return;
+  clearTimeout(autoSyncTimer);
+  if(gdriveToken && zlecenia.length>0) gdriveSave();
+}
+document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='hidden')flushSync(); });
+window.addEventListener('pagehide',flushSync);
+window.addEventListener('blur',()=>{ if(syncDirty)scheduleDriveSave(); });
+
 function save(){
   stampUpdated();
+  archiveEditStats(zlecenia);
   localStorage.setItem('foto_v4', JSON.stringify(zlecenia));
-  // auto-sync to Drive after 5s idle (tylko gdy lista niepusta)
-  if(gdriveToken && zlecenia.length>0){
-    clearTimeout(autoSyncTimer);
-    autoSyncTimer=setTimeout(()=>gdriveSave(),5000);
-  }
+  markDirty();
+  if(zlecenia.length>0) scheduleDriveSave();
 }
+// zapis samego stanu lokalnego (bez stemplowania updatedAt), np. po nadaniu gcalEventId
+function persistLocal(){ localStorage.setItem('foto_v4', JSON.stringify(zlecenia)); }
 function saveCols() { localStorage.setItem('foto_cols', JSON.stringify(cols)); }
+
+// ══ ARCHIWUM CZASU OBRÓBKI ═════════════════════════════════════════════════
+// Statystyka obróbki musi przeżyć usunięcie zlecenia (np. „Wyczyść zakończone"),
+// inaczej historia znika razem z kartą. Trzymamy lekki wpis: id, nazwa, kategoria,
+// data sesji, data zakończenia obróbki.
+let editArchive=[];
+try{ editArchive=JSON.parse(localStorage.getItem('foto_edit_archive')||'[]'); }catch(e){ editArchive=[]; }
+function saveEditArchive(){
+  editArchive=editArchive.slice(-2000);
+  localStorage.setItem('foto_edit_archive',JSON.stringify(editArchive));
+}
+// Dopisuje/odświeża wpisy dla zleceń, które mają datę sesji i zakończoną obróbkę.
+function archiveEditStats(list){
+  if(!Array.isArray(list))return;
+  const map=new Map(editArchive.map(a=>[a.id,a]));
+  let changed=false;
+  list.forEach(z=>{
+    if(!z||!z.id||!z.date||!z.editingFinished)return;
+    const prev=map.get(z.id);
+    if(prev&&prev.date===z.date&&prev.startDate===(editStartDate(z)||z.date)&&prev.editingFinished===z.editingFinished&&prev.name===z.name&&prev.cat===z.cat)return;
+    map.set(z.id,{id:z.id,name:z.name,cat:z.cat,customCat:z.customCat||'',date:z.date,startDate:editStartDate(z)||z.date,editingFinished:z.editingFinished,archivedAt:Date.now()});
+    changed=true;
+  });
+  if(!changed)return;
+  editArchive=[...map.values()];
+  saveEditArchive();
+}
+// Scalanie archiwum z drugiego urządzenia (suma zbiorów, nowszy wpis wygrywa).
+function mergeEditArchive(remote){
+  if(!Array.isArray(remote)||!remote.length)return 0;
+  const map=new Map(editArchive.map(a=>[a.id,a]));
+  let added=0;
+  remote.forEach(a=>{
+    if(!a||!a.id||!a.date||!a.editingFinished)return;
+    const prev=map.get(a.id);
+    if(!prev||(a.archivedAt||0)>(prev.archivedAt||0)){ map.set(a.id,a); added++; }
+  });
+  if(added){ editArchive=[...map.values()]; saveEditArchive(); }
+  return added;
+}
+// Pełna lista do statystyk: aktualne zlecenia + archiwum usuniętych.
+function editStatsSource(){
+  const live=zlecenia.filter(z=>z.date&&z.editingFinished);
+  const ids=new Set(live.map(z=>z.id));
+  const gone=editArchive.filter(a=>!ids.has(a.id)).map(a=>({...a,_archived:true}));
+  // startDate: dla wpisów sprzed tej wersji spada do daty zlecenia
+  return [...live,...gone];
+}
+
+// ══ SESJE DODATKOWE (wesela) ═══════════════════════════════════════════════
+// Sesja narzeczeńska — ZAWSZE przed ślubem, wyłącznie termin w kalendarzu.
+// Sesja ślubna (plenerowa) — ZAWSZE po ślubie; to ona wyznacza start obróbki,
+// bo termin oddania liczymy od dnia ostatnich zdjęć.
+const SESSION_KINDS=[
+  {key:'narz',field:'sesjaNarz',ev:'gcalSesNarzId',label:'sesja narzeczeńska',icon:'💍'},
+  {key:'slub',field:'sesjaSlub',ev:'gcalSesSlubId',label:'sesja ślubna',icon:'📸'},
+];
+function hasSessions(cat){ return cat==='wesele'; }
+function sessionKind(key){ return SESSION_KINDS.find(k=>k.key===key); }
+// Wpisane terminy sesji danego zlecenia (posortowane chronologicznie).
+function sessionEntries(z){
+  if(!z||!hasSessions(z.cat))return [];
+  return SESSION_KINDS.filter(k=>z[k.field]).map(k=>({
+    kind:k.key,cfg:k,date:z[k.field],z,label:k.label,icon:k.icon,
+    title:`${z.name} — ${k.label}`
+  })).sort((a,b)=>a.date.localeCompare(b.date));
+}
+// Dzień ostatnich zdjęć — od niego liczy się cała obróbka.
+function editStartDate(z){ return (z&&hasSessions(z.cat)&&z.sesjaSlub)?z.sesjaSlub:(z?(z.date||''):''); }
+function editDaysFor(cat){ return EDIT_DAYS[cat]||30; }
+function suggestedDeadline(z){ const st=editStartDate(z); return st?addDaysISO(st,editDaysFor(z.cat)):''; }
+
+// ══ ARCHIWUM ZLECEŃ ════════════════════════════════════════════════════════
+// Zakończone zlecenia chowamy (z.archived), nigdy nie kasujemy — Dashboard musi
+// widzieć cały rok, żeby policzyć, ile zostało do zarobienia. Archiwum jest
+// odwracalne: każde zlecenie wraca jednym kliknięciem.
+function isArchived(z){ return !!z && !!z.archived; }
+// Zlecenia widoczne w kalendarzu, na kanbanie, na osi czasu i w powiadomieniach.
+function visibleZ(){ return zlecenia.filter(z=>!z.archived); }
+
+// Etapy PO obróbce — takie zlecenia znikają z osi czasu.
+const POST_EDIT_STATUSES=['wysylka','odbior','zakonczone'];
+function leftEditingStage(z){
+  return !!z.editingFinished || POST_EDIT_STATUSES.includes(z.status);
+}
 function uid()      { return Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
 function esc(s)     { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
@@ -807,10 +1247,102 @@ function daysUntil(dateStr) {
   return Math.floor((d-t)/(1000*60*60*24));
 }
 
+// Data lokalna jako 'YYYY-MM-DD'. new Date().toISOString() zwraca UTC,
+// więc między północą a 2:00 (PL) wskazywało wczorajszy dzień.
+function toISODate(d){
+  const p=n=>String(n).padStart(2,'0');
+  return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate());
+}
+function todayISO(){ return toISODate(new Date()); }
+
 function formatDate(ds) {
   if(!ds) return '';
   const [y,m,d]=ds.split('-');
   return `${Number(d)} ${MONTHS_SHORT[Number(m)-1]} ${y}`;
+}
+
+// ══ LISTA ZADAŃ „DO ZROBIENIA" ═════════════════════════════════════════════
+// Prosta lista codzienna — bez kalendarza, bez terminów. Odhaczone znika.
+let todos=[];
+try{ todos=JSON.parse(localStorage.getItem('foto_todos')||'[]'); }catch(e){ todos=[]; }
+let todosDeleted=[];
+try{ todosDeleted=JSON.parse(localStorage.getItem('foto_todos_del')||'[]'); }catch(e){ todosDeleted=[]; }
+
+function markTodoDeleted(ids){
+  todosDeleted=[...new Set([...todosDeleted,...ids])].slice(-300);
+  localStorage.setItem('foto_todos_del',JSON.stringify(todosDeleted));
+}
+function saveTodos(){
+  localStorage.setItem('foto_todos',JSON.stringify(todos));
+  markDirty();
+  scheduleDriveSave();
+}
+function mergeTodosByNewest(localArr,driveArr,delSet){
+  const map={};
+  (localArr||[]).forEach(t=>{if(!delSet.has(t.id))map[t.id]=t;});
+  let added=0;
+  (driveArr||[]).forEach(t=>{
+    if(!t||!t.id||delSet.has(t.id))return;
+    const cur=map[t.id];
+    if(!cur){map[t.id]=t;added++;return;}
+    if((t.updatedAt||0)>(cur.updatedAt||0))map[t.id]=t;
+  });
+  const list=Object.values(map).sort((a,b)=>(a.createdAt||0)-(b.createdAt||0));
+  return {list,added};
+}
+function renderTodos(){
+  const box=document.getElementById('todo-list');
+  const cnt=document.getElementById('todo-count');
+  if(!box)return;
+  if(cnt)cnt.textContent=todos.length?todos.length+(todos.length===1?' zadanie':(todos.length<5?' zadania':' zadań')):'';
+  if(!todos.length){
+    box.innerHTML='<div class="todo-empty">Brak zadań. Dodaj pierwsze powyżej.</div>';
+    return;
+  }
+  box.innerHTML=todos.map(t=>`
+    <div class="todo-item" id="todo-${t.id}">
+      <button class="todo-box" onclick="completeTodo('${t.id}')" title="Odhacz — zadanie zniknie">✓</button>
+      <div class="todo-text" onclick="editTodo('${t.id}',this)">${esc(t.text)}</div>
+      <button class="todo-del" onclick="removeTodo('${t.id}')" title="Usuń bez odhaczania">×</button>
+    </div>`).join('');
+}
+function addTodo(){
+  const inp=document.getElementById('todo-input');
+  const txt=(inp.value||'').trim();
+  if(!txt)return;
+  todos.push({id:uid(),text:txt,createdAt:Date.now(),updatedAt:Date.now()});
+  inp.value='';
+  saveTodos();renderTodos();
+  inp.focus();
+}
+function dropTodo(id){
+  markTodoDeleted([id]);
+  todos=todos.filter(t=>t.id!==id);
+  saveTodos();renderTodos();
+}
+function completeTodo(id){
+  const el=document.getElementById('todo-'+id);
+  if(el){el.classList.add('leaving');setTimeout(()=>dropTodo(id),280);}
+  else dropTodo(id);
+}
+function removeTodo(id){ dropTodo(id); }
+function editTodo(id,el){
+  const t=todos.find(x=>x.id===id);if(!t)return;
+  const input=document.createElement('input');
+  input.className='todo-input';input.type='text';input.maxLength=200;input.value=t.text;
+  el.replaceWith(input);input.focus();input.select();
+  let done=false;
+  const commit=()=>{
+    if(done)return;done=true;
+    const v=input.value.trim();
+    if(v&&v!==t.text){t.text=v;t.updatedAt=Date.now();saveTodos();}
+    renderTodos();
+  };
+  input.addEventListener('blur',commit);
+  input.addEventListener('keydown',e=>{
+    if(e.key==='Enter'){e.preventDefault();input.blur();}
+    if(e.key==='Escape'){done=true;renderTodos();}
+  });
 }
 
 // ══ MAIN VIEW SWITCHING ════════════════════════════════════════════════════
@@ -833,7 +1365,7 @@ let calYear, calMonth, selectedDate, calView='grid', mpYear;
 function initCal() {
   const now=new Date();
   calYear=now.getFullYear(); calMonth=now.getMonth(); mpYear=calYear;
-  selectedDate=now.toISOString().slice(0,10);
+  selectedDate=toISODate(now);
   renderAll();
 }
 
@@ -868,16 +1400,35 @@ function fixMobileKanban(){
 function renderAll() {
   document.getElementById('month-label').textContent=MONTHS_PL[calMonth]+' '+calYear;
   if(calView==='grid'){renderCalGrid();renderDayStrip();} else renderCalList();
-  renderKanban(); updateNotifBadge();
+  renderKanban(); updateNotifBadge(); renderTodos();
   setTimeout(fixMobileKanban,50);
 }
 window.addEventListener('resize',fixMobileKanban);
+
+// Pozycje kalendarza dla dnia: zlecenia + osobne terminy sesji.
+function calItemsForDate(ds){
+  const out=[];
+  visibleZ().forEach(z=>{
+    if(z.date===ds) out.push({z,kind:null,name:z.name,icon:CATS[z.cat]?.icon||''});
+    sessionEntries(z).forEach(sx=>{ if(sx.date===ds) out.push({z,kind:sx.kind,name:sx.title,icon:sx.icon}); });
+  });
+  return out;
+}
+// Wszystkie pozycje w danym miesiącu ('YYYY-MM'), chronologicznie.
+function calItemsForMonth(prefix){
+  const out=[];
+  visibleZ().forEach(z=>{
+    if(z.date&&z.date.startsWith(prefix)) out.push({z,kind:null,date:z.date,name:z.name,icon:CATS[z.cat]?.icon||''});
+    sessionEntries(z).forEach(sx=>{ if(sx.date.startsWith(prefix)) out.push({z,kind:sx.kind,date:sx.date,name:sx.title,icon:sx.icon}); });
+  });
+  return out.sort((a,b)=>a.date.localeCompare(b.date));
+}
 
 function renderCalGrid() {
   const dowEl=document.getElementById('cal-dows');
   if(!dowEl.children.length) DAYS_SHORT.forEach(d=>{const e=document.createElement('div');e.className='cal-dow';e.textContent=d;dowEl.appendChild(e);});
   const grid=document.getElementById('cal-days'); grid.innerHTML='';
-  const today=new Date().toISOString().slice(0,10);
+  const today=todayISO();
   const firstDow=(new Date(calYear,calMonth,1).getDay()+6)%7;
   const dim=new Date(calYear,calMonth+1,0).getDate();
   for(let i=0;i<firstDow;i++){const e=document.createElement('div');e.className='cal-day empty';grid.appendChild(e);}
@@ -887,17 +1438,21 @@ function renderCalGrid() {
     if(ds===today)el.classList.add('today');
     if(ds===selectedDate)el.classList.add('selected');
     const num=document.createElement('div');num.className='day-num';num.textContent=d;el.appendChild(num);
-    const dayZ=zlecenia.filter(z=>z.date===ds);
-    if(dayZ.length){
+    const dayItems=calItemsForDate(ds);
+    if(dayItems.length){
       const dots=document.createElement('div');dots.className='day-dots';
-      dayZ.slice(0,3).forEach(z=>{const dot=document.createElement('div');dot.className='day-dot';dot.style.background=CATS[z.cat]?.color||'#888';dots.appendChild(dot);});
+      dayItems.slice(0,3).forEach(it=>{
+        const dot=document.createElement('div');dot.className='day-dot';
+        const c=CATS[it.z.cat]?.color||'#888';
+        // sesja dodatkowa = kółko obrysowane, żeby odróżnić ją od samego zlecenia
+        if(it.kind){ dot.style.background='transparent'; dot.style.border='2px solid '+c; }
+        else dot.style.background=c;
+        dots.appendChild(dot);
+      });
       el.appendChild(dots);
     }
-    // delivery deadline indicators
-    const ddZ=zlecenia.filter(z=>z.deliveryDeadline===ds);
-    if(ddZ.length&&!dayZ.length){
-      const d2=document.createElement('div');d2.style.cssText='width:6px;height:3px;background:var(--warn);border-radius:2px;margin-top:2px';el.appendChild(d2);
-    }
+    // Terminy oddania celowo NIE trafiają do kalendarza — kalendarz pokazuje
+    // wyłącznie terminy sesji. Postęp i deadline'y obróbki są w Timeline.
     el.onclick=()=>{selectedDate=ds;renderCalGrid();renderDayStrip();};
     grid.appendChild(el);
   }
@@ -906,21 +1461,22 @@ function renderCalGrid() {
 function renderDayStrip() {
   const strip=document.getElementById('cal-day-strip');
   const monthPrefix=`${calYear}-${String(calMonth+1).padStart(2,'0')}`;
-  const monthZ=zlecenia.filter(z=>z.date&&z.date.startsWith(monthPrefix)).sort((a,b)=>a.date.localeCompare(b.date));
+  const monthItems=calItemsForMonth(monthPrefix);
   let h=`<div class="strip-label">${MONTHS_PL[calMonth]} ${calYear}</div>`;
-  if(!monthZ.length) h+=`<div class="strip-empty">Brak zleceń w tym miesiącu</div>`;
-  else monthZ.forEach(z=>{
-    const cat=CATS[z.cat]||{};
+  if(!monthItems.length) h+=`<div class="strip-empty">Brak terminów w tym miesiącu</div>`;
+  else monthItems.forEach(it=>{
+    const z=it.z, cat=CATS[z.cat]||{};
     const done=(z.tasks||[]).filter(t=>t.done).length,total=(z.tasks||[]).length;
-    const d=z.date.split('-')[2];
-    const dow=['Nd','Pn','Wt','Śr','Cz','Pt','So'][new Date(z.date).getDay()];
-    h+=`<div class="strip-item" onclick="openDetail('${z.id}')" style="border-left-color:${cat.color}">
-      <div class="strip-dot" style="background:${cat.color}"></div>
+    const d=it.date.split('-')[2];
+    const dow=['Nd','Pn','Wt','Śr','Cz','Pt','So'][new Date(it.date).getDay()];
+    const badge=it.kind?`${it.icon}`:`${cat.icon||''} ${total?done+'/'+total:''}`;
+    h+=`<div class="strip-item" onclick="openDetail('${z.id}')" style="border-left-color:${cat.color}${it.kind?';opacity:.9':''}">
+      <div class="strip-dot" style="${it.kind?`background:transparent;border:2px solid ${cat.color}`:`background:${cat.color}`}"></div>
       <div style="flex:1;min-width:0">
-        <div class="strip-name">${esc(z.name)}</div>
+        <div class="strip-name">${esc(it.name)}</div>
         <div style="font-size:10px;color:var(--text3)">${dow} ${Number(d)} ${MONTHS_SHORT[calMonth]}</div>
       </div>
-      <div class="strip-badge" style="background:${cat.dim};color:${cat.color}">${cat.icon||''} ${total?done+'/'+total:''}</div>
+      <div class="strip-badge" style="background:${cat.dim};color:${cat.color}">${badge}</div>
     </div>`;
   });
   strip.innerHTML=h;
@@ -932,16 +1488,16 @@ function renderCalList() {
   let h='';
   for(let d=1;d<=dim;d++){
     const ds=`${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-    const dayZ=zlecenia.filter(z=>z.date===ds); if(!dayZ.length) continue;
+    const dayItems=calItemsForDate(ds); if(!dayItems.length) continue;
     const dow=['Nd','Pn','Wt','Śr','Cz','Pt','So'][new Date(ds).getDay()];
     h+=`<div class="cal-list-day-header">${dow}, ${d} ${MONTHS_SHORT[calMonth]}</div>`;
-    dayZ.forEach(z=>{
-      const cat=CATS[z.cat]||{};
+    dayItems.forEach(it=>{
+      const z=it.z, cat=CATS[z.cat]||{};
       const done=(z.tasks||[]).filter(t=>t.done).length,total=(z.tasks||[]).length;
       h+=`<div class="cal-list-item" onclick="openDetail('${z.id}')">
-        <div class="cal-list-dot" style="background:${cat.color}"></div>
-        <div class="cal-list-name">${esc(z.name)}</div>
-        <div class="cal-list-meta">${cat.icon||''} ${total?done+'/'+total+' zad.':''}</div>
+        <div class="cal-list-dot" style="${it.kind?`background:transparent;border:2px solid ${cat.color}`:`background:${cat.color}`}"></div>
+        <div class="cal-list-name">${esc(it.name)}</div>
+        <div class="cal-list-meta">${it.kind?it.icon:(cat.icon||'')+' '+(total?done+'/'+total+' zad.':'')}</div>
       </div>`;
     });
   }
@@ -969,7 +1525,8 @@ let draggingId=null;
 
 function renderKanban(){
   const c=document.getElementById('kanban-columns');c.innerHTML='';
-  document.getElementById('kanban-count').textContent=zlecenia.length+' zleceń';
+  const arch=zlecenia.length-visibleZ().length;
+  document.getElementById('kanban-count').textContent=visibleZ().length+' zleceń'+(arch?` · ${arch} w archiwum`:'');
   renderAllEventsCol(c);
   cols.forEach(col=>renderStatusCol(c,col));
   const btn=document.createElement('div');btn.className='add-col-card';
@@ -979,7 +1536,7 @@ function renderKanban(){
 
 function renderAllEventsCol(container){
   // Pokazuje tylko zlecenia bez przypisanej kolumny (inbox)
-  const inbox=zlecenia.filter(z=>!z.status||z.status==='').sort((a,b)=>(a.date||'9999').localeCompare(b.date||'9999'));
+  const inbox=visibleZ().filter(z=>!z.status||z.status==='').sort((a,b)=>(a.date||'9999').localeCompare(b.date||'9999'));
   const col=document.createElement('div');col.className='kanban-col all-events-col';col.dataset.status='';
   const header=document.createElement('div');header.className='col-header';
   header.innerHTML=`<span class="col-icon">📋</span><span class="col-name">Wszystkie zlecenia</span><span class="col-badge">${inbox.length}</span>`;
@@ -1008,7 +1565,7 @@ function renderAllEventsCol(container){
 }
 
 function renderStatusCol(container,col){
-  let cards=zlecenia.filter(z=>z.status===col.id);
+  let cards=visibleZ().filter(z=>z.status===col.id);
   // Kolumna "W edycji" sortowana po terminie oddania (najwcześniejszy na górze)
   if(col.id==='edycja_st'){
     cards=[...cards].sort((a,b)=>(a.deliveryDeadline||'9999').localeCompare(b.deliveryDeadline||'9999'));
@@ -1021,14 +1578,22 @@ function renderStatusCol(container,col){
   const badge=document.createElement('span');badge.className='col-badge';badge.textContent=cards.length;
   const delBtn=document.createElement('button');delBtn.className='col-del-btn';delBtn.textContent='✕';delBtn.title='Usuń';delBtn.onclick=()=>deleteCol(col.id);
   header.appendChild(iconEl);header.appendChild(nameEl);header.appendChild(badge);
-  if(col.id==='zakonczone'){const clrBtn=document.createElement('button');clrBtn.className='col-del-btn';clrBtn.textContent='🗑';clrBtn.title='Wyczyść zakończone';clrBtn.style.marginRight='2px';clrBtn.onclick=()=>clearZakonczone();header.appendChild(clrBtn);}
+  if(col.id==='zakonczone'){
+    const arcBtn=document.createElement('button');arcBtn.className='col-del-btn';
+    const n=zlecenia.filter(z=>z.archived).length;
+    arcBtn.textContent='🗄';arcBtn.title=`Archiwum zleceń (${n})`;arcBtn.style.marginRight='2px';
+    arcBtn.onclick=e=>{e.stopPropagation();openArchive();};header.appendChild(arcBtn);
+    const clrBtn=document.createElement('button');clrBtn.className='col-del-btn';
+    clrBtn.textContent='📥';clrBtn.title='Schowaj zakończone do archiwum';clrBtn.style.marginRight='2px';
+    clrBtn.onclick=e=>{e.stopPropagation();clearZakonczone();};header.appendChild(clrBtn);
+  }
   header.appendChild(delBtn);colEl.appendChild(header);
   const cardsEl=document.createElement('div');cardsEl.className='col-cards';cardsEl.id='col-'+col.id;
   cards.forEach(z=>cardsEl.appendChild(makeCard(z)));colEl.appendChild(cardsEl);
   const addBtn=document.createElement('button');addBtn.className='col-add-btn';addBtn.textContent='+ Dodaj';addBtn.onclick=()=>openAddModal(col.id);colEl.appendChild(addBtn);
   colEl.addEventListener('dragover',e=>{e.preventDefault();colEl.classList.add('drag-over');});
   colEl.addEventListener('dragleave',()=>colEl.classList.remove('drag-over'));
-  colEl.addEventListener('drop',e=>{e.preventDefault();colEl.classList.remove('drag-over');if(draggingId){const z=zlecenia.find(x=>x.id===draggingId);if(z){z.status=col.id;if(col.id==='edycja_st'&&z.date&&!z.deliveryDeadline){const days=EDIT_DAYS[z.cat]||30;const d=new Date(z.date);d.setDate(d.getDate()+days);z.deliveryDeadline=d.toISOString().slice(0,10);}save();renderKanban();renderDayStrip();}}});
+  colEl.addEventListener('drop',e=>{e.preventDefault();colEl.classList.remove('drag-over');if(draggingId){const z=zlecenia.find(x=>x.id===draggingId);if(z){z.status=col.id;if(col.id==='edycja_st'&&editStartDate(z)&&!z.deliveryDeadline){z.deliveryDeadline=suggestedDeadline(z);}save();renderKanban();renderDayStrip();}}});
   container.appendChild(colEl);
 }
 
@@ -1050,12 +1615,12 @@ function makeCard(z){
 
   // Finance badge (#2)
   let finHtml='';
-  if(z.price){
-    const price=Number(z.price),dep=Number(z.deposit)||0,rem=price-dep;
+  if(zTotal(z)){
+    const price=zTotal(z),dep=zPaidAmount(z),rem=price-dep;
     if(z.paid) finHtml=`<div class="card-finance">✓ Opłacone ${price.toLocaleString('pl')} zł</div>`;
     else if(dep>0&&rem>0) finHtml=`<div class="card-finance partial">💳 Pozostało: ${rem.toLocaleString('pl')} zł</div>`;
     else if(dep>0&&rem<=0) finHtml=`<div class="card-finance">✓ Opłacone ${price.toLocaleString('pl')} zł</div>`;
-    else finHtml=`<div class="card-finance partial">💰 ${price.toLocaleString('pl')} zł · brak zaliczki</div>`;
+    else finHtml=`<div class="card-finance partial">💰 ${price.toLocaleString('pl')} zł · brak zadatku</div>`;
   }
 
   const dotHtml=(z.tasks||[]).map(t=>`<div class="card-dot ${t.done?'done':''}" style="${t.done?'background:'+cat.color:''}"></div>`).join('');
@@ -1074,10 +1639,20 @@ function makeCard(z){
       editDoneBtn=`<button class="card-edit-done btn" onclick="event.stopPropagation();editDeadlineInline('${z.id}',this)">🎬 Ustaw termin obróbki</button>`;
     }
   }
+  const sesHtml=sessionEntries(z).map(sx=>{
+    const head=`${sx.icon} ${sx.label[0].toUpperCase()+sx.label.slice(1)}: ${formatDate(sx.date)}`;
+    if(sx.kind!=='narz'||!sesjaNarzKwota(z)) return `<div class="card-date" style="opacity:.85">${head}</div>`;
+    const op=sesjaNarzOplacona(z);
+    return `<div class="card-date" style="opacity:.85">${head}
+      <span class="ses-pay ${op?'paid':''}" onclick="event.stopPropagation();toggleSesjaNarzPaid('${z.id}')" title="Kliknij, żeby zmienić">
+        ${sesjaNarzKwota(z).toLocaleString('pl')} zł · ${op?'✓ opłacona':'○ nieopłacona'}</span>
+    </div>`;
+  }).join('');
   card.innerHTML=`
     <div class="card-cat" style="background:${cat.dim};color:${cat.color}">${cat.icon||''} ${getCatLabel(z)}</div>
     <div class="card-name">${esc(z.name)}</div>
     ${dateLabel?`<div class="card-date">📅 ${dateLabel}</div>`:''}
+    ${sesHtml}
     ${ddHtml}${finHtml}
     ${total?`<div class="card-pbar-bg"><div class="card-pbar-fill" style="width:${pct}%;background:${cat.color}"></div></div>`:''}
     <div class="card-dots">${dotHtml}</div>
@@ -1116,13 +1691,73 @@ function deleteCol(id){
 }
 
 function clearZakonczone(){
-  const count=zlecenia.filter(z=>z.status==='zakonczone').length;
-  if(!count){alert('Brak zakończonych zleceń.');return;}
-  if(!confirm(`Usunąć ${count} zakończonych zleceń? Tej operacji nie można cofnąć.`))return;
-  markDeleted(zlecenia.filter(z=>z.status==='zakonczone').map(z=>z.id));
-  zlecenia=zlecenia.filter(z=>z.status!=='zakonczone');
-  save();renderKanban();renderDayStrip();
+  const lista=zlecenia.filter(z=>z.status==='zakonczone'&&!z.archived);
+  if(!lista.length){alert('Brak zakończonych zleceń do schowania.');return;}
+  if(!confirm(`Schować ${lista.length} zakończonych zleceń do archiwum?\n\nZnikną z tablicy i kalendarza, ale zostaną w statystykach i w każdej chwili możesz je przywrócić (🗄 Archiwum).`))return;
+  const teraz=Date.now();
+  lista.forEach(z=>{z.archived=true;z.archivedAt=teraz;});
+  save();renderAll();
   if(gdriveToken)gdriveSave();
+  showDriveToast(`🗄 Schowano ${lista.length} zleceń do archiwum`);
+}
+
+// ── Okno archiwum ──────────────────────────────────────────────────────────
+function openArchive(){
+  let box=document.getElementById('modal-archive');
+  if(!box){
+    box=document.createElement('div');
+    box.className='modal-overlay';box.id='modal-archive';
+    box.onclick=e=>{if(e.target===box)closeArchive();};
+    box.innerHTML='<div class="modal" style="max-width:620px" id="modal-archive-body"></div>';
+    document.body.appendChild(box);
+  }
+  renderArchive();
+  box.classList.add('open');
+}
+function closeArchive(){document.getElementById('modal-archive')?.classList.remove('open');}
+
+function renderArchive(){
+  const el=document.getElementById('modal-archive-body');if(!el)return;
+  const lista=zlecenia.filter(z=>z.archived).sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+  const suma=lista.reduce((s,z)=>s+zTotal(z),0);
+  const doZaplaty=lista.reduce((s,z)=>s+Math.max(0,zTotal(z)-zPaidAmount(z)),0);
+  let h=`<div class="modal-top">
+      <div class="modal-title">🗄 Archiwum zleceń <span style="font-size:12px;color:var(--text3);font-weight:400">(${lista.length})</span></div>
+      <button class="modal-close" onclick="closeArchive()">✕</button>
+    </div>
+    <div style="font-size:12px;color:var(--text2);margin-bottom:12px;line-height:1.6">
+      Zlecenia schowane z tablicy. <b>Nie są skasowane</b> — liczą się w Dashboardzie i w historii
+      czasu obróbki, a ich terminy zostają w Google Calendar.
+      ${lista.length?`<br>Razem: <b style="color:var(--sesja)">${suma.toLocaleString('pl')} zł</b>${doZaplaty?` · niezapłacone: <b style="color:var(--warn)">${doZaplaty.toLocaleString('pl')} zł</b>`:''}`:''}
+    </div>`;
+  if(!lista.length){
+    h+=`<div style="text-align:center;color:var(--text3);padding:30px 10px;font-size:13px">
+      Archiwum jest puste.<br><small>Kolumna „Zakończone" → 📥 chowa zlecenia tutaj.</small></div>`;
+  } else {
+    let rok=null;
+    lista.forEach(z=>{
+      const y=(z.date||'—').slice(0,4);
+      if(y!==rok){rok=y;h+=`<div class="detail-sec">${y}</div>`;}
+      const cat=CATS[z.cat]||{};
+      const reszta=Math.max(0,zTotal(z)-zPaidAmount(z));
+      h+=`<div style="display:flex;align-items:center;gap:10px;background:var(--surface2);border-radius:8px;padding:8px 10px;margin-bottom:6px">
+        <div style="width:4px;align-self:stretch;border-radius:2px;background:${cat.color||'#888'}"></div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:13px;font-weight:600">${esc(z.name)}</div>
+          <div style="font-size:11px;color:var(--text3)">${cat.icon||''} ${esc(getCatLabel(z))} · ${z.date?formatDate(z.date):'bez daty'}${zTotal(z)?` · ${zTotal(z).toLocaleString('pl')} zł`:''}${reszta?` · <span style="color:var(--warn)">do zapłaty ${reszta.toLocaleString('pl')} zł</span>`:''}</div>
+        </div>
+        <button class="btn-ghost" style="font-size:11px;padding:4px 10px;white-space:nowrap" onclick="restoreFromArchive('${z.id}')">↩ Przywróć</button>
+      </div>`;
+    });
+  }
+  el.innerHTML=h;
+}
+
+function restoreFromArchive(id){
+  const z=zlecenia.find(x=>x.id===id);if(!z)return;
+  z.archived=false;delete z.archivedAt;
+  save();renderAll();renderArchive();
+  showDriveToast('↩ Zlecenie wróciło na tablicę');
 }
 
 // ══ TIMELINE VIEW (#9) ════════════════════════════════════════════════════
@@ -1149,7 +1784,7 @@ function dateToX(ds,year){
 
 function monthStartX(m,year){
   const d=new Date(year,m,1);
-  const ds=d.toISOString().slice(0,10);
+  const ds=toISODate(d);
   return dateToX(ds,year);
 }
 
@@ -1160,16 +1795,32 @@ function renderTimeline(){
   legend.innerHTML=Object.entries(CATS).map(([k,v])=>`<div class="tl-legend-item"><div class="tl-legend-dot" style="background:${v.color}"></div>${v.label}</div>`).join('');
 
   const container=document.getElementById('tl-container');
-  const yearZ=zlecenia.filter(z=>{
+  // Na osi czasu tylko to, co jest jeszcze w obróbce. Zlecenia zamówione,
+  // do odbioru, zakończone i te z odhaczoną obróbką znikają z wykresu.
+  const yearZ=visibleZ().filter(z=>{
     if(!z.date)return false;
+    if(leftEditingStage(z))return false;
     const y=Number(z.date.slice(0,4));
     const dy=z.deliveryDeadline?Number(z.deliveryDeadline.slice(0,4)):y;
     return y===tlYear||dy===tlYear;
   }).sort((a,b)=>(a.date||'').localeCompare(b.date||''));
 
-  if(!yearZ.length){container.innerHTML=`<div class="tl-empty">Brak zleceń w roku ${tlYear}<br><small style="color:var(--text3);font-size:12px">Dodaj zlecenia z datą w tym roku</small></div>`;return;}
+  // Statystyka obróbki żyje własnym życiem — obejmuje też zlecenia usunięte.
+  const editedZ=editStatsSource()
+    .filter(z=>Number(z.date.slice(0,4))===tlYear)
+    .map(z=>{
+      let st=z.startDate||editStartDate(z)||z.date;
+      // dane niespójne (sesja wpisana po zamknięciu obróbki) → licz od daty zlecenia
+      if(z.editingFinished<st) st=z.date;
+      return {...z,_start:st};
+    })
+    .map(z=>({...z,editDays:Math.round((new Date(z.editingFinished)-new Date(z._start))/(1000*60*60*24))}))
+    .filter(z=>z.editDays>=0)
+    .sort((a,b)=>b.editDays-a.editDays);
 
-  const today=new Date().toISOString().slice(0,10);
+  if(!yearZ.length&&!editedZ.length){container.innerHTML=`<div class="tl-empty">Brak zleceń w obróbce w roku ${tlYear}<br><small style="color:var(--text3);font-size:12px">Na osi widać tylko zlecenia przed zakończeniem obróbki</small></div>`;return;}
+
+  const today=todayISO();
   const todayX=new Date().getFullYear()===tlYear?dateToX(today,tlYear):null;
 
   let html=`<div class="tl-inner">`;
@@ -1181,6 +1832,7 @@ function renderTimeline(){
 
   // Rows
   html+=`<div class="tl-rows-area">`;
+  if(!yearZ.length) html+=`<div style="padding:18px 14px;font-size:12px;color:var(--text3)">Brak zleceń w obróbce w roku ${tlYear}.</div>`;
   yearZ.forEach(z=>{
     const cat=CATS[z.cat]||{};
     const eventX=dateToX(z.date,tlYear);
@@ -1199,6 +1851,7 @@ function renderTimeline(){
       <div class="tl-track" style="position:relative">
         ${MONTHS_SHORT.map((_,i)=>{const x=monthStartX(i,tlYear);return `<div class="tl-month-grid" style="left:${x}px"></div>`;}).join('')}
         ${todayX!==null?`<div class="tl-today-line" style="left:${todayX}px"></div>`:''}
+        ${sessionEntries(z).map(sx=>{const x=dateToX(sx.date,tlYear);return x===null?'':`<div style="position:absolute;top:50%;left:${x-4}px;width:8px;height:8px;margin-top:-4px;transform:rotate(45deg);background:var(--surface);border:2px solid ${barColor};border-radius:2px;z-index:3" title="${esc(sx.title)}: ${formatDate(sx.date)}"></div>`;}).join('')}
         ${dlX!==null?
           `<div class="tl-bar" style="left:${barLeft}px;width:${barWidth}px;background:${barColor};opacity:.85" title="${esc(z.name)}: ${formatDate(z.date)} → ${formatDate(z.deliveryDeadline)}">${barWidth>60?esc(z.name):''}</div>`:
           `<div class="tl-bar-dot" style="left:${barLeft-5}px;border-color:${barColor}" title="${esc(z.name)}: ${formatDate(z.date)}"></div>`
@@ -1208,14 +1861,9 @@ function renderTimeline(){
   });
   html+=`</div>`; // close tl-rows-area
 
-  // ── Sekcja: Czas obróbki ─────────────────────────────────────────────
-  const editedZ=yearZ
-    .filter(z=>z.editingFinished&&z.date)
-    .map(z=>({...z,editDays:Math.round((new Date(z.editingFinished)-new Date(z.date))/(1000*60*60*24))}))
-    .filter(z=>z.editDays>=0)
-    .sort((a,b)=>b.editDays-a.editDays);
-
+  // ── Sekcja: Czas obróbki (editedZ policzone wyżej, z archiwum włącznie) ──
   if(editedZ.length){
+    const archCount=editedZ.filter(z=>z._archived).length;
     const maxDays=editedZ[0].editDays;
     const avgDays=Math.round(editedZ.reduce((s,z)=>s+z.editDays,0)/editedZ.length);
     const BAR_MAX=680;
@@ -1238,10 +1886,10 @@ function renderTimeline(){
       <div class="tl-edit-section-header">
         <div class="tl-edit-section-label">
           <div class="tl-edit-section-title">📊 Czas obróbki</div>
-          <div class="tl-edit-section-sub">śr. ${avgDays} dni · ${editedZ.length} zleceń</div>
+          <div class="tl-edit-section-sub">śr. ${avgDays} dni · ${editedZ.length} zleceń${archCount?` · w tym ${archCount} usuniętych`:''}</div>
         </div>
         <div style="flex:1;padding:8px 12px;display:flex;align-items:center;font-size:10px;color:var(--text3)">
-          dni od daty zlecenia do zakończenia edycji
+          dni od ostatnich zdjęć (sesja ślubna lub data zlecenia) do zakończenia obróbki
         </div>
       </div>
 
@@ -1278,10 +1926,10 @@ function renderTimeline(){
       const cat=CATS[z.cat]||{};
       const barW=maxDays>0?Math.max(4,Math.round(z.editDays/maxDays*BAR_MAX)):4;
       const overAvg=z.editDays>avgDays;
-      html+=`<div class="tl-edit-row" onclick="openDetail('${z.id}')">
+      html+=`<div class="tl-edit-row"${z._archived?' style="opacity:.72"':` onclick="openDetail('${z.id}')"`}>
         <div class="tl-edit-label">
-          <div class="tl-row-name">${esc(z.name)}</div>
-          <div class="tl-row-meta" style="color:${cat.color}">${cat.icon||''} ${formatDate(z.date)}</div>
+          <div class="tl-row-name">${esc(z.name)}${z._archived?' <span style="font-size:9px;color:var(--text3);font-weight:400">· usunięte</span>':''}</div>
+          <div class="tl-row-meta" style="color:${cat.color}">${cat.icon||''} ${formatDate(z._start)}${z._start!==z.date?' <span style="color:var(--text3)">(sesja)</span>':''}</div>
         </div>
         <div class="tl-edit-track">
           <div class="tl-edit-avg-line" style="left:${avgX+12}px" title="Średnia: ${avgDays} dni"></div>
@@ -1311,11 +1959,23 @@ function renderDashboard(){
   chartInstances=[];
 
   const yearZ=zlecenia.filter(z=>z.date&&z.date.startsWith(dashYear+''));
-  const totalIncome=yearZ.reduce((s,z)=>s+(Number(z.price)||0),0);
-  const totalDeposits=yearZ.reduce((s,z)=>s+(Number(z.deposit)||0),0);
-  const totalRemaining=yearZ.reduce((s,z)=>s+Math.max(0,(Number(z.price)||0)-(Number(z.deposit)||0)),0);
-  const editedZ=yearZ.filter(z=>z.editingFinished&&z.date);
-  const avgEdit=editedZ.length?Math.round(editedZ.reduce((s,z)=>{const days=(new Date(z.editingFinished)-new Date(z.date))/(1000*60*60*24);return s+days;},0)/editedZ.length):null;
+  const sumaK=l=>l.reduce((s,z)=>s+zTotal(z),0);          // wartość kontraktów
+  const sumaW=l=>l.reduce((s,z)=>s+zPaidAmount(z),0);      // już wpłacone
+  const sumaD=l=>l.reduce((s,z)=>s+zDueAmount(z),0);       // jeszcze do zapłaty
+
+  // Rok dzieli się na dwie rozłączne części: to, co przed Tobą, i to, co zrobione.
+  const przedToba=yearZ.filter(czekaNaWykonanie);
+  const wykonane =yearZ.filter(z=>!czekaNaWykonanie(z));
+
+  const totalIncome=sumaK(yearZ), totalDeposits=sumaW(yearZ), totalRemaining=sumaD(yearZ);
+  const przedKontrakty=sumaK(przedToba), przedZadatki=sumaW(przedToba), przedDoZaplaty=sumaD(przedToba);
+  const zrobKontrakty=sumaK(wykonane),  zrobZadatki=sumaW(wykonane),  zrobDoZaplaty=sumaD(wykonane);
+  const zl=n=>n.toLocaleString('pl')+' zł';
+  // polska odmiana: 1 zlecenie / 2 zlecenia / 5 zleceń
+  const odm=(n,a,b,c)=>{const d=n%10,s=n%100;return n+' '+(n===1?a:(d>=2&&d<=4&&!(s>=12&&s<=14)?b:c));};
+  // z archiwum — usunięte zlecenia też liczą się do historii obróbki
+  const editedZ=editStatsSource().filter(z=>z.date.startsWith(dashYear+''));
+  const avgEdit=editedZ.length?Math.round(editedZ.reduce((s,z)=>{const st=z.startDate||editStartDate(z)||z.date;const days=(new Date(z.editingFinished)-new Date(st))/(1000*60*60*24);return s+days;},0)/editedZ.length):null;
 
   // Busiest month
   const monthlyCounts=Array(12).fill(0);
@@ -1325,11 +1985,26 @@ function renderDashboard(){
   const body=document.getElementById('dash-body');
   body.innerHTML=`
     <div class="stat-grid">
-      <div class="stat-card"><div class="stat-num" style="color:var(--wesele)">${yearZ.length}</div><div class="stat-lbl">Zleceń w ${dashYear}</div></div>
-      <div class="stat-card"><div class="stat-num" style="color:var(--sesja)">${totalIncome?totalIncome.toLocaleString('pl')+' zł':'—'}</div><div class="stat-lbl">Kontrakty</div><div class="stat-sub">${totalDeposits?'Zaliczki: '+totalDeposits.toLocaleString('pl')+' zł':'brak zaliczek'}</div></div>
-      <div class="stat-card"><div class="stat-num" style="color:${totalRemaining?'var(--warn)':'var(--sesja)'}">${totalRemaining?totalRemaining.toLocaleString('pl')+' zł':'✓'}</div><div class="stat-lbl">Pozostało do zapłaty</div><div class="stat-sub">${totalRemaining?'od klientów':totalIncome?'wszystko opłacone':'brak zleceń'}</div></div>
-      <div class="stat-card"><div class="stat-num" style="color:var(--urodziny)">${avgEdit!==null?avgEdit+' dni':'—'}</div><div class="stat-lbl">Śr. czas edycji</div></div>
-      <div class="stat-card"><div class="stat-num" style="color:var(--chrzest)">${yearZ.length?MONTHS_SHORT[busiestM]:'—'}</div><div class="stat-lbl">Najzapełniony miesiąc</div></div>
+      <div class="stat-card"><div class="stat-num" style="color:var(--wesele)">${przedToba.length}</div><div class="stat-lbl">Do zrobienia w ${dashYear}</div>
+        <div class="stat-sub">${przedToba.length?odm(wykonane.length,'zlecenie już w robocie','zlecenia już w robocie','zleceń już w robocie'):'wszystko wykonane'}</div></div>
+
+      <div class="stat-card"><div class="stat-num" style="color:var(--roczek,#fbbf24)">${yearZ.length}</div><div class="stat-lbl">Zleceń w ${dashYear}</div>
+        <div class="stat-sub">łącznie w bazie: ${zlecenia.length}${zlecenia.length-visibleZ().length?` (w tym ${zlecenia.length-visibleZ().length} w archiwum)`:''}</div></div>
+
+      <div class="stat-card"><div class="stat-num" style="color:var(--sesja)">${totalIncome?zl(totalIncome):'—'}</div><div class="stat-lbl">Kontrakty ${dashYear}</div>
+        <div class="stat-sub">${totalIncome?`wpłacone ${zl(totalDeposits)} · do zapłaty ${zl(totalRemaining)}`:'brak zleceń'}</div></div>
+
+      <div class="stat-card"><div class="stat-num" style="color:${przedDoZaplaty?'var(--warn)':'var(--text3)'}">${przedToba.length?zl(przedDoZaplaty):'—'}</div><div class="stat-lbl">Do zarobienia w ${dashYear}</div>
+        <div class="stat-sub">${przedToba.length?`z ${odm(przedToba.length,'zlecenia','zleceń','zleceń')} · z zadatkami ${zl(przedKontrakty)}${przedZadatki?` (wpłacone ${zl(przedZadatki)})`:''}`:'nic nie czeka na wykonanie'}</div></div>
+
+      <div class="stat-card"><div class="stat-num" style="color:var(--chrzest)">${zrobKontrakty?zl(zrobKontrakty):'—'}</div><div class="stat-lbl">Zarobione w ${dashYear}</div>
+        <div class="stat-sub">${wykonane.length?`z ${odm(wykonane.length,'zlecenia','zleceń','zleceń')} · wpłacone ${zl(zrobZadatki)} · zaległości ${zl(zrobDoZaplaty)}`:'brak wykonanych zleceń'}</div></div>
+
+      <div class="stat-card"><div class="stat-num" style="color:var(--urodziny)">${avgEdit!==null?avgEdit+' dni':'—'}</div><div class="stat-lbl">Śr. czas edycji</div>
+        <div class="stat-sub">${editedZ.length?odm(editedZ.length,'zakończona obróbka','zakończone obróbki','zakończonych obróbek'):'brak danych'}</div></div>
+
+      <div class="stat-card"><div class="stat-num" style="color:var(--komunia)">${yearZ.length?MONTHS_SHORT[busiestM]:'—'}</div><div class="stat-lbl">Najzapełniony miesiąc</div>
+        <div class="stat-sub">${yearZ.length?odm(monthlyCounts[busiestM],'zlecenie','zlecenia','zleceń'):''}</div></div>
     </div>
     <div class="charts-grid">
       <div class="chart-card chart-full"><div class="chart-title">Zlecenia per miesiąc</div><div class="chart-wrap"><canvas id="chart-monthly"></canvas></div></div>
@@ -1337,7 +2012,11 @@ function renderDashboard(){
       <div class="chart-card"><div class="chart-title">Przychód per miesiąc (PLN)</div><div class="chart-wrap"><canvas id="chart-income"></canvas></div></div>
     </div>
     <div class="chart-card" style="margin-bottom:14px">
-      <div class="chart-title">Czas edycji per zlecenie (#16)</div>
+      <div class="chart-title">Średni czas obróbki wg kategorii</div>
+      <div id="edit-cat-summary" style="padding:2px 0 4px"></div>
+    </div>
+    <div class="chart-card" style="margin-bottom:14px">
+      <div class="chart-title">Czas obróbki per zlecenie</div>
       <table class="edit-table">
         <thead><tr><th>Zlecenie</th><th>Kategoria</th><th>Data sesji</th><th>Edycja zakończona</th><th>Dni</th></tr></thead>
         <tbody id="edit-table-body"></tbody>
@@ -1385,7 +2064,7 @@ function renderDashboard(){
 
     // Monthly income bar
     const incomeData=Array(12).fill(0);
-    yearZ.forEach(z=>{if(z.price){const mi=Number(z.date.slice(5,7))-1;incomeData[mi]+=Number(z.price);}});
+    yearZ.forEach(z=>{if(zTotal(z)){const mi=Number(z.date.slice(5,7))-1;incomeData[mi]+=zTotal(z);}});
     const ctx3=document.getElementById('chart-income');
     if(ctx3){
       chartInstances.push(new Chart(ctx3,{
@@ -1396,17 +2075,48 @@ function renderDashboard(){
     }
   }
 
+  // Średnie per kategoria — te same dane co tabela niżej, tylko zgrupowane
+  const catBox=document.getElementById('edit-cat-summary');
+  if(catBox){
+    const grupy={};
+    editedZ.forEach(z=>{
+      const st=z.startDate||editStartDate(z)||z.date;
+      const d=Math.round((new Date(z.editingFinished)-new Date(st))/(1000*60*60*24));
+      if(d<0)return;
+      (grupy[z.cat]=grupy[z.cat]||[]).push(d);
+    });
+    const wiersze=Object.entries(grupy).map(([k,dni])=>({
+      k, cat:CATS[k]||{},
+      avg:Math.round(dni.reduce((a,b)=>a+b,0)/dni.length),
+      min:Math.min(...dni), max:Math.max(...dni), n:dni.length
+    })).sort((a,b)=>b.avg-a.avg);
+    const maxAvg=wiersze[0]?.avg||1;
+    catBox.innerHTML=wiersze.length?wiersze.map(({k,cat,avg,min,max,n})=>{
+      const w=Math.max(3,Math.round(avg/maxAvg*100));
+      return `<div style="display:flex;align-items:center;gap:10px;margin-bottom:7px">
+        <div style="width:150px;flex-shrink:0;font-size:12px;font-weight:600;color:${cat.color||'#888'}">${cat.icon||''} ${esc(cat.label||k)} <span style="color:var(--text3);font-weight:400">(${n})</span></div>
+        <div style="flex:1;min-width:60px;background:var(--surface2);border-radius:4px;height:16px;overflow:hidden">
+          <div style="height:100%;width:${w}%;background:${cat.color||'#888'};opacity:.85;border-radius:4px"></div>
+        </div>
+        <div style="width:150px;flex-shrink:0;text-align:right;font-size:12px;color:var(--text2)">
+          <b style="color:var(--text)">śr. ${avg} dni</b> <span style="color:var(--text3);font-size:11px">(${min}–${max})</span>
+        </div>
+      </div>`;}).join('')
+      :'<div style="font-size:12px;color:var(--text3);padding:6px 2px">Brak zakończonych obróbek w tym roku.</div>';
+  }
+
   // Editing time table
   const tbody=document.getElementById('edit-table-body');
   if(tbody){
-    const rows=yearZ.filter(z=>z.editingFinished).map(z=>{
-      const days=Math.round((new Date(z.editingFinished)-new Date(z.date))/(1000*60*60*24));
-      return {z,days};
+    const rows=editedZ.map(z=>{
+      const st=z.startDate||editStartDate(z)||z.date;
+      const days=Math.round((new Date(z.editingFinished)-new Date(st))/(1000*60*60*24));
+      return {z,days,st};
     }).sort((a,b)=>b.days-a.days);
-    rows.forEach(({z,days})=>{
+    rows.forEach(({z,days,st})=>{
       const cat=CATS[z.cat]||{};
       const tr=document.createElement('tr');
-      tr.innerHTML=`<td>${esc(z.name)}</td><td style="color:${cat.color}">${cat.icon} ${cat.label}</td><td>${formatDate(z.date)}</td><td>${formatDate(z.editingFinished)}</td><td class="edit-days">${days}</td>`;
+      tr.innerHTML=`<td>${esc(z.name)}${z._archived?' <span style="font-size:9px;color:var(--text3)">· usunięte</span>':''}</td><td style="color:${cat.color}">${cat.icon||''} ${cat.label||z.cat||''}</td><td>${formatDate(st)}${st!==z.date?' <span style="font-size:9px;color:var(--text3)">sesja</span>':''}</td><td>${formatDate(z.editingFinished)}</td><td class="edit-days">${days}</td>`;
       tbody.appendChild(tr);
     });
     if(!rows.length){
@@ -1418,18 +2128,24 @@ function renderDashboard(){
 }
 
 // ══ ADD/EDIT MODAL ════════════════════════════════════════════════════════
-let editingId=null,selCat=null,selStatus=null,taskStates={};
-let tasksDirty=false; // true if user manually changed tasks
+let editingId=null,selCat=null,selStatus=null,selPkg=null;
+let formTasks=[];                // [{id,label,done}] — pełna lista zadań w formularzu
+let tasksDirty=false;            // true jeśli użytkownik ręcznie zmienił zadania
+
+function tasksFromTemplate(tpl){return (tpl||DEFAULT_TASKS).map(t=>({id:t.id,label:t.label,done:false}));}
 
 function openAddModal(defaultStatus){
-  editingId=null;selCat=null;tasksDirty=false;
+  editingId=null;selCat=null;selPkg=null;tasksDirty=false;formDodatki=[];formDodatekEdit=null;
   selStatus=defaultStatus!==undefined&&defaultStatus!==null?defaultStatus:'';
-  taskStates={};
-  (CAT_TASKS.sesja||DEFAULT_TASKS).forEach(t=>taskStates[t.id]=false);
+  formTasks=tasksFromTemplate(CAT_TASKS.sesja);
   document.getElementById('modal-add-title').textContent='Nowe zlecenie';
   document.getElementById('f-name').value='';
-  document.getElementById('f-date').value=selectedDate||new Date().toISOString().slice(0,10);
+  document.getElementById('f-date').value=selectedDate||todayISO();
   document.getElementById('f-deadline').value='';
+  document.getElementById('f-sesja-narz').value='';
+  document.getElementById('f-sesja-slub').value='';
+  document.getElementById('f-sesja-narz-price').value='';
+  selSesjaNarzPaid=false;
   document.getElementById('f-custom-cat').value='';
   document.getElementById('custom-cat-group').style.display='none';
   document.getElementById('f-price').value='';
@@ -1437,7 +2153,7 @@ function openAddModal(defaultStatus){
   document.getElementById('f-pakiet').value='';
   document.getElementById('f-notes').value='';
   document.getElementById('btn-del').style.display='none';
-  renderCatPicker();renderStatusPicker();renderTaskForm();renderCatAddrFields();
+  renderCatPicker();renderPkgPicker();renderStatusPicker();renderTaskForm();renderCatAddrFields();renderAddons();renderSesjeBlock();
   document.getElementById('modal-add').classList.add('open');
 }
 
@@ -1445,13 +2161,18 @@ function openEditModal(id){
   closeDetail();
   const z=zlecenia.find(x=>x.id===id);if(!z)return;
   editingId=id;selCat=z.cat;selStatus=z.status!==undefined&&z.status!==null?z.status:'';tasksDirty=true;
-  taskStates={};
-  const tasks=z.tasks||(CAT_TASKS[z.cat]||DEFAULT_TASKS).map(t=>({...t,done:false}));
-  tasks.forEach(t=>taskStates[t.id]=t.done);
+  selPkg=z.pakietId||null;
+  formDodatki=zDodatki(z).map(d=>({id:d.id||('d_'+uid()),name:d.name||'',price:d.price??null}));
+  formDodatekEdit=null;
+  formTasks=(z.tasks&&z.tasks.length?z.tasks:tasksFromTemplate(CAT_TASKS[z.cat])).map(t=>({id:t.id,label:t.label,done:!!t.done}));
   document.getElementById('modal-add-title').textContent='Edytuj zlecenie';
   document.getElementById('f-name').value=z.name;
   document.getElementById('f-date').value=z.date||'';
   document.getElementById('f-deadline').value=z.deliveryDeadline||'';
+  document.getElementById('f-sesja-narz').value=z.sesjaNarz||'';
+  document.getElementById('f-sesja-slub').value=z.sesjaSlub||'';
+  document.getElementById('f-sesja-narz-price').value=z.sesjaNarzPrice||'';
+  selSesjaNarzPaid=!!z.sesjaNarzPaid;
   document.getElementById('f-custom-cat').value=z.customCat||'';
   document.getElementById('custom-cat-group').style.display=z.cat==='inne'?'':'none';
   document.getElementById('f-price').value=z.price||'';
@@ -1459,7 +2180,7 @@ function openEditModal(id){
   document.getElementById('f-pakiet').value=z.pakiet||'';
   document.getElementById('f-notes').value=z.notes||'';
   document.getElementById('btn-del').style.display='';
-  renderCatPicker();renderStatusPicker();renderTaskForm();renderCatAddrFields(z.adresy||{});
+  renderCatPicker();renderPkgPicker();renderStatusPicker();renderTaskForm();renderCatAddrFields(z.adresy||{});renderAddons();renderSesjeBlock();
   document.getElementById('modal-add').classList.add('open');
 }
 
@@ -1472,16 +2193,181 @@ function renderCatPicker(){
 }
 
 function selectCat(cat){
+  const changed=selCat!==cat;
   selCat=cat;
+  if(changed)selPkg=null;
   const ccg=document.getElementById('custom-cat-group');
   if(ccg)ccg.style.display=cat==='inne'?'':'none';
+  renderSesjeBlock();
   // Auto-load tasks if not dirty (#12)
   if(!tasksDirty){
-    taskStates={};
-    (CAT_TASKS[cat]||DEFAULT_TASKS).forEach(t=>taskStates[t.id]=false);
+    formTasks=tasksFromTemplate(CAT_TASKS[cat]);
     document.getElementById('tasks-auto-note').textContent='— auto-zadania dla: '+CATS[cat].label;
   }
-  renderCatPicker();renderTaskForm();renderCatAddrFields();
+  // podpowiedzi dodatków zależą od kategorii — przerysuj listę
+  renderCatPicker();renderPkgPicker();renderTaskForm();renderCatAddrFields();renderAddons();
+}
+
+// ── Dodatki poza pakietem (formularz) ──
+// Wiersz ma dwa stany: podgląd (nazwa · kwota + ✏) i edycja (pola + ✓ + 🗑).
+// Cenę podaje się przy dodawaniu, ale zawsze można ją później zmienić.
+let formDodatki=[], formDodatekEdit=null;
+
+function czytajDodatkiZFormularza(){
+  document.querySelectorAll('#addon-list .addon-row-edit').forEach(r=>{
+    const d=formDodatki.find(x=>x.id===r.dataset.id);if(!d)return;
+    d.name=r.querySelector('.addon-name').value;
+    d.price=Number(String(r.querySelector('.addon-price').value).replace(',','.'))||null;
+    const t=formTasks.find(x=>x.id==='dod_'+d.id);
+    if(t&&!t.done&&d.name.trim())t.label=czystaNazwa(d.name);
+  });
+}
+function czystaNazwa(n){ return (n||'').replace(/^[^\p{L}\d]+/u,'').trim()||(n||'').trim(); }
+function kwotaTxt(p){ return Number(p)?Number(p).toLocaleString('pl')+' zł':'<span style="color:var(--warn)">cena nieustalona</span>'; }
+
+function renderAddons(){
+  const box=document.getElementById('addon-list');if(!box)return;
+  box.innerHTML=formDodatki.length?formDodatki.map(d=>{
+    if(d.id===formDodatekEdit) return `
+    <div class="addon-row-edit" data-id="${d.id}" style="display:flex;gap:6px;align-items:center;background:var(--surface2);border:1px solid var(--border2);border-radius:8px;padding:7px 10px;margin-bottom:6px">
+      <input class="form-input addon-name" value="${esc(d.name||'')}" placeholder="Nazwa dodatku" style="flex:1;font-size:13px;padding:6px 8px" oninput="czytajDodatkiZFormularza();updateTotalNote()" />
+      <input class="form-input addon-price" type="number" min="0" value="${d.price??''}" placeholder="kwota" style="width:100px;font-size:13px;padding:6px 8px" oninput="czytajDodatkiZFormularza();updateTotalNote()" />
+      <span style="font-size:11px;color:var(--text3)">zł</span>
+      <button class="btn-sm" style="padding:4px 9px;font-size:11px" title="Gotowe" onclick="zamknijEdycjeDodatku()">✓</button>
+      <button class="task-del-btn" title="Usuń dodatek" onclick="usunDodatekZFormularza('${d.id}')">🗑</button>
+    </div>`;
+    return `
+    <div style="display:flex;gap:8px;align-items:center;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 10px;margin-bottom:6px">
+      <div style="flex:1;font-size:13px;min-width:0">${esc(d.name||'(bez nazwy)')}</div>
+      <div style="font-size:13px;font-weight:600;color:var(--sesja);white-space:nowrap">${kwotaTxt(d.price)}</div>
+      <button class="btn-ghost" style="font-size:11px;padding:3px 8px" title="Edytuj" onclick="edytujDodatekWFormularzu('${d.id}')">✏</button>
+    </div>`;
+  }).join('')
+    :'<div style="font-size:12px;color:var(--text3);padding:2px 2px 4px">Brak dodatków. Kliknij podpowiedź poniżej albo „＋ Własny".</div>';
+
+  const sug=document.getElementById('addon-suggest');
+  if(sug){
+    sug.innerHTML=addonSuggestions(selCat).map((n,i)=>
+      `<button class="cat-btn" style="font-size:11px;padding:4px 9px" onclick="dodajDodatekZPodpowiedzi(${i})">${esc(n)}</button>`).join('')
+      +`<button class="cat-btn" style="font-size:11px;padding:4px 9px" onclick="dodajWlasnyDodatek()">＋ Własny</button>`;
+  }
+  updateTotalNote();
+}
+
+function dodajDodatek(name,price){
+  czytajDodatkiZFormularza();
+  const d={id:'d_'+uid(),name,price:price||null};
+  formDodatki.push(d);
+  if(name&&!formTasks.some(t=>t.id==='dod_'+d.id))
+    formTasks.push({id:'dod_'+d.id,label:czystaNazwa(name),done:false});
+  tasksDirty=true;
+  formDodatekEdit=null;
+  renderAddons();renderTaskForm();
+  return d;
+}
+function dodajDodatekZPodpowiedzi(i){
+  const nazwa=addonSuggestions(selCat)[i];if(!nazwa)return;
+  const cena=zapytajOCene(nazwa);
+  if(cena===undefined)return;                    // Anuluj
+  dodajDodatek(nazwa,cena);
+}
+function dodajWlasnyDodatek(){
+  const d=dodajDodatek('',null);
+  formDodatekEdit=d.id;renderAddons();
+  setTimeout(()=>{const r=document.querySelectorAll('#addon-list .addon-name');r[r.length-1]?.focus();},30);
+}
+function edytujDodatekWFormularzu(id){ czytajDodatkiZFormularza(); formDodatekEdit=id; renderAddons(); }
+function zamknijEdycjeDodatku(){ czytajDodatkiZFormularza(); formDodatekEdit=null; renderAddons(); }
+function usunDodatekZFormularza(id){
+  czytajDodatkiZFormularza();
+  formDodatki=formDodatki.filter(d=>d.id!==id);
+  const t=formTasks.find(x=>x.id==='dod_'+id);
+  if(t&&!t.done)formTasks=formTasks.filter(x=>x.id!=='dod_'+id);
+  formDodatekEdit=null;
+  renderAddons();renderTaskForm();
+}
+
+function updateTotalNote(){
+  const el=document.getElementById('total-note');if(!el)return;
+  const p=Number(document.getElementById('f-price').value)||0;
+  const dod=formDodatki.reduce((s,d)=>s+(Number(d.price)||0),0);
+  const sn=(hasSessions(selCat)&&document.getElementById('f-sesja-narz').value)?(Number(document.getElementById('f-sesja-narz-price').value)||0):0;
+  const czesci=[`${p.toLocaleString('pl')} zł (pakiet)`];
+  formDodatki.filter(d=>Number(d.price)).forEach(d=>czesci.push(`${Number(d.price).toLocaleString('pl')} zł (${(d.name||'dodatek').trim()||'dodatek'})`));
+  if(sn)czesci.push(`${sn.toLocaleString('pl')} zł (sesja narzeczeńska)`);
+  el.textContent=czesci.length>1?`Razem: ${czesci.join(' + ')} = ${(p+dod+sn).toLocaleString('pl')} zł`:'';
+}
+
+// ── Terminy sesji (tylko wesela) ──
+let selSesjaNarzPaid=false;
+function toggleSesjaNarzPaidForm(){ selSesjaNarzPaid=!selSesjaNarzPaid; renderSesjeBlock(); }
+function renderSesjeBlock(){
+  const b=document.getElementById('sesje-block');if(!b)return;
+  b.style.display=hasSessions(selCat)?'':'none';
+  const fin=document.getElementById('sesja-narz-fin');
+  const maDate=!!document.getElementById('f-sesja-narz').value;
+  fin.style.display=(hasSessions(selCat)&&maDate)?'':'none';
+  document.getElementById('f-sesja-narz-paid-chk').classList.toggle('on',selSesjaNarzPaid);
+  renderSesjeNote();updateTotalNote();
+}
+function renderSesjeNote(){
+  const el=document.getElementById('sesje-note');if(!el)return;
+  const dateV=document.getElementById('f-date').value;
+  const nar=document.getElementById('f-sesja-narz').value;
+  const ses=document.getElementById('f-sesja-slub').value;
+  const dni=editDaysFor(selCat||'wesele');
+  const msgs=[];
+  const kw=Number(document.getElementById('f-sesja-narz-price').value)||0;
+  if(nar&&kw) msgs.push(`Sesja narzeczeńska: <b style="color:var(--text2)">${kw.toLocaleString('pl')} zł</b> — ${selSesjaNarzPaid?'<span style="color:#4ade80">opłacona</span>, wchodzi do wpłaconych':'nieopłacona, powiększa kwotę do zapłaty'}`);
+  if(ses&&dateV&&ses<=dateV) msgs.push('<span style="color:var(--danger)">⚠ Sesja ślubna musi być po dacie ślubu.</span>');
+  if(nar&&dateV&&nar>=dateV) msgs.push('<span style="color:var(--danger)">⚠ Sesja narzeczeńska musi być przed datą ślubu.</span>');
+  const start=ses||dateV;
+  if(start){
+    const dl=addDaysISO(start,dni);
+    const skad=ses?`od sesji ślubnej (${formatDate(ses)})`:'od daty ślubu';
+    const wydl=(ses&&dateV&&ses>dateV)?` · o ${Math.round((new Date(ses)-new Date(dateV))/86400000)} dni dłużej niż od ślubu`:'';
+    msgs.push(`Obróbka liczona ${skad}: <b style="color:var(--text2)">${formatDate(dl)}</b> (+${dni} dni)${wydl}`);
+  }
+  el.innerHTML=msgs.join('<br>');
+}
+
+// ── Wybór pakietu (#pakiety) ──
+function renderPkgPicker(){
+  const el=document.getElementById('pkg-picker');const note=document.getElementById('pkg-note');
+  if(!el)return;
+  const list=getPackages(selCat);
+  if(!selCat){el.innerHTML='';note.textContent='— najpierw wybierz kategorię';return;}
+  if(!list.length){el.innerHTML='';note.textContent='— brak pakietów dla: '+(CATS[selCat]?.label||selCat)+' (wpisz ręcznie)';return;}
+  note.textContent='';
+  el.innerHTML=list.map(p=>{
+    const sel=selPkg===p.id;
+    const col=CATS[selCat]?.color||'#888';
+    return `<button class="cat-btn ${sel?'sel':''}" style="${sel?'background:'+col+';border-color:'+col:''}" onclick="selectPackage('${p.id}')">${esc(p.name)}${p.price?' · '+p.price+' zł':''}</button>`;
+  }).join('')+`<button class="cat-btn ${!selPkg?'sel':''}" onclick="clearPackage()" title="Bez pakietu z cennika">✎ Własny</button>`;
+}
+
+function selectPackage(pkgId){
+  const p=findPackage(selCat,pkgId);if(!p)return;
+  const ta=document.getElementById('f-pakiet');
+  const hadText=ta.value.trim().length>0;
+  if(hadText&&selPkg!==pkgId&&!confirm('Nadpisać obecną zawartość pakietu treścią z cennika „'+p.name+'"?'))return;
+  selPkg=pkgId;
+  ta.value=packageToText(p);
+  // zadania z pakietu — nadpisują listę, bo pakiet decyduje co klient dostaje
+  const doneMap={};formTasks.forEach(t=>{if(t.done)doneMap[t.id]=true;});
+  formTasks=(p.tasks||[]).map(t=>({id:t.id,label:t.label,done:!!doneMap[t.id]}));
+  tasksDirty=false;
+  document.getElementById('tasks-auto-note').textContent='— zadania z pakietu: '+p.name;
+  renderPkgPicker();renderTaskForm();
+}
+
+function clearPackage(){
+  selPkg=null;
+  if(!tasksDirty){
+    formTasks=tasksFromTemplate(CAT_TASKS[selCat]);
+    document.getElementById('tasks-auto-note').textContent='— auto-zadania dla: '+(CATS[selCat]?.label||selCat);
+  }
+  renderPkgPicker();renderTaskForm();
 }
 
 function renderStatusPicker(){
@@ -1509,66 +2395,94 @@ function readCatAddrFields(){
 }
 
 function renderTaskForm(){
-  const tasks=selCat&&!tasksDirty?(CAT_TASKS[selCat]||DEFAULT_TASKS):Object.entries(taskStates).map(([id,done])=>{
-    const allDefs=[...WESELE_TASKS,...STANDARD_TASKS];
-    const def=allDefs.find(t=>t.id===id)||{id,label:id};
-    return {...def,done};
-  });
-  document.getElementById('f-tasks').innerHTML=tasks.map(t=>`
+  const el=document.getElementById('f-tasks');
+  if(!formTasks.length){el.innerHTML='<div style="font-size:12px;color:var(--text3);padding:6px 2px">Brak zadań — dodaj poniżej.</div>';return;}
+  el.innerHTML=formTasks.map(t=>`
     <div class="task-row">
-      <div class="chk ${taskStates[t.id]?'on':''}" onclick="taskStates['${t.id}']=!taskStates['${t.id}'];tasksDirty=true;renderTaskForm()"></div>
-      <div class="task-lbl ${taskStates[t.id]?'done':''}">${esc(t.label)}</div>
+      <div class="chk ${t.done?'on':''}" onclick="toggleFormTask('${t.id}')"></div>
+      <div class="task-lbl ${t.done?'done':''}">${esc(t.label)}</div>
       <button class="task-del-btn" onclick="deleteFormTask('${t.id}')" title="Usuń zadanie">✕</button>
     </div>`).join('');
 }
 
+function toggleFormTask(id){
+  const t=formTasks.find(x=>x.id===id);if(!t)return;
+  t.done=!t.done;tasksDirty=true;renderTaskForm();
+}
+
 function deleteFormTask(id){
-  if(!tasksDirty){
-    taskStates={};
-    (CAT_TASKS[selCat]||DEFAULT_TASKS).forEach(t=>taskStates[t.id]=false);
-    tasksDirty=true;
-  }
-  delete taskStates[id];
+  formTasks=formTasks.filter(t=>t.id!==id);
+  tasksDirty=true;
   renderTaskForm();
+}
+
+function addFormTask(){
+  const inp=document.getElementById('f-new-task');
+  const label=(inp.value||'').trim();
+  if(!label)return;
+  formTasks.push({id:'c_'+uid(),label,done:false});
+  inp.value='';tasksDirty=true;renderTaskForm();
 }
 
 function saveZlecenie(){
   const name=document.getElementById('f-name').value.trim();
   if(!name){document.getElementById('f-name').focus();return;}
   const cat=selCat||'sesja';
-  let tasks;
-  if(tasksDirty){
-    const allDefs=[...WESELE_TASKS,...STANDARD_TASKS];
-    tasks=Object.entries(taskStates).map(([id,done])=>{
-      const def=allDefs.find(t=>t.id===id)||{id,label:id};
-      return {id:def.id,label:def.label,done:!!done};
-    });
-  } else {
-    const taskTemplate=CAT_TASKS[cat]||DEFAULT_TASKS;
-    tasks=taskTemplate.map(t=>({id:t.id,label:t.label,done:!!taskStates[t.id]}));
-  }
+  const tasks=formTasks.map(t=>({id:t.id,label:t.label,done:!!t.done}));
+  const dateVal=document.getElementById('f-date').value;
+  // Terminy sesji — tylko wesela. Narzeczeńska zawsze przed ślubem, ślubna zawsze po.
+  const sesjaNarz=hasSessions(cat)?document.getElementById('f-sesja-narz').value:'';
+  const sesjaSlub=hasSessions(cat)?document.getElementById('f-sesja-slub').value:'';
+  if(sesjaSlub&&dateVal&&sesjaSlub<=dateVal){alert('Sesja ślubna odbywa się PO dacie ślubu — popraw termin.');return;}
+  if(sesjaNarz&&dateVal&&sesjaNarz>=dateVal){alert('Sesja narzeczeńska odbywa się PRZED datą ślubu — popraw termin.');return;}
+
+  const dni=EDIT_DAYS[cat]||30;
+  const startVal=sesjaSlub||dateVal;        // dzień ostatnich zdjęć
   let deliveryDeadline=document.getElementById('f-deadline').value;
-  if(!deliveryDeadline&&selStatus==='edycja_st'){
-    const dateVal=document.getElementById('f-date').value;
-    if(dateVal){const days=EDIT_DAYS[cat]||30;const d=new Date(dateVal);d.setDate(d.getDate()+days);deliveryDeadline=d.toISOString().slice(0,10);}
+  if(!deliveryDeadline&&selStatus==='edycja_st'&&startVal) deliveryDeadline=addDaysISO(startVal,dni);
+  // Data sesji ślubnej się zmieniła → zaproponuj przeliczenie terminu obróbki
+  const prevZ=editingId?zlecenia.find(z=>z.id===editingId):null;
+  if(deliveryDeadline&&(prevZ?(prevZ.sesjaSlub||'')!==sesjaSlub:!!sesjaSlub)){
+    const sug=startVal?addDaysISO(startVal,dni):'';
+    if(sug&&sug!==deliveryDeadline){
+      const skad=sesjaSlub?`sesji ślubnej (${formatDate(sesjaSlub)})`:`daty ślubu (${formatDate(dateVal)})`;
+      if(confirm(`Zmieniłeś termin sesji ślubnej.\n\nPrzeliczyć termin obróbki z ${formatDate(deliveryDeadline)} na ${formatDate(sug)}?\n(liczone od ${skad} + ${dni} dni)`))
+        deliveryDeadline=sug;
+    }
   }
+  const sesjaNarzPrice=(sesjaNarz?(Number(document.getElementById('f-sesja-narz-price').value)||null):null);
   const obj={
-    name,date:document.getElementById('f-date').value,cat,status:selStatus,
-    deliveryDeadline,
+    name,date:dateVal,cat,status:selStatus,
+    deliveryDeadline,sesjaNarz,sesjaSlub,
+    sesjaNarzPrice,sesjaNarzPaid:!!(sesjaNarz&&sesjaNarzPrice&&selSesjaNarzPaid),
     customCat:document.getElementById('f-custom-cat').value.trim(),
     price:Number(document.getElementById('f-price').value)||null,
     deposit:Number(document.getElementById('f-deposit').value)||null,
     pakiet:document.getElementById('f-pakiet').value.trim(),
+    pakietId:selPkg||null,
+    dodatki:(czytajDodatkiZFormularza(),formDodatki
+      .map(d=>({id:d.id,name:(d.name||'').trim(),price:Number(d.price)||null}))
+      .filter(d=>d.name||d.price)),
     adresy:readCatAddrFields(),
     notes:document.getElementById('f-notes').value.trim(),tasks
   };
   if(editingId){
     const i=zlecenia.findIndex(z=>z.id===editingId);
-    if(i>=0)zlecenia[i]={...zlecenia[i],...obj};
+    if(i>=0){
+      const prevDate=zlecenia[i].date, prevName=zlecenia[i].name;
+      const prevSes=SESSION_KINDS.map(k=>zlecenia[i][k.field]||'').join('|');
+      zlecenia[i]={...zlecenia[i],...obj};
+      // termin w Google Calendar musi nadążać za edycją zlecenia
+      if(zlecenia[i].date&&(prevDate!==zlecenia[i].date||prevName!==zlecenia[i].name||!zlecenia[i].gcalEventId))
+        gcalSyncZlecenie(zlecenia[i]);
+      if(prevSes!==SESSION_KINDS.map(k=>zlecenia[i][k.field]||'').join('|')||prevName!==zlecenia[i].name)
+        gcalSyncSessions(zlecenia[i]);
+    }
   } else {
-    const newZ={id:uid(),orderedItems:[],daySchedule:[],...obj};
+    const newZ={id:uid(),orderedItems:[],daySchedule:[],...obj,updatedAt:Date.now()};
     zlecenia.push(newZ);
-    if(gdriveToken&&newZ.date) gcalCreateZlecenie(newZ);
+    if(newZ.date) gcalSyncZlecenie(newZ);
+    gcalSyncSessions(newZ);
   }
   save();closeAddModal();renderAll();
 }
@@ -1576,7 +2490,7 @@ function saveZlecenie(){
 async function deleteZlecenie(){
   if(!editingId||!confirm('Usunąć to zlecenie?'))return;
   const z=zlecenia.find(x=>x.id===editingId);
-  if(z)await gcalDeleteZlecenie(z);
+  if(z){ archiveEditStats([z]); }   // terminu w Google Calendar NIE kasujemy — zostaje jako zapis
   markDeleted([editingId]);
   zlecenia=zlecenia.filter(x=>x.id!==editingId);
   save();closeAddModal();renderAll();
@@ -1588,7 +2502,7 @@ let detailTab='info';
 
 function openDetail(id){
   const z=zlecenia.find(x=>x.id===id);if(!z)return;
-  detailTab='info';
+  detailTab='info';detailPkgEdit=false;
   renderDetailModal(id);
   document.getElementById('modal-detail').classList.add('open');
 }
@@ -1626,8 +2540,20 @@ function renderDetailModal(id){
     <div class="detail-name">${esc(z.name)}</div>
     <div class="detail-meta">
       ${z.date?`📅 ${formatDate(z.date)}<br>`:''}
+      ${sessionEntries(z).map(sx=>{
+        const head=`${sx.icon} ${sx.label[0].toUpperCase()+sx.label.slice(1)}: <b>${formatDate(sx.date)}</b>`;
+        if(sx.kind!=='narz'||!sesjaNarzKwota(z))return head+'<br>';
+        const op=sesjaNarzOplacona(z);
+        return `${head} <span class="ses-pay ${op?'paid':''}" onclick="toggleSesjaNarzPaid('${z.id}')">${sesjaNarzKwota(z).toLocaleString('pl')} zł · ${op?'✓ opłacona':'○ nieopłacona'}</span><br>`;
+      }).join('')}
       ${dlText?`${dlText}<br>`:''}
-      ${z.price?(()=>{const p=Number(z.price),d=Number(z.deposit)||0,r=p-d;if(z.paid)return `💰 ${p.toLocaleString('pl')} zł · <b style="color:#4ade80">✓ Opłacone</b><br>`;return `💰 ${p.toLocaleString('pl')} zł${d?` · Zaliczka: <b style="color:var(--sesja)">${d.toLocaleString('pl')} zł</b> · Pozostało: <b style="color:${r>0?'var(--warn)':'#4ade80'}">${r.toLocaleString('pl')} zł</b>`:' · <span style="color:var(--warn);font-size:11px">brak zaliczki</span>'}<br>`;})():''}
+      ${zTotal(z)?(()=>{const p=zTotal(z),d=zPaidAmount(z),r=p-d;
+        const czesci=[`pakiet ${(Number(z.price)||0).toLocaleString('pl')} zł`];
+        zDodatki(z).filter(d=>Number(d.price)).forEach(d=>czesci.push(`${esc(d.name||'dodatek')} ${Number(d.price).toLocaleString('pl')} zł`));
+        if(sesjaNarzKwota(z))czesci.push(`💍 sesja narzeczeńska ${sesjaNarzKwota(z).toLocaleString('pl')} zł`);
+        const brk=czesci.length>1?`<div style="font-size:11px;color:var(--text3);margin-top:1px">↳ ${czesci.join(' + ')}</div>`:'';
+        if(z.paid)return `💰 ${p.toLocaleString('pl')} zł · <b style="color:#4ade80">✓ Opłacone</b>${brk}`;
+        return `💰 ${p.toLocaleString('pl')} zł${d?` · Wpłacono: <b style="color:var(--sesja)">${d.toLocaleString('pl')} zł</b> · Pozostało: <b style="color:${r>0?'var(--warn)':'#4ade80'}">${r.toLocaleString('pl')} zł</b>`:' · <span style="color:var(--warn);font-size:11px">brak zadatku</span>'}${brk}`;})():''}
     </div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
       <button class="card-paid-btn ${z.paid?'paid':''}" style="flex:1;margin-top:0" onclick="togglePaidDetail('${id}')">${z.paid?'✓ Zapłacone':'○ Oznacz jako zapłacone'}</button>
@@ -1636,7 +2562,7 @@ function renderDetailModal(id){
       ${z.editingFinished
         ?`<span style="color:#4ade80">✓ Zakończono edycję: <b>${formatDate(z.editingFinished)}</b></span>
            <button class="btn-ghost" style="font-size:11px;padding:2px 8px" onclick="unmarkEditingDoneDetail('${id}')">cofnij</button>`
-        :`<span style="color:var(--text3)">Termin obróbki: <b style="color:var(--text)">${z.deliveryDeadline?formatDate(z.deliveryDeadline):'nie ustawiono'}</b></span>
+        :`<span style="color:var(--text3)">Termin obróbki: <b style="color:var(--text)">${z.deliveryDeadline?formatDate(z.deliveryDeadline):'nie ustawiono'}</b>${hasSessions(z.cat)&&z.sesjaSlub?' <span style="font-size:10px">(liczony od sesji ślubnej)</span>':''}</span>
            <button class="btn-ghost" style="font-size:11px;padding:2px 8px" onclick="editDeadlineDetail('${id}')">✏ Zmień</button>
            <button class="btn-ghost" style="font-size:11px;padding:2px 8px;color:#4ade80;border-color:#4ade8044" onclick="markEditingDoneDetail('${id}')">✓ Zakończ</button>`
       }
@@ -1650,11 +2576,16 @@ function renderDetailModal(id){
     <div class="dtab-panel ${detailTab==='info'?'active':''}">
       <div class="detail-sec">Status</div>
       <div class="status-chips">${statusChips}</div>
-      ${z.pakiet?`<div class="detail-sec">Pakiet</div><div style="background:var(--surface2);border-radius:7px;padding:8px 10px;font-size:12px;color:var(--text2);line-height:1.8">📋 ${esc(z.pakiet).replace(/\n/g,'<br>').replace(/ - /g,'<br>- ')}</div>`:''}
+      ${renderDetailPackage(z)}
+      ${renderDetailAddons(z)}
       ${(()=>{const fields=CAT_ADDR[z.cat]||[];const adr=z.adresy||{};const rows=fields.filter(f=>adr[f.id]).map(f=>`<div style="margin-bottom:4px"><span style="color:var(--text3);font-size:10px">${f.label}</span><br>${esc(adr[f.id])}</div>`).join('');return rows?`<div class="detail-sec">Adresy</div><div style="background:var(--surface2);border-radius:7px;padding:8px 10px;font-size:12px;color:var(--text2)">${rows}</div>`:'';})()}
       ${z.notes?`<div class="detail-sec">Notatki</div><div style="background:var(--surface2);border-radius:7px;padding:8px 10px;font-size:12px;color:var(--text2)">${esc(z.notes)}</div>`:''}
-      ${total?`<div class="detail-sec">Zadania — ${done}/${total} (${pct}%)</div><div class="pbar-bg"><div class="pbar-fill" style="width:${pct}%;background:${cat.color}"></div></div>`:''}
+      ${total?`<div class="detail-sec">Zadania — ${done}/${total} (${pct}%)</div><div class="pbar-bg"><div class="pbar-fill" style="width:${pct}%;background:${cat.color}"></div></div>`:'<div class="detail-sec">Zadania</div>'}
       <div class="tasks-list">${tasksHtml}</div>
+      <div style="display:flex;gap:6px;margin-top:8px">
+        <input class="form-input" id="d-new-task-${id}" placeholder="Nowe zadanie..." style="flex:1;font-size:12px;padding:6px 8px" onkeydown="if(event.key==='Enter'){event.preventDefault();addDetailTask('${id}');}" />
+        <button class="btn-sm" onclick="addDetailTask('${id}')">+ Dodaj</button>
+      </div>
     </div>
 
     <div class="dtab-panel ${detailTab==='ordered'?'active':''}">
@@ -1665,6 +2596,87 @@ function renderDetailModal(id){
 }
 
 function switchDetailTab(id,tab){detailTab=tab;renderDetailModal(id);}
+
+// ── Pakiet na karcie klienta: podgląd + edycja lokalna (nie rusza szablonu) ──
+let detailPkgEdit=false;
+
+function renderDetailPackage(z){
+  const id=z.id;
+  if(detailPkgEdit){
+    const opts=getPackages(z.cat);
+    const pickers=opts.length?`<div class="cat-picker" style="margin-bottom:6px">${opts.map(p=>
+      `<button class="cat-btn" onclick="applyPackageToDetail('${id}','${p.id}')" title="Wstaw zawartość z cennika">${esc(p.name)}${p.price?' · '+p.price+' zł':''}</button>`).join('')}</div>`:'';
+    return `<div class="detail-sec">Pakiet — edycja</div>
+      ${pickers}
+      <textarea class="form-textarea" id="d-pakiet-${id}" style="min-height:130px;font-size:12px">${esc(z.pakiet||'')}</textarea>
+      <div style="display:flex;gap:6px;justify-content:flex-end;margin-top:6px">
+        <button class="btn-ghost" style="font-size:11px;padding:4px 10px" onclick="detailPkgEdit=false;renderDetailModal('${id}')">Anuluj</button>
+        <button class="btn-sm" onclick="saveDetailPackage('${id}')">✓ Zapisz</button>
+      </div>`;
+  }
+  const lines=packageLines(z.pakiet);
+  const body=lines.length
+    ? `<div style="font-weight:600;color:var(--text);margin-bottom:4px">📋 ${esc(lines[0])}</div>`+
+      lines.slice(1).map(l=>`<div style="display:flex;gap:6px"><span style="color:var(--text3)">–</span><span>${esc(l)}</span></div>`).join('')
+    : `<span style="color:var(--text3)">Brak pakietu — kliknij „Edytuj", żeby wybrać z cennika lub wpisać własny.</span>`;
+  return `<div class="detail-sec" style="display:flex;align-items:center;justify-content:space-between">
+      <span>Pakiet</span>
+      <button class="btn-ghost" style="font-size:11px;padding:2px 8px" onclick="detailPkgEdit=true;renderDetailModal('${id}')">✏ Edytuj</button>
+    </div>
+    <div style="background:var(--surface2);border-radius:7px;padding:8px 10px;font-size:12px;color:var(--text2);line-height:1.8">${body}</div>`;
+}
+
+// ── Dodatki na karcie klienta: tylko podgląd ──────────────────────────────
+// Sekcja czyta się jak opis pakietu: wybrane pozycje z kwotami i nic więcej.
+// Dodawanie i edycja są w formularzu zlecenia (✏ Edytuj / nowe zlecenie).
+function renderDetailAddons(z){
+  const lista=zDodatki(z);
+  if(!lista.length)return '';                      // brak dodatków = brak sekcji
+  const suma=zDodatkiSuma(z);
+  const wiersze=lista.map(d=>`
+      <div style="display:flex;gap:8px;align-items:baseline">
+        <span style="color:var(--text3)">–</span>
+        <span style="flex:1;min-width:0">${esc(d.name||'(bez nazwy)')}</span>
+        <b style="color:var(--sesja);white-space:nowrap">${kwotaTxt(d.price)}</b>
+      </div>`).join('');
+  return `<div class="detail-sec" style="display:flex;align-items:center;justify-content:space-between">
+      <span>Dodatki poza pakietem</span>
+      ${suma?`<span style="font-size:11px;color:var(--sesja);font-weight:600">+ ${suma.toLocaleString('pl')} zł</span>`:''}
+    </div>
+    <div style="background:var(--surface2);border-radius:7px;padding:8px 10px;font-size:12px;color:var(--text2);line-height:1.8">${wiersze}</div>`;
+}
+
+function applyPackageToDetail(zId,pkgId){
+  const z=zlecenia.find(x=>x.id===zId);if(!z)return;
+  const p=findPackage(z.cat,pkgId);if(!p)return;
+  const ta=document.getElementById('d-pakiet-'+zId);
+  if(ta&&ta.value.trim()&&!confirm('Nadpisać treść pakietu zawartością z cennika „'+p.name+'"?'))return;
+  if(ta)ta.value=packageToText(p);
+}
+
+function saveDetailPackage(zId){
+  const z=zlecenia.find(x=>x.id===zId);if(!z)return;
+  const ta=document.getElementById('d-pakiet-'+zId);
+  const txt=(ta?.value||'').trim();
+  // dopasuj pakietId po nazwie (1. linia), żeby karta wiedziała z czego wyszła
+  const firstLine=txt.split('\n')[0].trim().toLowerCase();
+  const match=getPackages(z.cat).find(p=>p.name.trim().toLowerCase()===firstLine);
+  z.pakiet=txt;
+  z.pakietId=match?match.id:null;
+  detailPkgEdit=false;
+  save();renderDetailModal(zId);renderAll();
+  showDriveToast('✅ Pakiet zapisany w zleceniu');
+}
+
+function addDetailTask(zId){
+  const z=zlecenia.find(x=>x.id===zId);if(!z)return;
+  const inp=document.getElementById('d-new-task-'+zId);
+  const label=(inp?.value||'').trim();
+  if(!label)return;
+  if(!z.tasks)z.tasks=[];
+  z.tasks.push({id:'c_'+uid(),label,done:false});
+  save();renderDetailModal(zId);renderAll();
+}
 
 // ── Ordered Items (#14)
 function renderOrderedItems(z){
@@ -1685,7 +2697,7 @@ function renderOrderedItems(z){
       ${products.map(p=>`<option>${p}</option>`).join('')}
       <option value="__custom">Własna nazwa...</option>
     </select>
-    <input class="form-input" id="order-date-${z.id}" type="date" style="flex:.6" value="${new Date().toISOString().slice(0,10)}" />
+    <input class="form-input" id="order-date-${z.id}" type="date" style="flex:.6" value="${todayISO()}" />
     <button class="btn-sm" onclick="addOrderItem('${z.id}')">+ Dodaj</button>
   </div>`;
   return h;
@@ -1705,7 +2717,7 @@ function addOrderItem(zId){
 function toggleOrderReceived(zId,oId){
   const z=zlecenia.find(x=>x.id===zId);if(!z)return;
   const o=(z.orderedItems||[]).find(x=>x.id===oId);if(!o)return;
-  o.receivedDate=o.receivedDate?null:new Date().toISOString().slice(0,10);
+  o.receivedDate=o.receivedDate?null:todayISO();
   save();renderDetailModal(zId);
 }
 
@@ -1771,10 +2783,8 @@ function deleteDetailTask(zId,tId){
 function setStatus(zId,status){
   const z=zlecenia.find(x=>x.id===zId);if(!z)return;
   z.status=status;
-  if(status==='edycja_st'&&z.date&&!z.deliveryDeadline){
-    const days=EDIT_DAYS[z.cat]||30;
-    const d=new Date(z.date);d.setDate(d.getDate()+days);
-    z.deliveryDeadline=d.toISOString().slice(0,10);
+  if(status==='edycja_st'&&editStartDate(z)&&!z.deliveryDeadline){
+    z.deliveryDeadline=suggestedDeadline(z);
   }
   save();renderDetailModal(zId);renderKanban();
 }
@@ -1785,21 +2795,129 @@ function closeDetail(){document.getElementById('modal-detail').classList.remove(
 function openSettings(){
   const container=document.getElementById('settings-edit-days');
   container.innerHTML='';
-  const labels={wesele:'💒 Wesele',urodziny:'🎂 Urodziny',chrzest:'👶 Chrzest',komunia:'✝️ Komunia',sesja:'📸 Sesja',inne:'📷 Inne'};
+  const labels={};Object.entries(CATS).forEach(([k,v])=>labels[k]=v.icon+' '+v.label);
   Object.keys(labels).forEach(key=>{
     container.innerHTML+=`<label style="display:flex;flex-direction:column;gap:4px;font-size:13px"><span style="opacity:.8">${labels[key]}</span><div style="display:flex;align-items:center;gap:6px"><input type="number" id="sett-${key}" value="${EDIT_DAYS[key]||30}" min="1" max="365" style="width:70px;padding:6px 8px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:14px;text-align:center"><span style="opacity:.5;font-size:12px">dni</span></div></label>`;
   });
+  pkgDraft=clonePackages(PACKAGES);
+  addonDraft=JSON.parse(JSON.stringify(ADDONS));
+  Object.keys(CATS).forEach(k=>{if(!Array.isArray(addonDraft[k]))addonDraft[k]=[];});
+  pkgTab=pkgTab||'wesele';
+  renderPkgCatTabs();renderPkgEditor();renderAddonEditor();
   document.getElementById('modal-settings').classList.add('open');
 }
 function closeSettings(){document.getElementById('modal-settings').classList.remove('open');}
 function saveSettings(){
-  ['wesele','urodziny','chrzest','komunia','sesja','inne'].forEach(key=>{
-    const v=parseInt(document.getElementById('sett-'+key).value,10);
+  Object.keys(CATS).forEach(key=>{
+    const el=document.getElementById('sett-'+key);if(!el)return;
+    const v=parseInt(el.value,10);
     if(v>0)EDIT_DAYS[key]=v;
   });
   localStorage.setItem('foto_edit_days',JSON.stringify(EDIT_DAYS));
+  readPkgEditor();
+  PACKAGES=clonePackages(pkgDraft);
+  savePackages();
+  readAddonEditor();
+  ADDONS=JSON.parse(JSON.stringify(addonDraft));
+  saveAddons();
   closeSettings();
-  showDriveToast('✅ Ustawienia zapisane');
+  // otwarty formularz / karta klienta mają od razu nową listę podpowiedzi
+  if(document.getElementById('modal-add').classList.contains('open'))renderAddons();
+  showDriveToast('✅ Ustawienia, pakiety i dodatki zapisane');
+}
+
+// ══ EDYTOR PAKIETÓW W USTAWIENIACH ═════════════════════════════════════════
+let pkgDraft={}, pkgTab='wesele';
+
+function renderPkgCatTabs(){
+  document.getElementById('pkg-cat-tabs').innerHTML=Object.entries(CATS).map(([k,v])=>{
+    const sel=pkgTab===k;const n=(pkgDraft[k]||[]).length;
+    return `<button class="cat-btn ${sel?'sel':''}" style="${sel?'background:'+v.color+';border-color:'+v.color:''}" onclick="switchPkgTab('${k}')">${v.icon} ${v.label} <span style="opacity:.6">(${n})</span></button>`;
+  }).join('');
+}
+
+function switchPkgTab(cat){readPkgEditor();readAddonEditor();pkgTab=cat;renderPkgCatTabs();renderPkgEditor();renderAddonEditor();}
+
+// ── Edytor podpowiedzi dodatków (ta sama zakładka kategorii co pakiety) ──
+let addonDraft={};
+function renderAddonEditor(){
+  const el=document.getElementById('addon-editor');if(!el)return;
+  const lista=addonDraft[pkgTab]||[];
+  const c=CATS[pkgTab]||{};
+  el.innerHTML=`
+    <label style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px">Dodatki dla: <span style="color:${c.color||'var(--text2)'}">${c.icon||''} ${esc(c.label||pkgTab)}</span></label>
+    <textarea class="form-textarea" id="addon-draft-ta" style="min-height:120px;font-size:12px;margin-top:3px"
+      placeholder="🎬 Teledysk&#10;📕 Fotoksiążka dla rodziców&#10;🖼 Odbitki / dodruki">${esc(lista.join('\n'))}</textarea>`;
+}
+function readAddonEditor(){
+  const ta=document.getElementById('addon-draft-ta');if(!ta)return;
+  addonDraft[pkgTab]=ta.value.split('\n').map(x=>x.trim()).filter(Boolean);
+}
+function restoreDefaultAddons(){
+  if(!confirm('Przywrócić domyślne dodatki dla kategorii „'+(CATS[pkgTab]?.label||pkgTab)+'"? Twoja lista dla tej kategorii przepadnie.'))return;
+  addonDraft[pkgTab]=(ADDON_SUGGEST[pkgTab]||[]).slice();
+  renderAddonEditor();
+}
+
+function renderPkgEditor(){
+  const list=pkgDraft[pkgTab]||[];
+  const el=document.getElementById('pkg-editor');
+  if(!list.length){el.innerHTML='<div style="font-size:12px;color:var(--text3);padding:8px 2px">Brak pakietów w tej kategorii. Dodaj pakiet poniżej — albo zostaw pusto, wtedy w zleceniu wpiszesz zawartość ręcznie.</div>';return;}
+  el.innerHTML=list.map((p,i)=>`
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px;margin-bottom:8px">
+      <div style="display:flex;gap:6px;align-items:center;margin-bottom:8px">
+        <input class="form-input pkg-f" data-i="${i}" data-f="name" value="${esc(p.name||'')}" placeholder="Nazwa pakietu" style="flex:1;font-size:13px;padding:6px 8px" />
+        <input class="form-input pkg-f" data-i="${i}" data-f="price" type="number" min="0" value="${p.price||''}" placeholder="Cena" style="width:100px;font-size:13px;padding:6px 8px" />
+        <span style="font-size:11px;color:var(--text3)">zł</span>
+        <button class="task-del-btn" onclick="deletePackageFromDraft(${i})" title="Usuń pakiet">✕</button>
+      </div>
+      <label style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px">Zawartość (1 pozycja = 1 linia)</label>
+      <textarea class="form-textarea pkg-f" data-i="${i}" data-f="items" style="min-height:96px;font-size:12px;margin-top:3px">${esc((p.items||[]).join('\n'))}</textarea>
+      <label style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;display:block;margin-top:8px">Zadania do wykonania (1 na linię)</label>
+      <textarea class="form-textarea pkg-f" data-i="${i}" data-f="tasks" style="min-height:96px;font-size:12px;margin-top:3px">${esc((p.tasks||[]).map(t=>t.label).join('\n'))}</textarea>
+    </div>`).join('');
+}
+
+function readPkgEditor(){
+  const list=pkgDraft[pkgTab];
+  if(!list||!list.length)return;
+  document.querySelectorAll('#pkg-editor .pkg-f').forEach(el=>{
+    const p=list[+el.dataset.i];if(!p)return;
+    const f=el.dataset.f;
+    if(f==='name')p.name=el.value.trim()||'Pakiet';
+    else if(f==='price')p.price=Number(el.value)||null;
+    else if(f==='items')p.items=el.value.split('\n').map(s=>s.replace(/^[-–•]\s*/,'').trim()).filter(Boolean);
+    else if(f==='tasks'){
+      const old=p.tasks||[];
+      p.tasks=el.value.split('\n').map(s=>s.trim()).filter(Boolean).map(label=>{
+        const prev=old.find(t=>t.label===label);
+        if(prev)return {id:prev.id,label};
+        const known=Object.keys(TASK_LABELS).find(k=>TASK_LABELS[k]===label);
+        return {id:known||('c_'+uid()),label};
+      });
+    }
+  });
+}
+
+function addPackageToDraft(){
+  readPkgEditor();
+  if(!pkgDraft[pkgTab])pkgDraft[pkgTab]=[];
+  pkgDraft[pkgTab].push({id:'p_'+uid(),name:'Nowy pakiet',price:null,items:[],tasks:T(['selekcja','obrobka'])});
+  renderPkgCatTabs();renderPkgEditor();
+}
+
+function deletePackageFromDraft(i){
+  readPkgEditor();
+  const p=(pkgDraft[pkgTab]||[])[i];
+  if(!p||!confirm('Usunąć pakiet „'+p.name+'"? Zlecenia, które go już mają, zachowają swoją zawartość.'))return;
+  pkgDraft[pkgTab].splice(i,1);
+  renderPkgCatTabs();renderPkgEditor();
+}
+
+function restoreDefaultPackages(){
+  if(!confirm('Przywrócić domyślne pakiety z oferty dla kategorii „'+(CATS[pkgTab]?.label||pkgTab)+'"? Twoje zmiany w tej kategorii przepadną.'))return;
+  pkgDraft[pkgTab]=clonePackages(PACKAGES_DEFAULTS[pkgTab]||[]);
+  renderPkgCatTabs();renderPkgEditor();
 }
 
 // ══ QUICK ADD (#20) ════════════════════════════════════════════════════════
@@ -1812,7 +2930,7 @@ function openQuickAdd(){
     `<button class="qa-cat-btn" data-cat="${k}" style="" onclick="selectQaCat('${k}')">${v.icon} ${v.label}</button>`
   ).join('');
   document.getElementById('qa-name').value='';
-  document.getElementById('qa-date').value=selectedDate||new Date().toISOString().slice(0,10);
+  document.getElementById('qa-date').value=selectedDate||todayISO();
   document.getElementById('qa-deadline').value='';
   document.getElementById('qa-overlay').classList.add('open');
   setTimeout(()=>document.getElementById('qa-name').focus(),80);
@@ -1840,9 +2958,11 @@ function saveQuickAdd(){
     status:cols[0]?.id||'nowe',
     deliveryDeadline:document.getElementById('qa-deadline').value,
     price:null,deposit:null,deliveryTime:'',customCat:'',secondShooter:'',location:'',notes:'',
-    orderedItems:[],daySchedule:[],editingFinished:'',tasks
+    orderedItems:[],daySchedule:[],editingFinished:'',tasks,updatedAt:Date.now()
   });
   save();closeQuickAdd();renderAll();
+  const nz=zlecenia.find(z=>z.id===id);
+  if(nz&&nz.date)gcalSyncZlecenie(nz);
   openEditModal(id);
 }
 
@@ -1862,8 +2982,9 @@ function getUpcoming(days=7){
   const limit=new Date(today);limit.setDate(limit.getDate()+days);
   // Include both event dates AND delivery deadlines
   const results=[];
-  zlecenia.forEach(z=>{
+  visibleZ().forEach(z=>{
     if(z.date){const d=new Date(z.date);if(d>=today&&d<=limit)results.push({...z,_alertDate:z.date,_alertType:'sesja'});}
+    sessionEntries(z).forEach(sx=>{const d=new Date(sx.date);if(d>=today&&d<=limit)results.push({...z,name:sx.title,_alertDate:sx.date,_alertType:'sesjaDod',_sesIcon:sx.icon});});
     if(z.deliveryDeadline&&z.deliveryDeadline!==z.date){const d=new Date(z.deliveryDeadline);if(d>=today&&d<=limit)results.push({...z,_alertDate:z.deliveryDeadline,_alertType:'dostawa'});}
   });
   return results.sort((a,b)=>a._alertDate.localeCompare(b._alertDate));
@@ -1879,7 +3000,7 @@ function renderNotifList(){
     const diff=Math.floor((new Date(z._alertDate)-today)/(1000*60*60*24));
     const when=diff===0?'Dziś! 🔴':diff===1?'Jutro 🟠':`Za ${diff} dni`;
     const urgColor=diff===0?'#ff4444':diff<=2?'#ff7a2f':'#4ade80';
-    const typeLabel=z._alertType==='dostawa'?'📦 Termin oddania':'📅 Sesja/ślub';
+    const typeLabel=z._alertType==='dostawa'?'📦 Termin oddania':z._alertType==='sesjaDod'?`${z._sesIcon||'📸'} Sesja dodatkowa`:'📅 Sesja/ślub';
     return `<div class="notif-item" onclick="openDetail('${z.id}');toggleNotifDropdown()">
       <div class="notif-dot" style="background:${CATS[z.cat]?.color||'#888'}"></div>
       <div class="notif-info"><div class="notif-name">${esc(z.name)}</div><div class="notif-when">${typeLabel}</div></div>
@@ -1895,26 +3016,27 @@ async function requestNotifPermission(){
 }
 function fireNotifications(){
   if(Notification.permission!=='granted')return;
-  const today=new Date().toISOString().slice(0,10);
+  const today=todayISO();
   const shown=JSON.parse(localStorage.getItem('foto_notif_shown')||'{}');
   getUpcoming(3).forEach(z=>{
-    const key=`${z.id}_${z._alertType}_${today}`;
+    const key=`${z.id}_${z._alertType}_${z._alertDate}_${today}`;
     if(shown[key])return;
     const diff=Math.floor((new Date(z._alertDate)-new Date().setHours(0,0,0,0))/(1000*60*60*24));
     const when=diff===0?'Dziś!':diff===1?'Jutro':`Za ${diff} dni`;
-    const type=z._alertType==='dostawa'?'📦 Termin oddania':'📅 Sesja';
-    new Notification(`📷 ${z.name}`,{body:`${type} — ${when}`,tag:z.id+z._alertType});
+    const type=z._alertType==='dostawa'?'📦 Termin oddania':z._alertType==='sesjaDod'?'📸 Sesja dodatkowa':'📅 Sesja';
+    new Notification(`📷 ${z.name}`,{body:`${type} — ${when}`,tag:z.id+z._alertType+z._alertDate});
     shown[key]=true;
   });
-  localStorage.setItem('foto_notif_shown',JSON.stringify(shown));
+  const swieze={};Object.keys(shown).forEach(k=>{if(k.endsWith('_'+today))swieze[k]=true;});
+  localStorage.setItem('foto_notif_shown',JSON.stringify(swieze));
 }
 
 // ══ EXPORT / IMPORT ════════════════════════════════════════════════════════
 function exportData(){
-  const data={zlecenia,cols,exported:new Date().toISOString(),version:4};
+  const data={zlecenia,cols,todos,todosDeleted,editArchive,deleted:deletedIds,exported:new Date().toISOString(),version:6};
   const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
   const url=URL.createObjectURL(blob);
-  const a=document.createElement('a');a.href=url;a.download=`fotoplaner-${new Date().toISOString().slice(0,10)}.json`;a.click();URL.revokeObjectURL(url);
+  const a=document.createElement('a');a.href=url;a.download=`fotoplaner-${todayISO()}.json`;a.click();URL.revokeObjectURL(url);
 }
 function importData(){
   const input=document.createElement('input');input.type='file';input.accept='.json';
@@ -1926,7 +3048,15 @@ function importData(){
         const data=JSON.parse(ev.target.result);
         if(!confirm(`Importować ${data.zlecenia?.length||0} zleceń? Obecne dane zostaną zastąpione.`))return;
         zlecenia=data.zlecenia||[];if(data.cols)cols=data.cols;
+        markDeleted(data.deleted||[]);   // skasowane na drugim urządzeniu nie mają wracać
         deletedIds=deletedIds.filter(id=>!zlecenia.some(z=>z.id===id));localStorage.setItem('foto_deleted',JSON.stringify(deletedIds));
+        if(Array.isArray(data.todos)){
+          markTodoDeleted(data.todosDeleted||[]);
+          todos=mergeTodosByNewest(todos,data.todos,new Set(todosDeleted)).list;
+          localStorage.setItem('foto_todos',JSON.stringify(todos));
+        }
+        mergeEditArchive(data.editArchive||[]);
+        syncSignatures();
         save();saveCols();renderAll();
       }catch(e){alert('Błąd: nieprawidłowy plik JSON.');}
     };
@@ -1956,7 +3086,7 @@ function togglePaidDetail(id){
 function markEditingDoneDetail(id){
   const z=zlecenia.find(x=>x.id===id);if(!z)return;
   const inp=document.createElement('input');inp.type='date';
-  inp.value=new Date().toISOString().slice(0,10);
+  inp.value=todayISO();
   inp.style.cssText='position:fixed;opacity:0;pointer-events:none';
   document.body.appendChild(inp);inp.focus();inp.showPicker?.();
   inp.addEventListener('change',()=>{if(inp.value){z.editingFinished=inp.value;save();renderDetailModal(id);renderKanban();}inp.remove();});
@@ -1979,12 +3109,20 @@ function editDeadlineDetail(id){
 function markEditingDone(id){
   const z=zlecenia.find(x=>x.id===id);if(!z)return;
   const inp=document.createElement('input');inp.type='date';
-  inp.value=new Date().toISOString().slice(0,10);
+  inp.value=todayISO();
   inp.style.cssText='position:fixed;opacity:0;pointer-events:none';
   document.body.appendChild(inp);inp.focus();inp.showPicker?.();
   inp.addEventListener('change',()=>{if(inp.value){z.editingFinished=inp.value;save();renderKanban();}inp.remove();});
   inp.addEventListener('blur',()=>setTimeout(()=>inp.remove(),200));
 }
+// Sesja narzeczeńska rozliczana osobno — jeden klik zmienia stan opłacenia.
+function toggleSesjaNarzPaid(id){
+  const z=zlecenia.find(x=>x.id===id);if(!z||!sesjaNarzKwota(z))return;
+  z.sesjaNarzPaid=!z.sesjaNarzPaid;
+  save();renderAll();
+  if(document.getElementById('modal-detail').classList.contains('open'))renderDetailModal(id);
+}
+
 function unmarkEditingDone(id){
   const z=zlecenia.find(x=>x.id===id);if(!z)return;
   z.editingFinished='';
@@ -2004,6 +3142,7 @@ function editDeadlineInline(id,el){
 
 // ══ GOOGLE DRIVE SYNC (#18) ════════════════════════════════════════════════
 let gdriveToken=null,gdriveFileId=null,tokenClient=null,pendingDriveAction=null;
+let tokenExpiresAt=0,tokenResolve=null,tokenRefreshInFlight=null,silentStart=false;
 const HARDCODED_CLIENT_ID='298351769527-fdtj2ij6f6s657ju43i9aka4bipb68cs.apps.googleusercontent.com';
 let GDRIVE_CLIENT_ID=HARDCODED_CLIENT_ID||localStorage.getItem('foto_gdrive_client_id');
 const GDRIVE_SCOPE='https://www.googleapis.com/auth/drive.appdata https://www.googleapis.com/auth/calendar.events';
@@ -2019,9 +3158,29 @@ function hideDriveMenu(){const m=document.getElementById('drive-menu');if(m)m.st
 
 function updateDriveBtn(){
   const btn=document.getElementById('drive-btn');if(!btn)return;
-  btn.textContent=gdriveToken?'☁ Drive + 📅 ✓':'☁ Drive';
-  btn.style.color=gdriveToken?'var(--sesja)':'';
-  btn.style.borderColor=gdriveToken?'var(--sesja)':'';
+  // w trakcie cichego logowania przy starcie nie strasz użytkownika czerwonym „offline"
+  const dirty=(typeof syncDirty!=='undefined')&&syncDirty&&!silentStart;
+  btn.textContent=gdriveToken?(dirty?'☁ Drive ● …':'☁ Drive + 📅 ✓'):(dirty?'☁ Drive ● offline':'☁ Drive');
+  const col=gdriveToken?(dirty?'var(--urodziny)':'var(--sesja)'):(dirty?'var(--danger)':'');
+  btn.style.color=col;
+  btn.style.borderColor=col;
+  btn.title=gdriveToken
+    ? (dirty?'Są zmiany jeszcze niewysłane na Drive':'Połączono z Google Drive i Kalendarzem')
+    : (dirty?'UWAGA: są niezapisane zmiany, brak połączenia z Drive — kliknij i zaloguj się':'Kliknij aby połączyć z Google Drive');
+}
+
+function showSyncStatus(){
+  const last=localStorage.getItem('foto_last_sync');
+  alert(
+    'STATUS SYNCHRONIZACJI\n\n'+
+    'Połączenie z Google: '+(gdriveToken?'✅ aktywne':'❌ brak (dane tylko na tym urządzeniu)')+'\n'+
+    'Niewysłane zmiany: '+(syncDirty?'⚠ TAK':'✅ nie')+'\n'+
+    'Ostatni udany zapis na Drive: '+(last?new Date(Number(last)).toLocaleString('pl'):'nigdy')+'\n\n'+
+    'Zleceń lokalnie: '+zlecenia.length+'\n'+
+    'Zadań na liście: '+todos.length+'\n'+
+    'Historia obróbki (archiwum): '+editArchive.length+' wpisów\n\n'+
+    (syncDirty?'Kliknij „⬆ Zapisz na Drive" aby wysłać zmiany teraz.':'Wszystko wysłane.')
+  );
 }
 
 function showDriveToast(msg,err=false){
@@ -2038,15 +3197,51 @@ function initGIS(){
   tokenClient=google.accounts.oauth2.initTokenClient({
     client_id:GDRIVE_CLIENT_ID,scope:GDRIVE_SCOPE,
     callback:async(r)=>{
-      if(r.error){showDriveToast('Błąd logowania: '+r.error,true);return;}
+      const resolver=tokenResolve; tokenResolve=null;
+      if(r.error){
+        gdriveToken=null;updateDriveBtn();
+        if(resolver){resolver(false);return;}
+        if(!silentStart)showDriveToast('Błąd logowania: '+r.error,true);
+        silentStart=false;
+        return;
+      }
       gdriveToken=r.access_token;
-      showDriveToast('✅ Połączono z Google Drive');updateDriveBtn();
+      // token GIS żyje ~1h; odświeżamy 2 min przed końcem, zanim poleci 401
+      tokenExpiresAt=Date.now()+((Number(r.expires_in)||3600)-120)*1000;
+      updateDriveBtn();
+      if(resolver){resolver(true);return;}
+      if(!silentStart)showDriveToast('✅ Połączono z Google Drive');
+      silentStart=false;
       const action=pendingDriveAction;pendingDriveAction=null;
       if(action==='load') await gdriveLoad();
       else if(action==='save') await gdriveSave();
       else await gdriveAutoSync();
     }
   });
+}
+
+// Zapewnia ważny token — po cichu, bez okienka, jeśli użytkownik już się kiedyś zalogował.
+async function ensureToken(){
+  if(gdriveToken && (!tokenExpiresAt || Date.now()<tokenExpiresAt)) return true;
+  if(tokenExpiresAt && Date.now()>=tokenExpiresAt) gdriveToken=null;
+  if(gdriveToken) return true;
+  if(!GDRIVE_CLIENT_ID) return false;
+  if(tokenRefreshInFlight) return tokenRefreshInFlight;
+  tokenRefreshInFlight=(async()=>{
+    try{
+      if(!tokenClient){ await loadGIS(); initGIS(); }
+      if(!tokenClient) return false;
+      return await new Promise(res=>{
+        let settled=false;
+        tokenResolve=(ok)=>{ if(settled)return; settled=true; res(ok); };
+        setTimeout(()=>{ if(!settled){settled=true;tokenResolve=null;res(false);} },10000);
+        try{ tokenClient.requestAccessToken({prompt:''}); }
+        catch(e){ if(!settled){settled=true;tokenResolve=null;res(false);} }
+      });
+    }catch(e){ return false; }
+    finally{ setTimeout(()=>{tokenRefreshInFlight=null;},0); }
+  })();
+  return tokenRefreshInFlight;
 }
 
 async function loadGIS(){
@@ -2076,10 +3271,15 @@ async function gdriveConnect(){
   }catch(e){showDriveToast('Błąd ładowania GIS: '+e.message,true);return false;}
 }
 
-async function driveRequest(url,opts={}){
-  opts.headers={...opts.headers,Authorization:'Bearer '+gdriveToken};
-  const r=await fetch(url,opts);
-  if(r.status===401){gdriveToken=null;updateDriveBtn();throw new Error('Token wygasł — zaloguj się ponownie');}
+async function driveRequest(url,opts={},allowRetry=true){
+  if(!await ensureToken())throw new Error('Brak połączenia z kontem Google');
+  const o={...opts,headers:{...(opts.headers||{}),Authorization:'Bearer '+gdriveToken}};
+  const r=await fetch(url,o);
+  if(r.status===401){
+    gdriveToken=null;tokenExpiresAt=0;updateDriveBtn();
+    if(allowRetry&&await ensureToken())return driveRequest(url,opts,false);
+    throw new Error('Sesja Google wygasła — kliknij ☁ Drive i zaloguj się');
+  }
   return r;
 }
 
@@ -2100,7 +3300,7 @@ async function gdriveSave(){
   showDriveToast('☁ Zapisuję na Drive...');
   try{
     await findDriveFile();
-    const content=JSON.stringify({zlecenia,cols,deleted:deletedIds,exported:new Date().toISOString(),version:4},null,2);
+    const content=JSON.stringify({zlecenia,cols,deleted:deletedIds,todos,todosDeleted,editArchive,exported:new Date().toISOString(),version:6},null,2);
     const bnd='---fotoplaner---boundary---';
     const method=gdriveFileId?'PATCH':'POST';
     const metaObj=gdriveFileId?{name:GDRIVE_FNAME}:{name:GDRIVE_FNAME,parents:['appDataFolder']};
@@ -2111,9 +3311,61 @@ async function gdriveSave(){
       :'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart';
     const r=await driveRequest(url,{method,headers:{'Content-Type':'multipart/related; boundary='+bnd},body});
     const json=await r.json();
-    if(json.id){gdriveFileId=json.id;showDriveToast('☁ Zapisano na Drive! ('+new Date().toLocaleTimeString('pl')+')');}
+    if(json.id){
+      gdriveFileId=json.id;
+      localStorage.setItem('foto_last_sync',String(Date.now()));
+      clearDirty();
+      showDriveToast('☁ Zapisano na Drive! ('+new Date().toLocaleTimeString('pl')+')');
+    }
     else throw new Error(json.error?.message||JSON.stringify(json));
-  }catch(e){showDriveToast('Błąd zapisu: '+e.message,true);}
+  }catch(e){
+    // zmiany zostają oznaczone jako niewysłane → zapis ponowi się przy starcie i przy kolejnej edycji
+    markDirty();
+    showDriveToast('Błąd zapisu: '+e.message,true);
+  }
+}
+
+// Odzyskiwanie historii obróbki ze starszych wersji pliku na Drive.
+// Nie rusza bieżących zleceń — wyciąga wyłącznie statystykę (data sesji + data
+// zakończenia obróbki) zleceń, które zostały już usunięte lokalnie.
+function absorbSnapshot(data){
+  const before=editArchive.length;
+  mergeEditArchive(data.editArchive||[]);
+  archiveEditStats(data.zlecenia||[]);
+  return editArchive.length-before;
+}
+
+async function gdriveRecoverHistory(){
+  if(!await ensureToken()){showDriveToast('Najpierw zaloguj się do Drive.',true);return;}
+  showDriveToast('⏪ Szukam starszych wersji pliku na Drive...');
+  try{
+    const fid=await findDriveFile();
+    if(!fid){showDriveToast('Brak pliku na Drive.',true);return;}
+    const r=await driveRequest(`https://www.googleapis.com/drive/v3/files/${fid}/revisions?fields=revisions(id,modifiedTime)&pageSize=1000`);
+    const d=await r.json();
+    const revs=(d.revisions||[]).slice().reverse();   // od najnowszej
+    if(!revs.length){showDriveToast('Google Drive nie przechowuje starszych wersji tego pliku.',true);return;}
+    const limit=Math.min(revs.length,40);
+    let added=0,scanned=0;
+    for(let i=0;i<limit;i++){
+      showDriveToast(`⏪ Przeglądam wersję ${i+1}/${limit}...`);
+      try{
+        const rr=await driveRequest(`https://www.googleapis.com/drive/v3/files/${fid}/revisions/${revs[i].id}?alt=media`);
+        const snap=await rr.json();
+        scanned++;
+        added+=absorbSnapshot(snap);
+      }catch(e){}
+    }
+    renderAll();
+    if(document.getElementById('view-timeline')?.classList.contains('active'))renderTimeline();
+    if(added){
+      markDirty();
+      await gdriveSave();
+      alert(`Odzyskano ${added} zleceń do historii „Czas obróbki".\nPrzejrzano wersji pliku: ${scanned}.`);
+    } else {
+      alert(`Przejrzano ${scanned} wersji pliku — nic nowego do odzyskania.\n\nJeśli usunięcie było dawno, Google mogło już skasować starsze wersje. Sprawdź jeszcze:\n• drugie urządzenie, które nie synchronizowało się po usunięciu,\n• plik fotoplaner-*.json z eksportu (folder Pobrane).`);
+    }
+  }catch(e){showDriveToast('Błąd odzyskiwania: '+e.message,true);}
 }
 
 async function gdriveLoad(){
@@ -2141,6 +3393,12 @@ async function gdriveLoad(){
       zlecenia=driveZ;syncSignatures();if(data.cols)cols=data.cols;saveCols();
       deletedIds=deletedIds.filter(id=>!driveZ.some(z=>z.id===id));localStorage.setItem('foto_deleted',JSON.stringify(deletedIds));
     }
+    // lista zadań — zawsze scalamy (odhaczone zostają odhaczone dzięki tombstone'om)
+    markTodoDeleted(data.todosDeleted||[]);
+    todos=mergeTodosByNewest(todos,data.todos||[],new Set(todosDeleted)).list;
+    localStorage.setItem('foto_todos',JSON.stringify(todos));
+    mergeEditArchive(data.editArchive||[]);   // historia obróbki — zawsze suma zbiorów
+    migratePackageFormat();migrateDropRedundantTasks();migrateAddons();
     save();renderAll();
     showDriveToast(doMerge?`☁ Scalono! +${added} nowych, ${updated} zaktualizowanych.`:`☁ Wczytano z Drive! (${zlecenia.length} zleceń)`);
   }catch(e){showDriveToast('Błąd odczytu: '+e.message,true);}
@@ -2149,7 +3407,7 @@ async function gdriveLoad(){
 // Cicha synchronizacja przy starcie: najpierw wczytaj i scal dane z Drive, dopiero potem zapisz.
 // Naprawia błąd nadpisywania Drive starą lokalną kopią z innego urządzenia.
 async function gdriveAutoSync(){
-  if(!gdriveToken)return;
+  if(!await ensureToken())return;
   try{
     const fid=await findDriveFile();
     if(!fid){if(zlecenia.length>0)await gdriveSave();return;}
@@ -2163,12 +3421,25 @@ async function gdriveAutoSync(){
     const removed=before-localClean.length;
     const {list,added,updated}=mergeByNewest(localClean,driveZ,delSet);
     zlecenia=list;
+    migratePackageFormat();migrateDropRedundantTasks();migrateAddons();
     syncSignatures();
     localStorage.setItem('foto_v4',JSON.stringify(zlecenia));
     if(data.cols&&!localStorage.getItem('foto_cols')){cols=data.cols;saveCols();}
+    // lista zadań
+    markTodoDeleted(data.todosDeleted||[]);
+    const tm=mergeTodosByNewest(todos,data.todos||[],new Set(todosDeleted));
+    todos=tm.list;
+    localStorage.setItem('foto_todos',JSON.stringify(todos));
+    mergeEditArchive(data.editArchive||[]);
     renderAll();
     if(zlecenia.length>0)await gdriveSave();
-    if(added||updated||removed)showDriveToast(`☁ Zsynchronizowano:${added?' +'+added+' nowych':''}${updated?' '+updated+' zaktualizowanych':''}${removed?' '+removed+' usuniętych':''}`);
+    if(added||updated||removed||tm.added)showDriveToast(`☁ Zsynchronizowano:${added?' +'+added+' nowych':''}${updated?' '+updated+' zaktualizowanych':''}${removed?' '+removed+' usuniętych':''}${tm.added?' +'+tm.added+' zadań':''}`);
+    // raz na dobę sprawdź, czy terminy faktycznie są w Google Calendar
+    const lastRec=Number(localStorage.getItem('foto_gcal_check')||0);
+    if(Date.now()-lastRec>20*3600*1000){
+      localStorage.setItem('foto_gcal_check',String(Date.now()));
+      gcalReconcile(true);
+    }
   }catch(e){showDriveToast('Błąd synchronizacji: '+e.message,true);}
 }
 
@@ -2192,12 +3463,21 @@ const GCAL_API='https://www.googleapis.com/calendar/v3/calendars/primary/events'
 
 function gcalEventBody(z){
   const cat=CATS[z.cat]||{};
+  // Sesja dodatkowa — osobne, samodzielne wydarzenie. Bez terminu oddania,
+  // bez finansów; ma być czytelną pozycją w kalendarzu.
+  if(z._session){
+    const b={summary:`${z._sessionIcon||'📸'} ${z.name}`};
+    if(z._sessionDesc)b.description=z._sessionDesc;
+    if(z.id)b.extendedProperties={private:{fpid:z.id}};
+    if(z.date){ b.start={date:z.date}; b.end={date:addDaysISO(z.date,1)}; }
+    return b;
+  }
   const label=getCatLabel(z);
   const desc=[
     z.secondShooter?`2. fotograf: ${z.secondShooter}`:'',
     z.location?`Lokalizacja: ${z.location}`:'',
-    z.price?`Wynagrodzenie: ${Number(z.price).toLocaleString('pl')} zł`:'',
-    z.deposit?`Zaliczka: ${Number(z.deposit).toLocaleString('pl')} zł`:'',
+    zTotal(z)?`Wynagrodzenie: ${zTotal(z).toLocaleString('pl')} zł`+(zDodatkiSuma(z)?` (pakiet ${(Number(z.price)||0).toLocaleString('pl')} + dodatki ${zDodatkiSuma(z).toLocaleString('pl')})`:''):'',
+    z.deposit?`Zadatek: ${Number(z.deposit).toLocaleString('pl')} zł`:'',
     z.notes?`Notatki: ${z.notes}`:'',
     z.deliveryDeadline?`Termin oddania: ${z.deliveryDeadline}${z.deliveryTime?' o '+z.deliveryTime:''}`:'',
   ].filter(Boolean).join('\n');
@@ -2205,44 +3485,249 @@ function gcalEventBody(z){
     summary:`${cat.icon||''} ${z.name} [${label}]`,
     description:desc||undefined,
   };
-  // session date
+  // Znacznik własnościowy — po nim rozpoznajemy „nasze" wydarzenie nawet wtedy,
+  // gdy urządzenie zgubiło gcalEventId. Klucz do walki z duplikatami.
+  if(z.id)body.extendedProperties={private:{fpid:z.id}};
+  // Wydarzenie całodniowe: end.date w Google Calendar jest WYŁĄCZNY (exclusive).
+  // start==end dawało wydarzenie o zerowej długości — właśnie takie potrafią
+  // znikać i wracać w widokach Google Calendar. Poprawnie: koniec = dzień później.
   if(z.date){
     body.start={date:z.date};
-    body.end={date:z.date};
+    body.end={date:addDaysISO(z.date,1)};
   }
   return body;
 }
 
-async function gcalRequest(url,method='GET',body=null){
+// bezpieczne dodawanie dni do 'YYYY-MM-DD' (bez pułapek stref czasowych)
+function addDaysISO(ds,n){
+  const [y,m,d]=ds.split('-').map(Number);
+  const dt=new Date(Date.UTC(y,m-1,d));
+  dt.setUTCDate(dt.getUTCDate()+n);
+  return dt.toISOString().slice(0,10);
+}
+
+async function gcalRequest(url,method='GET',body=null,allowRetry=true){
+  if(!await ensureToken())throw new Error('Brak połączenia z kontem Google');
   const opts={method,headers:{Authorization:'Bearer '+gdriveToken,'Content-Type':'application/json'}};
   if(body)opts.body=JSON.stringify(body);
   const r=await fetch(url,opts);
-  if(r.status===401){gdriveToken=null;updateDriveBtn();throw new Error('Token wygasł');}
+  if(r.status===401){
+    gdriveToken=null;tokenExpiresAt=0;updateDriveBtn();
+    if(allowRetry&&await ensureToken())return gcalRequest(url,method,body,false);
+    throw new Error('Sesja Google wygasła');
+  }
   return r;
 }
 
 async function gcalRetry(id){
   const z=zlecenia.find(x=>x.id===id);if(!z)return;
-  showDriveToast('📅 Dodaję termin do kalendarza...');
-  await gcalCreateZlecenie(z);
-  showDriveToast('📅 Termin dodany do Google Calendar!');
-  renderKanban();
+  showDriveToast('📅 Wysyłam termin do kalendarza...');
+  const ok=await gcalSyncZlecenie(z);
+  await gcalSyncSessions(z);
+  showDriveToast(ok?'📅 Termin jest w Google Calendar!':'Nie udało się dodać terminu',!ok);
+  save();renderKanban();
 }
 
-// Jednorazowe dodanie nowego zlecenia do Google Calendar (tylko przy tworzeniu)
-async function gcalCreateZlecenie(z){
-  if(!gdriveToken||!z.date)return;
+// ── OCHRONA PRZED DUPLIKATAMI ──────────────────────────────────────────────
+// Deterministyczne ID wydarzenia liczone ze zlecenia. Dwa urządzenia policzą
+// to samo ID, więc drugie dostanie od Google 409 (już istnieje) zamiast
+// stworzyć bliźniaka. Google wymaga alfabetu base32hex: 0-9 oraz a-v.
+function gcalDetId(z){
+  const enc=Array.from(String(z.id||'')).map(c=>c.charCodeAt(0).toString(32).padStart(2,'0')).join('');
+  return ('fp'+enc).padEnd(8,'0').slice(0,1024);   // Google wymaga min. 5 znaków
+}
+const gcalInFlight=new Set();   // blokada: jedno zlecenie = jedna operacja naraz
+
+// ── Sesje jako osobne wydarzenia ───────────────────────────────────────────
+// Proxy udaje zlecenie (własne id = „<id>::narz" / „<id>::slub"), więc cała
+// machineria antyduplikatowa — fpid, deterministyczne ID, reconcile — działa
+// bez zmian. gcalEventId zapisuje się przez setter wprost do zlecenia.
+function sessionProxy(z,cfg){
+  const p={
+    id:z.id+'::'+cfg.key,
+    date:z[cfg.field]||'',
+    name:`${z.name} — ${cfg.label}`,
+    cat:z.cat,
+    _session:true,
+    _sessionIcon:cfg.icon,
+    _ownerId:z.id,
+    _sessionDesc:(cfg.key==='narz'&&sesjaNarzKwota(z))
+      ? `Kwota: ${sesjaNarzKwota(z).toLocaleString('pl')} zł (${sesjaNarzOplacona(z)?'opłacona':'nieopłacona'})`
+      : undefined,
+  };
+  Object.defineProperty(p,'gcalEventId',{
+    get(){ return z[cfg.ev]||null; },
+    set(v){ z[cfg.ev]=v||null; },
+    enumerable:true,configurable:true
+  });
+  return p;
+}
+function sessionProxies(z){ return hasSessions(z.cat)?SESSION_KINDS.map(k=>sessionProxy(z,k)):[]; }
+
+// Dosyła / aktualizuje / kasuje wydarzenia sesji po edycji zlecenia.
+async function gcalSyncSessions(z){
+  if(!z)return;
+  for(const k of SESSION_KINDS){
+    const has=hasSessions(z.cat)&&z[k.field];
+    const px=sessionProxy(z,k);
+    if(has){ await gcalSyncZlecenie(px); }
+    // Wyczyszczona data sesji nie kasuje wydarzenia — zostaje w kalendarzu.
+    // ID trzymamy dalej, żeby ponowne wpisanie daty zaktualizowało to samo wydarzenie.
+  }
+}
+
+function gcalEventMatches(ev,z,want){
+  if(!ev||ev.status==='cancelled')return false;
+  const fpid=ev.extendedProperties?.private?.fpid;
+  if(fpid)return fpid===z.id;                    // znacznik rozstrzyga
+  if(ev.id===z.gcalEventId||ev.id===gcalDetId(z))return true;
+  // stare wydarzenia bez znacznika: ta sama data i dokładnie ten sam tytuł
+  return !!ev.start?.date && ev.start.date===z.date && ev.summary===want.summary;
+}
+
+// Szuka wszystkich wydarzeń należących do zlecenia (żeby nie tworzyć kolejnego).
+async function gcalFindAll(z,want){
+  const out=[],seen=new Set();
+  const push=e=>{if(e&&!seen.has(e.id)&&gcalEventMatches(e,z,want)){seen.add(e.id);out.push(e);}};
   try{
-    const body=gcalEventBody(z);
-    const r=await gcalRequest(GCAL_API,'POST',body);
-    const json=await r.json();
-    if(json.id){z.gcalEventId=json.id;localStorage.setItem('foto_v4',JSON.stringify(zlecenia));}
-  }catch(e){console.warn('gcalCreate error:',e.message);}
+    const r=await gcalRequest(`${GCAL_API}?privateExtendedProperty=${encodeURIComponent('fpid='+z.id)}&showDeleted=false&maxResults=50`);
+    if(r.ok)(await r.json()).items?.forEach(push);
+  }catch(e){}
+  if(z.date){
+    try{
+      const r2=await gcalRequest(`${GCAL_API}?timeMin=${z.date}T00:00:00Z&timeMax=${addDaysISO(z.date,2)}T00:00:00Z&showDeleted=false&maxResults=100`);
+      if(r2.ok)(await r2.json()).items?.forEach(push);
+    }catch(e){}
+  }
+  return out;
 }
 
-async function gcalDeleteZlecenie(z){
-  if(!gdriveToken||!z.gcalEventId)return;
-  try{await gcalRequest(`${GCAL_API}/${z.gcalEventId}`,'DELETE');}catch(e){}
+// Tworzy LUB aktualizuje wydarzenie. Nigdy nie duplikuje; skasowane przywraca.
+async function gcalSyncZlecenie(z){
+  if(!z||!z.date)return false;
+  if(gcalInFlight.has(z.id))return false;
+  if(!await ensureToken())return false;
+  gcalInFlight.add(z.id);
+  try{
+    const want=gcalEventBody(z);
+    // 1. znamy ID → zwykła aktualizacja
+    if(z.gcalEventId){
+      const r=await gcalRequest(`${GCAL_API}/${encodeURIComponent(z.gcalEventId)}`,'PATCH',{...want,status:'confirmed'});
+      if(r.ok)return true;
+      if(r.status===404||r.status===410||r.status===403){ z.gcalEventId=null; }
+      else return false;
+    }
+    // 2. nie znamy ID → NAJPIERW sprawdź, czy wydarzenie już tam nie jest
+    //    (np. utworzone przez drugie urządzenie). Bez tego powstawał duplikat.
+    const found=await gcalFindAll(z,want);
+    if(found.length){
+      const keep=found.find(e=>e.id===z.gcalEventId)||found.find(e=>e.id===gcalDetId(z))||found[0];
+      for(const e of found){ if(e.id!==keep.id){ try{await gcalRequest(`${GCAL_API}/${encodeURIComponent(e.id)}`,'DELETE');}catch(err){} } }
+      z.gcalEventId=keep.id;
+      await gcalRequest(`${GCAL_API}/${encodeURIComponent(keep.id)}`,'PATCH',{...want,status:'confirmed'});
+      save();                       // ID musi trafić na Drive, inaczej drugie urządzenie znów zgadnie źle
+      return true;
+    }
+    // 3. tworzymy z deterministycznym ID — wyścig dwóch urządzeń kończy się 409, nie duplikatem
+    const detId=gcalDetId(z);
+    const r2=await gcalRequest(GCAL_API,'POST',{...want,id:detId});
+    if(r2.status===409){
+      z.gcalEventId=detId;
+      await gcalRequest(`${GCAL_API}/${detId}`,'PATCH',{...want,status:'confirmed'});
+      save();return true;
+    }
+    if(r2.ok){
+      const json=await r2.json();
+      if(json.id){ z.gcalEventId=json.id; save(); return true; }
+    }
+    // awaryjnie: gdyby Google odrzucił nasze ID, twórz bez niego
+    const r3=await gcalRequest(GCAL_API,'POST',want);
+    const j3=await r3.json();
+    if(j3.id){ z.gcalEventId=j3.id; save(); return true; }
+    return false;
+  }catch(e){ console.warn('gcalSync error:',e.message); return false; }
+  finally{ gcalInFlight.delete(z.id); }
+}
+// zgodność wstecz
+async function gcalCreateZlecenie(z){ return gcalSyncZlecenie(z); }
+
+// ZASADA: FotoPlaner nigdy nie kasuje terminów z Google Calendar. Wydarzenie raz
+// wpisane zostaje — także po usunięciu zlecenia z aplikacji. Kasujemy wyłącznie
+// własne DUPLIKATY (druga kopia tego samego terminu), co robią gcalSyncZlecenie
+// i gcalReconcile. Funkcja zostawiona pusta celowo, żeby nikt jej nie przywrócił
+// przez przypadek.
+async function gcalDeleteZlecenie(z){ return; }
+
+// Przegląd wszystkich terminów naraz: brakujące dodaje, zmienione poprawia,
+// skasowane przywraca, DUPLIKATY kasuje. Jedno listowanie kalendarza na całość.
+async function gcalReconcile(silent){
+  if(!await ensureToken()){ if(!silent)showDriveToast('Najpierw połącz się z Google',true); return; }
+  const from=new Date(); from.setDate(from.getDate()-30);
+  const fromISO=toISODate(from);
+  const list=[
+    ...zlecenia.filter(z=>z.date&&z.date>=fromISO),
+    ...zlecenia.flatMap(z=>sessionProxies(z).filter(px=>px.date&&px.date>=fromISO)),
+  ].sort((a,b)=>a.date.localeCompare(b.date));
+  if(!list.length){ if(!silent)showDriveToast('Brak terminów do sprawdzenia.'); return; }
+  if(!silent)showDriveToast('📅 Sprawdzam '+list.length+' terminów...');
+
+  // 1. pobierz wszystkie wydarzenia z okna czasowego (z paginacją)
+  const maxISO=addDaysISO(list[list.length-1].date,2);
+  const events=[];
+  try{
+    let page='';
+    for(let i=0;i<20;i++){
+      const r=await gcalRequest(`${GCAL_API}?timeMin=${fromISO}T00:00:00Z&timeMax=${maxISO}T00:00:00Z&showDeleted=false&maxResults=2500${page?'&pageToken='+page:''}`);
+      if(!r.ok)break;
+      const d=await r.json();
+      (d.items||[]).forEach(e=>events.push(e));
+      if(!d.nextPageToken)break;
+      page=d.nextPageToken;
+    }
+  }catch(e){ if(!silent)showDriveToast('Nie udało się pobrać kalendarza: '+e.message,true); return; }
+
+  // 2. dopasuj wydarzenia do zleceń; jedno wydarzenie może należeć tylko do jednego
+  const claimed=new Set();
+  let fixed=0,dups=0,created=0,failed=0;
+  for(const z of list){
+    try{
+      const want=gcalEventBody(z);
+      const mine=events.filter(e=>!claimed.has(e.id)&&gcalEventMatches(e,z,want));
+      mine.forEach(e=>claimed.add(e.id));
+      if(mine.length){
+        const keep=mine.find(e=>e.id===z.gcalEventId)||mine.find(e=>e.id===gcalDetId(z))||mine[0];
+        for(const e of mine){
+          if(e.id===keep.id)continue;
+          try{ await gcalRequest(`${GCAL_API}/${encodeURIComponent(e.id)}`,'DELETE'); dups++; }catch(err){ failed++; }
+        }
+        const bad = keep.start?.date!==want.start.date
+                 || keep.end?.date!==want.end.date
+                 || keep.summary!==want.summary
+                 || keep.extendedProperties?.private?.fpid!==z.id;
+        if(bad){ await gcalRequest(`${GCAL_API}/${encodeURIComponent(keep.id)}`,'PATCH',{...want,status:'confirmed'}); fixed++; }
+        if(z.gcalEventId!==keep.id){ z.gcalEventId=keep.id; fixed++; }
+        continue;
+      }
+      // brak wydarzenia → utwórz (deterministyczne ID chroni przed wyścigiem)
+      const detId=gcalDetId(z);
+      const r2=await gcalRequest(GCAL_API,'POST',{...want,id:detId});
+      if(r2.status===409){
+        await gcalRequest(`${GCAL_API}/${detId}`,'PATCH',{...want,status:'confirmed'});
+        z.gcalEventId=detId; created++;
+      } else if(r2.ok){
+        const j2=await r2.json();
+        if(j2.id){ z.gcalEventId=j2.id; created++; } else failed++;
+      } else failed++;
+    }catch(e){ failed++; break; }
+  }
+  if(fixed||created||dups)save();
+  const summary=`📅 Sprawdzono ${list.length}`+
+    (created?`, dodano ${created}`:'')+
+    (fixed?`, poprawiono ${fixed}`:'')+
+    (dups?`, usunięto ${dups} duplikat(ów)`:'')+
+    (failed?`, błędów ${failed}`:'')+'.';
+  if(!silent)showDriveToast(summary,failed>0);
+  else if(created||dups)showDriveToast(summary);
 }
 
 // ══ PWA — MANIFEST + INSTALL PROMPT (#19) ══════════════════════════════════
@@ -2332,16 +3817,29 @@ async function installPWA(){
 
 // ══ INIT ═══════════════════════════════════════════════════════════════════
 loadData();
+archiveEditStats(zlecenia);   // domknij historię obróbki dla danych sprzed tej wersji
+syncSignatures();   // punkt odniesienia dla wykrywania zmian w tej sesji
 initCal();
 initPWA();
+updateDriveBtn();
 if(Notification.permission==='granted')fireNotifications();
 // Auto-reconnect Drive silently (no popup) if user already authorized before
 if(GDRIVE_CLIENT_ID){
+  silentStart=true;
   loadGIS().then(()=>{
     initGIS();
     if(tokenClient)tokenClient.requestAccessToken({prompt:''});
-  }).catch(()=>{});
+    // jeśli ciche logowanie nie przejdzie, a mamy niewysłane zmiany — powiedz o tym wprost
+    setTimeout(()=>{
+      silentStart=false;
+      updateDriveBtn();
+      if(!gdriveToken&&syncDirty)
+        showDriveToast('⚠ Zmiany nie trafiły jeszcze na Drive — kliknij ☁ Drive i zaloguj się',true);
+    },12000);
+  }).catch(()=>{silentStart=false;});
 }
+// Sieć wróciła — dokończ zaległy zapis
+window.addEventListener('online',()=>{ if(syncDirty)scheduleDriveSave(); });
 </script>
 </body>
 </html>
