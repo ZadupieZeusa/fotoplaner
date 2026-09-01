@@ -2652,16 +2652,15 @@ function renderDetailAddons(z){
         <button class="btn-ghost" style="font-size:10px;padding:2px 7px" title="Edytuj" onclick="edytujDodatek('${id}','${d.id}')">✏</button>
       </div>`;
   }).join('');
-  const chipsy=addonSuggestions(z.cat).map((n,i)=>
-    `<button class="cat-btn" style="font-size:11px;padding:3px 8px" onclick="dodajDodatekDoZlecenia('${id}',${i})">${esc(n)}</button>`).join('')
-    +`<button class="cat-btn" style="font-size:11px;padding:3px 8px" onclick="dodajDodatekDoZlecenia('${id}',-1)">＋ Własny</button>`;
+  // Zapisana karta: pokazujemy TYLKO wybrane dodatki z kwotą (bez listy podpowiedzi).
+  // Listę do wyboru ma formularz edycji (renderAddons → #addon-suggest).
+  if(!lista.length) return '';
   return `<div class="detail-sec" style="display:flex;align-items:center;justify-content:space-between">
       <span>Dodatki poza pakietem</span>
       ${suma?`<span style="font-size:11px;color:var(--sesja);font-weight:600">+ ${suma.toLocaleString('pl')} zł</span>`:''}
     </div>
     <div style="background:var(--surface2);border-radius:7px;padding:8px 10px;font-size:12px;color:var(--text2);line-height:1.7">
-      ${wiersze||'<div style="color:var(--text3);margin-bottom:6px">Brak dodatków — kliknij poniżej, żeby dopisać.</div>'}
-      <div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:7px">${chipsy}</div>
+      ${wiersze}
     </div>`;
 }
 
