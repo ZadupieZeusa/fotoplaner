@@ -2502,7 +2502,7 @@ let detailTab='info';
 
 function openDetail(id){
   const z=zlecenia.find(x=>x.id===id);if(!z)return;
-  detailTab='info';detailPkgEdit=false;
+  detailTab='info';detailPkgEdit=false;detailDodatekEdit=null;
   renderDetailModal(id);
   document.getElementById('modal-detail').classList.add('open');
 }
@@ -2626,24 +2626,81 @@ function renderDetailPackage(z){
     <div style="background:var(--surface2);border-radius:7px;padding:8px 10px;font-size:12px;color:var(--text2);line-height:1.8">${body}</div>`;
 }
 
-// ── Dodatki na karcie klienta: tylko podgląd ──────────────────────────────
-// Sekcja czyta się jak opis pakietu: wybrane pozycje z kwotami i nic więcej.
-// Dodawanie i edycja są w formularzu zlecenia (✏ Edytuj / nowe zlecenie).
+// ── Dodatki na karcie klienta ──────────────────────────────────────────────
+// Wygląda jak blok pakietu: lista pozycji z kwotami. Przy każdej ołówek,
+// pod ołówkiem edycja nazwy i kwoty oraz kosz.
+let detailDodatekEdit=null;
+
 function renderDetailAddons(z){
+  const id=z.id;
   const lista=zDodatki(z);
-  if(!lista.length)return '';                      // brak dodatków = brak sekcji
   const suma=zDodatkiSuma(z);
-  const wiersze=lista.map(d=>`
-      <div style="display:flex;gap:8px;align-items:baseline">
+  const wiersze=lista.map(d=>{
+    if(d.id===detailDodatekEdit) return `
+      <div style="display:flex;gap:6px;align-items:center;margin-bottom:6px">
+        <input class="form-input" id="dod-name-${d.id}" value="${esc(d.name||'')}" placeholder="Nazwa dodatku" style="flex:1;font-size:12px;padding:5px 8px" />
+        <input class="form-input" id="dod-price-${d.id}" type="number" min="0" value="${d.price??''}" placeholder="kwota" style="width:92px;font-size:12px;padding:5px 8px" />
+        <span style="font-size:11px;color:var(--text3)">zł</span>
+        <button class="btn-sm" style="padding:3px 8px;font-size:11px" title="Zapisz" onclick="zapiszDodatek('${id}','${d.id}')">✓</button>
+        <button class="task-del-btn" title="Usuń dodatek" onclick="usunDodatek('${id}','${d.id}')">🗑</button>
+      </div>`;
+    return `
+      <div style="display:flex;gap:8px;align-items:center;margin-bottom:5px">
         <span style="color:var(--text3)">–</span>
         <span style="flex:1;min-width:0">${esc(d.name||'(bez nazwy)')}</span>
         <b style="color:var(--sesja);white-space:nowrap">${kwotaTxt(d.price)}</b>
-      </div>`).join('');
+        <button class="btn-ghost" style="font-size:10px;padding:2px 7px" title="Edytuj" onclick="edytujDodatek('${id}','${d.id}')">✏</button>
+      </div>`;
+  }).join('');
+  const chipsy=addonSuggestions(z.cat).map((n,i)=>
+    `<button class="cat-btn" style="font-size:11px;padding:3px 8px" onclick="dodajDodatekDoZlecenia('${id}',${i})">${esc(n)}</button>`).join('')
+    +`<button class="cat-btn" style="font-size:11px;padding:3px 8px" onclick="dodajDodatekDoZlecenia('${id}',-1)">＋ Własny</button>`;
   return `<div class="detail-sec" style="display:flex;align-items:center;justify-content:space-between">
       <span>Dodatki poza pakietem</span>
       ${suma?`<span style="font-size:11px;color:var(--sesja);font-weight:600">+ ${suma.toLocaleString('pl')} zł</span>`:''}
     </div>
-    <div style="background:var(--surface2);border-radius:7px;padding:8px 10px;font-size:12px;color:var(--text2);line-height:1.8">${wiersze}</div>`;
+    <div style="background:var(--surface2);border-radius:7px;padding:8px 10px;font-size:12px;color:var(--text2);line-height:1.7">
+      ${wiersze||'<div style="color:var(--text3);margin-bottom:6px">Brak dodatków — kliknij poniżej, żeby dopisać.</div>'}
+      <div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:7px">${chipsy}</div>
+    </div>`;
+}
+
+function dodajDodatekDoZlecenia(zId,i){
+  const z=zlecenia.find(x=>x.id===zId);if(!z)return;
+  if(!Array.isArray(z.dodatki))z.dodatki=[];
+  const nazwa=i>=0?addonSuggestions(z.cat)[i]:'';
+  if(i>=0&&!nazwa)return;
+  let cena=null;
+  if(i>=0){ cena=zapytajOCene(nazwa); if(cena===undefined)return; }   // Anuluj
+  const d={id:'d_'+uid(),name:nazwa,price:cena};
+  z.dodatki.push(d);
+  if(nazwa){
+    if(!z.tasks)z.tasks=[];
+    if(!z.tasks.some(t=>t.id==='dod_'+d.id))
+      z.tasks.push({id:'dod_'+d.id,label:czystaNazwa(nazwa),done:false});
+  }
+  detailDodatekEdit=nazwa?null:d.id;      // „Własny" od razu w edycji
+  save();renderDetailModal(zId);renderAll();
+}
+function edytujDodatek(zId,dId){ detailDodatekEdit=dId; renderDetailModal(zId); }
+function zapiszDodatek(zId,dId){
+  const z=zlecenia.find(x=>x.id===zId);if(!z)return;
+  const d=zDodatki(z).find(x=>x.id===dId);if(!d)return;
+  const n=document.getElementById('dod-name-'+dId), c=document.getElementById('dod-price-'+dId);
+  if(n)d.name=(n.value||'').trim();
+  if(c)d.price=Number(String(c.value).replace(',','.'))||null;
+  const t=(z.tasks||[]).find(x=>x.id==='dod_'+dId);
+  if(t&&!t.done&&d.name)t.label=czystaNazwa(d.name);
+  detailDodatekEdit=null;
+  save();renderDetailModal(zId);renderAll();
+}
+function usunDodatek(zId,dId){
+  const z=zlecenia.find(x=>x.id===zId);if(!z)return;
+  z.dodatki=zDodatki(z).filter(d=>d.id!==dId);
+  const t=(z.tasks||[]).find(x=>x.id==='dod_'+dId);
+  if(t&&!t.done)z.tasks=z.tasks.filter(x=>x.id!=='dod_'+dId);
+  detailDodatekEdit=null;
+  save();renderDetailModal(zId);renderAll();
 }
 
 function applyPackageToDetail(zId,pkgId){
@@ -2808,12 +2865,31 @@ function openSettings(){
 }
 function closeSettings(){document.getElementById('modal-settings').classList.remove('open');}
 function saveSettings(){
+  const oldDays={...EDIT_DAYS};
   Object.keys(CATS).forEach(key=>{
     const el=document.getElementById('sett-'+key);if(!el)return;
     const v=parseInt(el.value,10);
     if(v>0)EDIT_DAYS[key]=v;
   });
   localStorage.setItem('foto_edit_days',JSON.stringify(EDIT_DAYS));
+  // Przeliczenie WSTECZ: zmiana liczby dni obróbki aktualizuje terminy istniejących zleceń.
+  // Obejmuje kategorie, których wartość zmieniono; pomija zlecenia z zakończoną obróbką.
+  window._settDeadlineN=0;
+  const changedCats=Object.keys(CATS).filter(k=>EDIT_DAYS[k]!==oldDays[k]);
+  if(changedCats.length){
+    let n=0;
+    zlecenia.forEach(z=>{
+      if(!changedCats.includes(z.cat))return;
+      if(z.editingFinished)return;
+      if(!(z.deliveryDeadline||z.status==='edycja_st'))return;
+      const start=editStartDate(z);
+      if(!start)return;
+      const nd=addDaysISO(start,editDaysFor(z.cat));
+      if(nd&&nd!==z.deliveryDeadline){z.deliveryDeadline=nd;n++;}
+    });
+    if(n){save();renderAll();}
+    window._settDeadlineN=n;
+  }
   readPkgEditor();
   PACKAGES=clonePackages(pkgDraft);
   savePackages();
@@ -2823,7 +2899,7 @@ function saveSettings(){
   closeSettings();
   // otwarty formularz / karta klienta mają od razu nową listę podpowiedzi
   if(document.getElementById('modal-add').classList.contains('open'))renderAddons();
-  showDriveToast('✅ Ustawienia, pakiety i dodatki zapisane');
+  showDriveToast('✅ Zapisano'+(window._settDeadlineN?' · przeliczono terminy: '+window._settDeadlineN+' zleceń':''));
 }
 
 // ══ EDYTOR PAKIETÓW W USTAWIENIACH ═════════════════════════════════════════
