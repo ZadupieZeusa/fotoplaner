@@ -951,9 +951,12 @@ function zDueAmount(z){ return Math.max(0,zTotal(z)-zPaidAmount(z)); }
 // Zlecenie „przed Tobą" = jeszcze niewykonane: siedzi w kolumnie „Wszystkie zlecenia",
 // czyli nie trafiło jeszcze do żadnego etapu pracy (edycja / zamówione / odbiór / zakończone).
 function czekaNaWykonanie(z){
-  if(!z||z.archived) return false;
-  if(z.date && z.date>=todayISO()) return true;   // impreza dopiero przed nami
-  return !leftEditingStage(z);                     // po imprezie: dopóki obróbka niedomknięta
+  // „Do wykonania" = impreza jeszcze się NIE odbyła. Zlecenia po sesji/ślubie
+  // (nawet te w obróbce albo do oddania) są już zrobione — praca poprodukcyjna
+  // to nie jest zlecenie czekające na wykonanie.
+  if(!z||z.archived||z._usuniete) return false;
+  if(!z.date) return true;              // bez daty — jeszcze nieumówione
+  return z.date>=todayISO();
 }
 
 function clonePackages(src){return JSON.parse(JSON.stringify(src));}
@@ -2067,7 +2070,7 @@ function renderDashboard(){
     .filter(a=>a.date&&a.date.startsWith(rok)&&!wszystkieId.has(a.id)&&((a.total||0)>0||(a.paid||0)>0))
     .map(a=>({id:a.id,name:a.name,cat:a.cat,customCat:a.customCat||'',date:a.date,
               editingFinished:a.editingFinished||'',status:'zakonczone',
-              price:a.total||0,deposit:a.paid||0,_usuniete:true}));
+              price:a.paid||0,deposit:a.paid||0,_usuniete:true}));
   const yearZ=[...liveYear,...goneYear];
   const sumaK=l=>l.reduce((s,z)=>s+zTotal(z),0);          // wartość kontraktów
   const sumaW=l=>l.reduce((s,z)=>s+zPaidAmount(z),0);      // już wpłacone
