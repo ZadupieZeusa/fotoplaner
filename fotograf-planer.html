@@ -950,7 +950,11 @@ function zPaidAmount(z){
 function zDueAmount(z){ return Math.max(0,zTotal(z)-zPaidAmount(z)); }
 // Zlecenie „przed Tobą" = jeszcze niewykonane: siedzi w kolumnie „Wszystkie zlecenia",
 // czyli nie trafiło jeszcze do żadnego etapu pracy (edycja / zamówione / odbiór / zakończone).
-function czekaNaWykonanie(z){ return !z.archived && (!z.status || z.status===''); }
+function czekaNaWykonanie(z){
+  if(!z||z.archived) return false;
+  if(z.date && z.date>=todayISO()) return true;   // impreza dopiero przed nami
+  return !leftEditingStage(z);                     // po imprezie: dopóki obróbka niedomknięta
+}
 
 function clonePackages(src){return JSON.parse(JSON.stringify(src));}
 let PACKAGES = (()=>{
@@ -1253,6 +1257,30 @@ function sessionEntries(z){
 function editStartDate(z){ return (z&&hasSessions(z.cat)&&z.sesjaSlub)?z.sesjaSlub:(z?(z.date||''):''); }
 function editDaysFor(cat){ return EDIT_DAYS[cat]||30; }
 function suggestedDeadline(z){ const st=editStartDate(z); return st?addDaysISO(st,editDaysFor(z.cat)):''; }
+// Termin obróbki jest DETERMINISTYCZNY: dzień ostatnich zdjęć + dni z ustawień.
+// Automatyczny termin zawsze podąża za ustawieniami; ręczny (deadlineManual) jest nietykalny.
+function refreshDeadline(z){
+  if(!z||z.deadlineManual||z.editingFinished) return false;
+  if(!(z.deliveryDeadline||z.status==='edycja_st')) return false;
+  const st=editStartDate(z); if(!st) return false;
+  const nd=addDaysISO(st,editDaysFor(z.cat));
+  if(nd&&nd!==z.deliveryDeadline){ z.deliveryDeadline=nd; return true; }
+  return false;
+}
+function refreshAllDeadlines(){ let n=0; zlecenia.forEach(z=>{ if(refreshDeadline(z)) n++; }); return n; }
+// Jedno źródło prawdy dla „ile trwała obróbka" — używane przez Timeline i Dashboard,
+// żeby oba widoki nigdy nie pokazywały różnych liczb. null = brak/niespójne dane.
+function editStartOf(z){
+  if(!z||!z.editingFinished) return '';
+  let st=z.startDate||editStartDate(z)||z.date||'';
+  if(st&&z.editingFinished<st) st=z.date||'';   // dane niespójne → licz od daty zlecenia
+  return st;
+}
+function editDaysOf(z){
+  const st=editStartOf(z); if(!st) return null;
+  const d=Math.round((new Date(z.editingFinished)-new Date(st))/86400000);
+  return d>=0?d:null;
+}
 
 // ══ ARCHIWUM ZLECEŃ ════════════════════════════════════════════════════════
 // Zakończone zlecenia chowamy (z.archived), nigdy nie kasujemy — Dashboard musi
@@ -1844,14 +1872,8 @@ function renderTimeline(){
   // Statystyka obróbki żyje własnym życiem — obejmuje też zlecenia usunięte.
   const editedZ=editStatsSource()
     .filter(z=>Number(z.date.slice(0,4))===tlYear)
-    .map(z=>{
-      let st=z.startDate||editStartDate(z)||z.date;
-      // dane niespójne (sesja wpisana po zamknięciu obróbki) → licz od daty zlecenia
-      if(z.editingFinished<st) st=z.date;
-      return {...z,_start:st};
-    })
-    .map(z=>({...z,editDays:Math.round((new Date(z.editingFinished)-new Date(z._start))/(1000*60*60*24))}))
-    .filter(z=>z.editDays>=0)
+    .map(z=>({...z,_start:editStartOf(z),editDays:editDaysOf(z)}))
+    .filter(z=>z.editDays!==null)
     .sort((a,b)=>b.editDays-a.editDays);
 
   if(!yearZ.length&&!editedZ.length){container.innerHTML=`<div class="tl-empty">Brak zleceń w obróbce w roku ${tlYear}<br><small style="color:var(--text3);font-size:12px">Na osi widać tylko zlecenia przed zakończeniem obróbki</small></div>`;return;}
@@ -2047,7 +2069,8 @@ function renderDashboard(){
   const odm=(n,a,b,c)=>{const d=n%10,s=n%100;return n+' '+(n===1?a:(d>=2&&d<=4&&!(s>=12&&s<=14)?b:c));};
   // z archiwum — usunięte zlecenia też liczą się do historii obróbki
   const editedZ=editStatsSource().filter(z=>z.date.startsWith(dashYear+''));
-  const avgEdit=editedZ.length?Math.round(editedZ.reduce((s,z)=>{const st=z.startDate||editStartDate(z)||z.date;const days=(new Date(z.editingFinished)-new Date(st))/(1000*60*60*24);return s+days;},0)/editedZ.length):null;
+  const edDni=editedZ.map(editDaysOf).filter(d=>d!==null);
+  const avgEdit=edDni.length?Math.round(edDni.reduce((s,d)=>s+d,0)/edDni.length):null;
 
   // Busiest month
   const monthlyCounts=Array(12).fill(0);
@@ -2058,7 +2081,7 @@ function renderDashboard(){
   body.innerHTML=`
     <div class="stat-grid">
       <div class="stat-card"><div class="stat-num" style="color:var(--wesele)">${przedToba.length}</div><div class="stat-lbl">Do zrobienia w ${dashYear}</div>
-        <div class="stat-sub">${przedToba.length?odm(wykonane.length,'zlecenie już w robocie','zlecenia już w robocie','zleceń już w robocie'):'wszystko wykonane'}</div></div>
+        <div class="stat-sub">${przedToba.length?odm(wykonane.length,'zlecenie już zrobione','zlecenia już zrobione','zleceń już zrobionych'):'wszystko wykonane'}</div></div>
 
       <div class="stat-card"><div class="stat-num" style="color:var(--roczek,#fbbf24)">${yearZ.length}</div><div class="stat-lbl">Zleceń w ${dashYear}</div>
         <div class="stat-sub">łącznie w bazie: ${zlecenia.length}${zlecenia.length-visibleZ().length?` (w tym ${zlecenia.length-visibleZ().length} w archiwum)`:''}</div></div>
@@ -2152,9 +2175,8 @@ function renderDashboard(){
   if(catBox){
     const grupy={};
     editedZ.forEach(z=>{
-      const st=z.startDate||editStartDate(z)||z.date;
-      const d=Math.round((new Date(z.editingFinished)-new Date(st))/(1000*60*60*24));
-      if(d<0)return;
+      const d=editDaysOf(z);
+      if(d===null)return;
       (grupy[z.cat]=grupy[z.cat]||[]).push(d);
     });
     const wiersze=Object.entries(grupy).map(([k,dni])=>({
@@ -2181,8 +2203,8 @@ function renderDashboard(){
   const tbody=document.getElementById('edit-table-body');
   if(tbody){
     const rows=editedZ.map(z=>{
-      const st=z.startDate||editStartDate(z)||z.date;
-      const days=Math.round((new Date(z.editingFinished)-new Date(st))/(1000*60*60*24));
+      const st=editStartOf(z)||z.date;
+      const days=editDaysOf(z);
       return {z,days,st};
     }).sort((a,b)=>b.days-a.days);
     rows.forEach(({z,days,st})=>{
@@ -2240,7 +2262,7 @@ function openEditModal(id){
   document.getElementById('modal-add-title').textContent='Edytuj zlecenie';
   document.getElementById('f-name').value=z.name;
   document.getElementById('f-date').value=z.date||'';
-  document.getElementById('f-deadline').value=z.deliveryDeadline||'';
+  document.getElementById('f-deadline').value=z.deadlineManual?(z.deliveryDeadline||''):(suggestedDeadline(z)||z.deliveryDeadline||'');
   document.getElementById('f-sesja-narz').value=z.sesjaNarz||'';
   document.getElementById('f-sesja-slub').value=z.sesjaSlub||'';
   document.getElementById('f-sesja-narz-price').value=z.sesjaNarzPrice||'';
@@ -2510,30 +2532,29 @@ function saveZlecenie(){
 
   const dni=EDIT_DAYS[cat]||30;
   const startVal=sesjaSlub||dateVal;        // dzień ostatnich zdjęć
-  let deliveryDeadline=document.getElementById('f-deadline').value;
-  if(!deliveryDeadline&&selStatus==='edycja_st'&&startVal) deliveryDeadline=addDaysISO(startVal,dni);
-  // Data sesji ślubnej się zmieniła → zaproponuj przeliczenie terminu obróbki
+  const sug=startVal?addDaysISO(startVal,dni):'';
+  const fieldDeadline=document.getElementById('f-deadline').value;
   const prevZ=editingId?zlecenia.find(z=>z.id===editingId):null;
-  if(deliveryDeadline&&(prevZ?(prevZ.sesjaSlub||'')!==sesjaSlub:!!sesjaSlub)){
-    const sug=startVal?addDaysISO(startVal,dni):'';
-    if(sug&&sug!==deliveryDeadline){
-      const skad=sesjaSlub?`sesji ślubnej (${formatDate(sesjaSlub)})`:`daty ślubu (${formatDate(dateVal)})`;
-      if(confirm(`Zmieniłeś termin sesji ślubnej.\n\nPrzeliczyć termin obróbki z ${formatDate(deliveryDeadline)} na ${formatDate(sug)}?\n(liczone od ${skad} + ${dni} dni)`))
-        deliveryDeadline=sug;
-    }
+  // Pusty lub równy podpowiedzi = termin automatyczny (śledzi ustawienia).
+  // Wpisany własny (różny od podpowiedzi) = ręczny i nienaruszalny.
+  let deliveryDeadline='', deadlineManual=false;
+  if(fieldDeadline && fieldDeadline!==sug){
+    deliveryDeadline=fieldDeadline; deadlineManual=true;
+  } else {
+    deliveryDeadline=(selStatus==='edycja_st'||(prevZ&&prevZ.deliveryDeadline))?sug:'';
   }
-  const sesjaNarzPrice=(sesjaNarz?(Number(document.getElementById('f-sesja-narz-price').value)||null):null);
+  const sesjaNarzPrice=(sesjaNarz?(Math.max(0,Number(document.getElementById('f-sesja-narz-price').value)||0)||null):null);
   const obj={
     name,date:dateVal,cat,status:selStatus,
-    deliveryDeadline,sesjaNarz,sesjaSlub,
+    deliveryDeadline,deadlineManual,sesjaNarz,sesjaSlub,
     sesjaNarzPrice,sesjaNarzPaid:!!(sesjaNarz&&sesjaNarzPrice&&selSesjaNarzPaid),
     customCat:document.getElementById('f-custom-cat').value.trim(),
-    price:Number(document.getElementById('f-price').value)||null,
-    deposit:Number(document.getElementById('f-deposit').value)||null,
+    price:Math.max(0,Number(document.getElementById('f-price').value)||0)||null,
+    deposit:Math.max(0,Number(document.getElementById('f-deposit').value)||0)||null,
     pakiet:document.getElementById('f-pakiet').value.trim(),
     pakietId:selPkg||null,
     dodatki:(czytajDodatkiZFormularza(),formDodatki
-      .map(d=>({id:d.id,name:(d.name||'').trim(),price:Number(d.price)||null}))
+      .map(d=>({id:d.id,name:(d.name||'').trim(),price:Math.max(0,Number(d.price)||0)||null}))
       .filter(d=>d.name||d.price)),
     adresy:readCatAddrFields(),
     notes:document.getElementById('f-notes').value.trim(),tasks
@@ -2624,8 +2645,15 @@ function renderDetailModal(id){
         zDodatki(z).filter(d=>Number(d.price)).forEach(d=>czesci.push(`${esc(d.name||'dodatek')} ${Number(d.price).toLocaleString('pl')} zł`));
         if(sesjaNarzKwota(z))czesci.push(`💍 sesja narzeczeńska ${sesjaNarzKwota(z).toLocaleString('pl')} zł`);
         const brk=czesci.length>1?`<div style="font-size:11px;color:var(--text3);margin-top:1px">↳ ${czesci.join(' + ')}</div>`:'';
-        if(z.paid)return `💰 ${p.toLocaleString('pl')} zł · <b style="color:#4ade80">✓ Opłacone</b>${brk}`;
-        return `💰 ${p.toLocaleString('pl')} zł${d?` · Wpłacono: <b style="color:var(--sesja)">${d.toLocaleString('pl')} zł</b> · Pozostało: <b style="color:${r>0?'var(--warn)':'#4ade80'}">${r.toLocaleString('pl')} zł</b>`:' · <span style="color:var(--warn);font-size:11px">brak zadatku</span>'}${brk}`;})():''}
+        const bezCeny=zDodatki(z).filter(x=>!Number(x.price)).length;
+        const nadplata=Math.max(0,d-p);
+        const ostrz=[];
+        if(bezCeny)ostrz.push(`⚠ ${bezCeny===1?'1 pozycja bez ceny':bezCeny+' pozycji bez ceny'} — nie wchodzi do sumy`);
+        if(nadplata)ostrz.push(`⚠ Nadpłata: ${nadplata.toLocaleString('pl')} zł`);
+        if(sesjaNarzOplacona(z)&&Number(z.deposit))ostrz.push('⚠ Sesja narzeczeńska liczy się osobno — sprawdź, czy zadatek już jej nie zawiera');
+        const warn=ostrz.length?`<div style="font-size:11px;color:var(--warn);margin-top:2px">${ostrz.join('<br>')}</div>`:'';
+        if(z.paid)return `💰 ${p.toLocaleString('pl')} zł · <b style="color:#4ade80">✓ Opłacone</b>${brk}${warn}`;
+        return `💰 ${p.toLocaleString('pl')} zł${d?` · Wpłacono: <b style="color:var(--sesja)">${d.toLocaleString('pl')} zł</b> · Pozostało: <b style="color:${r>0?'var(--warn)':'#4ade80'}">${r.toLocaleString('pl')} zł</b>`:' · <span style="color:var(--warn);font-size:11px">brak zadatku</span>'}${brk}${warn}`;})():''}
     </div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
       <button class="card-paid-btn ${z.paid?'paid':''}" style="flex:1;margin-top:0" onclick="togglePaidDetail('${id}')">${z.paid?'✓ Zapłacone':'○ Oznacz jako zapłacone'}</button>
@@ -2634,8 +2662,9 @@ function renderDetailModal(id){
       ${z.editingFinished
         ?`<span style="color:#4ade80">✓ Zakończono edycję: <b>${formatDate(z.editingFinished)}</b></span>
            <button class="btn-ghost" style="font-size:11px;padding:2px 8px" onclick="unmarkEditingDoneDetail('${id}')">cofnij</button>`
-        :`<span style="color:var(--text3)">Termin obróbki: <b style="color:var(--text)">${z.deliveryDeadline?formatDate(z.deliveryDeadline):'nie ustawiono'}</b>${hasSessions(z.cat)&&z.sesjaSlub?' <span style="font-size:10px">(liczony od sesji ślubnej)</span>':''}</span>
+        :`<span style="color:var(--text3)">Termin obróbki: <b style="color:var(--text)">${z.deliveryDeadline?formatDate(z.deliveryDeadline):'nie ustawiono'}</b>${z.deadlineManual?' <span style="font-size:10px;color:var(--warn)">(termin ręczny)</span>':(hasSessions(z.cat)&&z.sesjaSlub?' <span style="font-size:10px">(od sesji ślubnej)</span>':'')}</span>
            <button class="btn-ghost" style="font-size:11px;padding:2px 8px" onclick="editDeadlineDetail('${id}')">✏ Zmień</button>
+           <button class="btn-ghost" style="font-size:11px;padding:2px 8px;color:var(--chrzest);border-color:#38bdf844" title="Przelicz z ustawień: ${suggestedDeadline(z)?formatDate(suggestedDeadline(z))+' ('+editDaysFor(z.cat)+' dni od '+formatDate(editStartDate(z))+')':'brak daty startu'}" onclick="resetDeadlineAuto('${id}')">🔄 Auto</button>
            <button class="btn-ghost" style="font-size:11px;padding:2px 8px;color:#4ade80;border-color:#4ade8044" onclick="markEditingDoneDetail('${id}')">✓ Zakończ</button>`
       }
     </div>`:''}
@@ -2759,7 +2788,7 @@ function zapiszDodatek(zId,dId){
   const d=zDodatki(z).find(x=>x.id===dId);if(!d)return;
   const n=document.getElementById('dod-name-'+dId), c=document.getElementById('dod-price-'+dId);
   if(n)d.name=(n.value||'').trim();
-  if(c)d.price=Number(String(c.value).replace(',','.'))||null;
+  if(c)d.price=Math.max(0,Number(String(c.value).replace(',','.'))||0)||null;
   const t=(z.tasks||[]).find(x=>x.id==='dod_'+dId);
   if(t&&!t.done&&d.name)t.label=czystaNazwa(d.name);
   detailDodatekEdit=null;
@@ -2945,22 +2974,10 @@ function saveSettings(){
   localStorage.setItem('foto_edit_days',JSON.stringify(EDIT_DAYS));
   // Przeliczenie WSTECZ: zmiana liczby dni obróbki aktualizuje terminy istniejących zleceń.
   // Obejmuje kategorie, których wartość zmieniono; pomija zlecenia z zakończoną obróbką.
-  window._settDeadlineN=0;
-  const changedCats=Object.keys(CATS).filter(k=>EDIT_DAYS[k]!==oldDays[k]);
-  if(changedCats.length){
-    let n=0;
-    zlecenia.forEach(z=>{
-      if(!changedCats.includes(z.cat))return;
-      if(z.editingFinished)return;
-      if(!(z.deliveryDeadline||z.status==='edycja_st'))return;
-      const start=editStartDate(z);
-      if(!start)return;
-      const nd=addDaysISO(start,editDaysFor(z.cat));
-      if(nd&&nd!==z.deliveryDeadline){z.deliveryDeadline=nd;n++;}
-    });
-    if(n){save();renderAll();}
-    window._settDeadlineN=n;
-  }
+  // Zapis ustawień odświeża wszystkie AUTOMATYCZNE terminy (ręcznych i zakończonych nie rusza).
+  const n=refreshAllDeadlines();
+  if(n){save();renderAll();}
+  window._settDeadlineN=n;
   readPkgEditor();
   PACKAGES=clonePackages(pkgDraft);
   savePackages();
@@ -3125,14 +3142,16 @@ document.addEventListener('keydown',e=>{
 
 // ══ NOTIFICATIONS ══════════════════════════════════════════════════════════
 function getUpcoming(days=7){
-  const today=new Date();today.setHours(0,0,0,0);
-  const limit=new Date(today);limit.setDate(limit.getDate()+days);
-  // Include both event dates AND delivery deadlines
+  // Porównujemy ciągi ISO (nie obiekty Date) — mieszanie UTC z czasem lokalnym
+  // skracało okno o jeden dzień i gubiło termin dokładnie za `days` dni.
+  const t=todayISO();
+  const limit=addDaysISO(t,days);
+  const wOknie=ds=>!!ds&&ds>=t&&ds<=limit;
   const results=[];
   visibleZ().forEach(z=>{
-    if(z.date){const d=new Date(z.date);if(d>=today&&d<=limit)results.push({...z,_alertDate:z.date,_alertType:'sesja'});}
-    sessionEntries(z).forEach(sx=>{const d=new Date(sx.date);if(d>=today&&d<=limit)results.push({...z,name:sx.title,_alertDate:sx.date,_alertType:'sesjaDod',_sesIcon:sx.icon});});
-    if(z.deliveryDeadline&&z.deliveryDeadline!==z.date){const d=new Date(z.deliveryDeadline);if(d>=today&&d<=limit)results.push({...z,_alertDate:z.deliveryDeadline,_alertType:'dostawa'});}
+    if(wOknie(z.date))results.push({...z,_alertDate:z.date,_alertType:'sesja'});
+    sessionEntries(z).forEach(sx=>{if(wOknie(sx.date))results.push({...z,name:sx.title,_alertDate:sx.date,_alertType:'sesjaDod',_sesIcon:sx.icon});});
+    if(z.deliveryDeadline&&z.deliveryDeadline!==z.date&&wOknie(z.deliveryDeadline))results.push({...z,_alertDate:z.deliveryDeadline,_alertType:'dostawa'});
   });
   return results.sort((a,b)=>a._alertDate.localeCompare(b._alertDate));
 }
@@ -3142,9 +3161,8 @@ function renderNotifList(){
   const upcoming=getUpcoming(14);
   const list=document.getElementById('notif-list');
   if(!upcoming.length){list.innerHTML='<div class="notif-empty">Brak terminów w ciągu 14 dni</div>';return;}
-  const today=new Date();today.setHours(0,0,0,0);
   list.innerHTML=upcoming.map(z=>{
-    const diff=Math.floor((new Date(z._alertDate)-today)/(1000*60*60*24));
+    const diff=daysUntil(z._alertDate);
     const when=diff===0?'Dziś! 🔴':diff===1?'Jutro 🟠':`Za ${diff} dni`;
     const urgColor=diff===0?'#ff4444':diff<=2?'#ff7a2f':'#4ade80';
     const typeLabel=z._alertType==='dostawa'?'📦 Termin oddania':z._alertType==='sesjaDod'?`${z._sesIcon||'📸'} Sesja dodatkowa`:'📅 Sesja/ślub';
@@ -3168,7 +3186,7 @@ function fireNotifications(){
   getUpcoming(3).forEach(z=>{
     const key=`${z.id}_${z._alertType}_${z._alertDate}_${today}`;
     if(shown[key])return;
-    const diff=Math.floor((new Date(z._alertDate)-new Date().setHours(0,0,0,0))/(1000*60*60*24));
+    const diff=daysUntil(z._alertDate);
     const when=diff===0?'Dziś!':diff===1?'Jutro':`Za ${diff} dni`;
     const type=z._alertType==='dostawa'?'📦 Termin oddania':z._alertType==='sesjaDod'?'📸 Sesja dodatkowa':'📅 Sesja';
     new Notification(`📷 ${z.name}`,{body:`${type} — ${when}`,tag:z.id+z._alertType+z._alertDate});
@@ -3244,12 +3262,22 @@ function unmarkEditingDoneDetail(id){
   z.editingFinished='';
   save();renderDetailModal(id);renderKanban();
 }
+// Powrót z terminu ręcznego na automatyczny (przeliczenie z ustawień).
+function resetDeadlineAuto(id){
+  const z=zlecenia.find(x=>x.id===id);if(!z)return;
+  const st=editStartDate(z);
+  if(!st){alert('Brak daty zlecenia — nie ma od czego liczyć terminu.');return;}
+  z.deadlineManual=false;
+  z.deliveryDeadline=addDaysISO(st,editDaysFor(z.cat));
+  save();renderDetailModal(id);renderKanban();
+  showDriveToast('🔄 Termin przeliczony: '+formatDate(z.deliveryDeadline)+' ('+editDaysFor(z.cat)+' dni od '+formatDate(st)+')');
+}
 function editDeadlineDetail(id){
   const z=zlecenia.find(x=>x.id===id);if(!z)return;
   const inp=document.createElement('input');inp.type='date';inp.value=z.deliveryDeadline||'';
   inp.style.cssText='position:fixed;opacity:0;pointer-events:none';
   document.body.appendChild(inp);inp.focus();inp.showPicker?.();
-  inp.addEventListener('change',()=>{z.deliveryDeadline=inp.value;save();renderDetailModal(id);renderKanban();inp.remove();});
+  inp.addEventListener('change',()=>{z.deliveryDeadline=inp.value;z.deadlineManual=!!inp.value;save();renderDetailModal(id);renderKanban();inp.remove();});
   inp.addEventListener('blur',()=>setTimeout(()=>inp.remove(),200));
 }
 
@@ -3282,7 +3310,7 @@ function editDeadlineInline(id,el){
   input.type='date';input.value=z.deliveryDeadline||'';
   input.className='form-input';input.style.cssText='font-size:11px;padding:3px 6px;width:100%;margin-top:6px';
   el.replaceWith(input);input.focus();
-  const save_=()=>{if(input.value)z.deliveryDeadline=input.value;save();renderKanban();};
+  const save_=()=>{if(input.value){z.deliveryDeadline=input.value;z.deadlineManual=true;}save();renderKanban();};
   input.addEventListener('blur',save_);
   input.addEventListener('keydown',e=>{if(e.key==='Enter')input.blur();if(e.key==='Escape')renderKanban();});
 }
@@ -3964,6 +3992,8 @@ async function installPWA(){
 
 // ══ INIT ═══════════════════════════════════════════════════════════════════
 loadData();
+const _rn=refreshAllDeadlines();   // wyrównaj „zamrożone" terminy do aktualnych ustawień
+if(_rn) save();
 archiveEditStats(zlecenia);   // domknij historię obróbki dla danych sprzed tej wersji
 syncSignatures();   // punkt odniesienia dla wykrywania zmian w tej sesji
 initCal();
