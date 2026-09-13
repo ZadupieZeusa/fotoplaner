@@ -1197,16 +1197,23 @@ function saveEditArchive(){
   editArchive=editArchive.slice(-2000);
   localStorage.setItem('foto_edit_archive',JSON.stringify(editArchive));
 }
-// Dopisuje/odświeża wpisy dla zleceń, które mają datę sesji i zakończoną obróbkę.
+// Migawka każdego zlecenia z datą: historia obróbki ORAZ finanse.
+// Dzięki temu rok pamięta zarobek nawet po skasowaniu karty.
 function archiveEditStats(list){
   if(!Array.isArray(list))return;
   const map=new Map(editArchive.map(a=>[a.id,a]));
   let changed=false;
   list.forEach(z=>{
-    if(!z||!z.id||!z.date||!z.editingFinished)return;
+    if(!z||!z.id||!z.date)return;
+    const snap={
+      id:z.id,name:z.name,cat:z.cat,customCat:z.customCat||'',date:z.date,
+      startDate:editStartDate(z)||z.date,editingFinished:z.editingFinished||'',
+      total:zTotal(z),paid:zPaidAmount(z),archivedAt:Date.now()
+    };
     const prev=map.get(z.id);
-    if(prev&&prev.date===z.date&&prev.startDate===(editStartDate(z)||z.date)&&prev.editingFinished===z.editingFinished&&prev.name===z.name&&prev.cat===z.cat)return;
-    map.set(z.id,{id:z.id,name:z.name,cat:z.cat,customCat:z.customCat||'',date:z.date,startDate:editStartDate(z)||z.date,editingFinished:z.editingFinished,archivedAt:Date.now()});
+    if(prev&&prev.date===snap.date&&prev.startDate===snap.startDate&&prev.editingFinished===snap.editingFinished
+       &&prev.name===snap.name&&prev.cat===snap.cat&&prev.total===snap.total&&prev.paid===snap.paid)return;
+    map.set(z.id,snap);
     changed=true;
   });
   if(!changed)return;
@@ -1219,7 +1226,7 @@ function mergeEditArchive(remote){
   const map=new Map(editArchive.map(a=>[a.id,a]));
   let added=0;
   remote.forEach(a=>{
-    if(!a||!a.id||!a.date||!a.editingFinished)return;
+    if(!a||!a.id||!a.date)return;
     const prev=map.get(a.id);
     if(!prev||(a.archivedAt||0)>(prev.archivedAt||0)){ map.set(a.id,a); added++; }
   });
@@ -1229,8 +1236,8 @@ function mergeEditArchive(remote){
 // Pełna lista do statystyk: aktualne zlecenia + archiwum usuniętych.
 function editStatsSource(){
   const live=zlecenia.filter(z=>z.date&&z.editingFinished);
-  const ids=new Set(live.map(z=>z.id));
-  const gone=editArchive.filter(a=>!ids.has(a.id)).map(a=>({...a,_archived:true}));
+  const wszystkieId=new Set(zlecenia.map(z=>z.id));
+  const gone=editArchive.filter(a=>!wszystkieId.has(a.id)&&a.editingFinished).map(a=>({...a,_archived:true}));
   // startDate: dla wpisów sprzed tej wersji spada do daty zlecenia
   return [...live,...gone];
 }
@@ -2052,7 +2059,16 @@ function renderDashboard(){
   chartInstances.forEach(c=>{try{c.destroy();}catch(e){}});
   chartInstances=[];
 
-  const yearZ=zlecenia.filter(z=>z.date&&z.date.startsWith(dashYear+''));
+  const rok=dashYear+'';
+  const liveYear=zlecenia.filter(z=>z.date&&z.date.startsWith(rok));
+  const wszystkieId=new Set(zlecenia.map(z=>z.id));
+  // Skasowane zlecenia nadal liczą się do finansów roku (migawka z archiwum).
+  const goneYear=editArchive
+    .filter(a=>a.date&&a.date.startsWith(rok)&&!wszystkieId.has(a.id)&&((a.total||0)>0||(a.paid||0)>0))
+    .map(a=>({id:a.id,name:a.name,cat:a.cat,customCat:a.customCat||'',date:a.date,
+              editingFinished:a.editingFinished||'',status:'zakonczone',
+              price:a.total||0,deposit:a.paid||0,_usuniete:true}));
+  const yearZ=[...liveYear,...goneYear];
   const sumaK=l=>l.reduce((s,z)=>s+zTotal(z),0);          // wartość kontraktów
   const sumaW=l=>l.reduce((s,z)=>s+zPaidAmount(z),0);      // już wpłacone
   const sumaD=l=>l.reduce((s,z)=>s+zDueAmount(z),0);       // jeszcze do zapłaty
@@ -2064,7 +2080,7 @@ function renderDashboard(){
   const totalIncome=sumaK(yearZ), totalDeposits=sumaW(yearZ), totalRemaining=sumaD(yearZ);
   const przedKontrakty=sumaK(przedToba), przedZadatki=sumaW(przedToba), przedDoZaplaty=sumaD(przedToba);
   const zrobKontrakty=sumaK(wykonane),  zrobZadatki=sumaW(wykonane),  zrobDoZaplaty=sumaD(wykonane);
-  const zl=n=>n.toLocaleString('pl')+' zł';
+  const zl=n=>Math.round(n).toLocaleString('pl')+' zł';
   // polska odmiana: 1 zlecenie / 2 zlecenia / 5 zleceń
   const odm=(n,a,b,c)=>{const d=n%10,s=n%100;return n+' '+(n===1?a:(d>=2&&d<=4&&!(s>=12&&s<=14)?b:c));};
   // z archiwum — usunięte zlecenia też liczą się do historii obróbki
@@ -2080,26 +2096,20 @@ function renderDashboard(){
   const body=document.getElementById('dash-body');
   body.innerHTML=`
     <div class="stat-grid">
-      <div class="stat-card"><div class="stat-num" style="color:var(--wesele)">${przedToba.length}</div><div class="stat-lbl">Do zrobienia w ${dashYear}</div>
+      <div class="stat-card"><div class="stat-num" style="color:var(--wesele)">${przedToba.length}</div><div class="stat-lbl">Zlecenia do wykonania ${dashYear}</div>
         <div class="stat-sub">${przedToba.length?odm(wykonane.length,'zlecenie już zrobione','zlecenia już zrobione','zleceń już zrobionych'):'wszystko wykonane'}</div></div>
 
-      <div class="stat-card"><div class="stat-num" style="color:var(--roczek,#fbbf24)">${yearZ.length}</div><div class="stat-lbl">Zleceń w ${dashYear}</div>
-        <div class="stat-sub">łącznie w bazie: ${zlecenia.length}${zlecenia.length-visibleZ().length?` (w tym ${zlecenia.length-visibleZ().length} w archiwum)`:''}</div></div>
+      <div class="stat-card"><div class="stat-num" style="color:var(--roczek,#fbbf24)">${yearZ.length}</div><div class="stat-lbl">Zlecenia w skali roku</div>
+        <div class="stat-sub">łącznie w bazie: ${zlecenia.length}${zlecenia.length-visibleZ().length?` (w tym ${zlecenia.length-visibleZ().length} w archiwum)`:''}${goneYear.length?` · +${goneYear.length} skasowanych liczy się do finansów`:''}</div></div>
 
-      <div class="stat-card"><div class="stat-num" style="color:var(--sesja)">${totalIncome?zl(totalIncome):'—'}</div><div class="stat-lbl">Kontrakty ${dashYear}</div>
-        <div class="stat-sub">${totalIncome?`wpłacone ${zl(totalDeposits)} · do zapłaty ${zl(totalRemaining)}`:'brak zleceń'}</div></div>
+      <div class="stat-card"><div class="stat-num" style="color:var(--sesja)">${totalIncome?zl(totalIncome):'—'}</div><div class="stat-lbl">Całoroczny przychód ${dashYear}</div>
+        <div class="stat-sub">${totalIncome?`z zadatkami · wpłacone już ${zl(totalDeposits)}`:'brak zleceń'}</div></div>
 
-      <div class="stat-card"><div class="stat-num" style="color:${przedDoZaplaty?'var(--warn)':'var(--text3)'}">${przedToba.length?zl(przedDoZaplaty):'—'}</div><div class="stat-lbl">Do zarobienia w ${dashYear}</div>
-        <div class="stat-sub">${przedToba.length?`z ${odm(przedToba.length,'zlecenia','zleceń','zleceń')} · z zadatkami ${zl(przedKontrakty)}${przedZadatki?` (wpłacone ${zl(przedZadatki)})`:''}`:'nic nie czeka na wykonanie'}</div></div>
+      <div class="stat-card"><div class="stat-num" style="color:${totalRemaining?'var(--warn)':'var(--text3)'}">${yearZ.length?zl(totalRemaining):'—'}</div><div class="stat-lbl">Przychód minus zadatki</div>
+        <div class="stat-sub">${yearZ.length?`tyle jeszcze wpłynie${zrobDoZaplaty?` · w tym zaległości z wykonanych ${zl(zrobDoZaplaty)}`:''}`:'brak zleceń'}</div></div>
 
-      <div class="stat-card"><div class="stat-num" style="color:var(--chrzest)">${zrobKontrakty?zl(zrobKontrakty):'—'}</div><div class="stat-lbl">Zarobione w ${dashYear}</div>
-        <div class="stat-sub">${wykonane.length?`z ${odm(wykonane.length,'zlecenia','zleceń','zleceń')} · wpłacone ${zl(zrobZadatki)} · zaległości ${zl(zrobDoZaplaty)}`:'brak wykonanych zleceń'}</div></div>
-
-      <div class="stat-card"><div class="stat-num" style="color:var(--urodziny)">${avgEdit!==null?avgEdit+' dni':'—'}</div><div class="stat-lbl">Śr. czas edycji</div>
-        <div class="stat-sub">${editedZ.length?odm(editedZ.length,'zakończona obróbka','zakończone obróbki','zakończonych obróbek'):'brak danych'}</div></div>
-
-      <div class="stat-card"><div class="stat-num" style="color:var(--komunia)">${yearZ.length?MONTHS_SHORT[busiestM]:'—'}</div><div class="stat-lbl">Najzapełniony miesiąc</div>
-        <div class="stat-sub">${yearZ.length?odm(monthlyCounts[busiestM],'zlecenie','zlecenia','zleceń'):''}</div></div>
+      <div class="stat-card"><div class="stat-num" style="color:var(--chrzest)">${przedToba.length?zl(przedDoZaplaty):'—'}</div><div class="stat-lbl">Do zapłaty z niewykonanych</div>
+        <div class="stat-sub">${przedToba.length?`${odm(przedToba.length,'zlecenie przed Tobą','zlecenia przed Tobą','zleceń przed Tobą')} · wartość umów ${zl(przedKontrakty)}${zrobDoZaplaty?` · zaległości z wykonanych ${zl(zrobDoZaplaty)}`:''}`:'nic nie czeka na wykonanie'}</div></div>
     </div>
     <div class="charts-grid">
       <div class="chart-card chart-full"><div class="chart-title">Zlecenia per miesiąc</div><div class="chart-wrap"><canvas id="chart-monthly"></canvas></div></div>
