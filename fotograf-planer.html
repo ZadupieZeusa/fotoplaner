@@ -948,6 +948,10 @@ function zPaidAmount(z){
 }
 // Ile jeszcze zostało do zainkasowania z tego zlecenia.
 function zDueAmount(z){ return Math.max(0,zTotal(z)-zPaidAmount(z)); }
+// Sam zadatek — pieniądze pobrane z góry. NIE zmienia się po kliknięciu „✓ Zapłacone",
+// dzięki czemu roczne sumy na Dashboardzie są stałe.
+function zZadatek(z){ return (Number(z&&z.deposit)||0)+(sesjaNarzOplacona(z)?sesjaNarzKwota(z):0); }
+function zPoZadatku(z){ return Math.max(0,zTotal(z)-zZadatek(z)); }
 // Zlecenie „przed Tobą" = jeszcze niewykonane: siedzi w kolumnie „Wszystkie zlecenia",
 // czyli nie trafiło jeszcze do żadnego etapu pracy (edycja / zamówione / odbiór / zakończone).
 function czekaNaWykonanie(z){
@@ -2082,6 +2086,12 @@ function renderDashboard(){
 
   const totalIncome=sumaK(yearZ), totalDeposits=sumaW(yearZ), totalRemaining=sumaD(yearZ);
   const przedKontrakty=sumaK(przedToba), przedZadatki=sumaW(przedToba), przedDoZaplaty=sumaD(przedToba);
+  // Sumy niezależne od znacznika „Zapłacone" — stałe przez cały rok
+  const sumaZ=l=>l.reduce((s,z)=>s+zZadatek(z),0);
+  const sumaPoZ=l=>l.reduce((s,z)=>s+zPoZadatku(z),0);
+  const totalZadatki=sumaZ(yearZ);
+  const totalPoZadatkach=sumaPoZ(yearZ);
+  const przedPoZadatkach=sumaPoZ(przedToba);
   const zrobKontrakty=sumaK(wykonane),  zrobZadatki=sumaW(wykonane),  zrobDoZaplaty=sumaD(wykonane);
   const zl=n=>Math.round(n).toLocaleString('pl')+' zł';
   // polska odmiana: 1 zlecenie / 2 zlecenia / 5 zleceń
@@ -2106,12 +2116,12 @@ function renderDashboard(){
         <div class="stat-sub">łącznie w bazie: ${zlecenia.length}${zlecenia.length-visibleZ().length?` (w tym ${zlecenia.length-visibleZ().length} w archiwum)`:''}${goneYear.length?` · +${goneYear.length} skasowanych liczy się do finansów`:''}</div></div>
 
       <div class="stat-card"><div class="stat-num" style="color:var(--sesja)">${totalIncome?zl(totalIncome):'—'}</div><div class="stat-lbl">Całoroczny przychód ${dashYear}</div>
-        <div class="stat-sub">${totalIncome?`z zadatkami · wpłacone już ${zl(totalDeposits)}`:'brak zleceń'}</div></div>
+        <div class="stat-sub">${totalIncome?`suma pakietów, dodatków i opłat · zadatki ${zl(totalZadatki)}`:'brak zleceń'}</div></div>
 
-      <div class="stat-card"><div class="stat-num" style="color:${totalRemaining?'var(--warn)':'var(--text3)'}">${yearZ.length?zl(totalRemaining):'—'}</div><div class="stat-lbl">Przychód minus zadatki</div>
-        <div class="stat-sub">${yearZ.length?`tyle jeszcze wpłynie${zrobDoZaplaty?` · w tym zaległości z wykonanych ${zl(zrobDoZaplaty)}`:''}`:'brak zleceń'}</div></div>
+      <div class="stat-card"><div class="stat-num" style="color:${totalPoZadatkach?'var(--warn)':'var(--text3)'}">${yearZ.length?zl(totalPoZadatkach):'—'}</div><div class="stat-lbl">Przychód minus zadatki</div>
+        <div class="stat-sub">${yearZ.length?`${zl(totalIncome)} − ${zl(totalZadatki)} zadatków`:'brak zleceń'}</div></div>
 
-      <div class="stat-card"><div class="stat-num" style="color:var(--chrzest)">${przedToba.length?zl(przedDoZaplaty):'—'}</div><div class="stat-lbl">Do zapłaty z niewykonanych</div>
+      <div class="stat-card"><div class="stat-num" style="color:var(--chrzest)">${przedToba.length?zl(przedPoZadatkach):'—'}</div><div class="stat-lbl">Do zapłaty z niewykonanych</div>
         <div class="stat-sub">${przedToba.length?`${odm(przedToba.length,'zlecenie przed Tobą','zlecenia przed Tobą','zleceń przed Tobą')} · wartość umów ${zl(przedKontrakty)}${zrobDoZaplaty?` · zaległości z wykonanych ${zl(zrobDoZaplaty)}`:''}`:'nic nie czeka na wykonanie'}</div></div>
     </div>
     <div class="charts-grid">
