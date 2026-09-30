@@ -2,7 +2,12 @@
 <html lang="pl">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#141414">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="FotoPlaner">
 <title>Fotograf Planer</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
@@ -16,7 +21,11 @@ html,body{height:100%;overflow:hidden}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);display:flex;flex-direction:column}
 
 /* ── TOPBAR ── */
-.topbar{display:flex;align-items:center;gap:6px;padding:0 12px;height:50px;background:var(--panel);border-bottom:1px solid var(--border);flex-shrink:0;z-index:50}
+/* Belka musi być w pełni nieprzezroczysta — iPadOS potrafi nałożyć na górną
+   krawędź własny efekt przezroczystości/rozmycia (Liquid Glass). */
+.topbar{display:flex;align-items:center;gap:6px;height:50px;background:#141414;background-color:#141414;border-bottom:1px solid var(--border);flex-shrink:0;z-index:50;
+  backdrop-filter:none;-webkit-backdrop-filter:none;isolation:isolate;opacity:1;
+  padding:0 calc(12px + env(safe-area-inset-right)) 0 calc(12px + env(safe-area-inset-left))}
 .logo{font-size:14px;font-weight:800;letter-spacing:-.5px;white-space:nowrap;margin-right:4px}
 .logo span{color:var(--wesele)}
 .main-nav{display:flex;gap:2px;background:var(--surface2);border-radius:8px;padding:2px}
@@ -306,6 +315,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .form-input,.form-textarea,.form-select{width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:8px;color:var(--text);font-size:13px;padding:8px 10px;outline:none;font-family:inherit}
 .form-input:focus,.form-textarea:focus{border-color:var(--wesele)}
 .form-textarea{resize:none;height:55px}
+#f-notes{height:120px;resize:vertical;line-height:1.6}
 .cat-picker{display:flex;gap:5px;flex-wrap:wrap}
 .cat-btn{padding:5px 10px;border-radius:16px;border:2px solid var(--border2);font-size:11px;font-weight:700;cursor:pointer;background:var(--surface2);color:var(--text2)}
 .cat-btn.sel{color:#fff}
@@ -1015,6 +1025,7 @@ const DAYS_SHORT   = ['Pn','Wt','Śr','Cz','Pt','So','Nd'];
 // ══ DATA ═══════════════════════════════════════════════════════════════════
 const DEFAULT_COLS = [
   {id:'edycja_st',  name:'W edycji',   icon:'🖥️'},
+  {id:'fotoksiazka',name:'Projekt fotoksiążki', icon:'📕'},
   {id:'wysylka',    name:'Zamówione',  icon:'📦'},
   {id:'odbior',     name:'Do odbioru', icon:'🎁'},
   {id:'zakonczone', name:'Zakończone', icon:'✅'},
@@ -1108,6 +1119,14 @@ function loadData() {
   // Migration: rename 'Do wysyłki' → 'Zamówione'
   const wysCol=cols.find(c=>c.id==='wysylka');
   if(wysCol&&wysCol.name==='Do wysyłki'){wysCol.name='Zamówione';saveCols();}
+  // Migration: add 'fotoksiazka' column between 'edycja_st' and 'wysylka'
+  if(!cols.some(c=>c.id==='fotoksiazka')){
+    const wysIdx=cols.findIndex(c=>c.id==='wysylka');
+    const edIdx=cols.findIndex(c=>c.id==='edycja_st');
+    const pos=wysIdx>=0?wysIdx:(edIdx>=0?edIdx+1:cols.length);
+    cols.splice(pos,0,{id:'fotoksiazka',name:'Projekt fotoksiążki',icon:'📕'});
+    saveCols();
+  }
   // Migration: add 'odbior' column before 'zakonczone' if missing
   if(!cols.some(c=>c.id==='odbior')){
     const zakIdx=cols.findIndex(c=>c.id==='zakonczone');
@@ -2604,7 +2623,11 @@ function saveZlecenie(){
 }
 
 async function deleteZlecenie(){
-  if(!editingId||!confirm('Usunąć to zlecenie?'))return;
+  if(!editingId)return;
+  const _z=zlecenia.find(x=>x.id===editingId);
+  const _n=(_z&&_z.name)?_z.name:'to zlecenie';
+  if(!confirm(`Usunąć zlecenie „${_n}"?\n\nZniknie z tablicy, kalendarza i osi czasu.`))return;
+  if(!confirm(`NA PEWNO? Tej operacji nie można cofnąć.\n\n„${_n}" zostanie skasowane bezpowrotnie.\nJeśli chcesz je tylko schować — użyj archiwum (🗄).`))return;
   const z=zlecenia.find(x=>x.id===editingId);
   if(z){ archiveEditStats([z]); }   // terminu w Google Calendar NIE kasujemy — zostaje jako zapis
   markDeleted([editingId]);
@@ -2703,7 +2726,7 @@ function renderDetailModal(id){
       ${renderDetailPackage(z)}
       ${renderDetailAddons(z)}
       ${(()=>{const fields=CAT_ADDR[z.cat]||[];const adr=z.adresy||{};const rows=fields.filter(f=>adr[f.id]).map(f=>`<div style="margin-bottom:4px"><span style="color:var(--text3);font-size:10px">${f.label}</span><br>${esc(adr[f.id])}</div>`).join('');return rows?`<div class="detail-sec">Adresy</div><div style="background:var(--surface2);border-radius:7px;padding:8px 10px;font-size:12px;color:var(--text2)">${rows}</div>`:'';})()}
-      ${z.notes?`<div class="detail-sec">Notatki</div><div style="background:var(--surface2);border-radius:7px;padding:8px 10px;font-size:12px;color:var(--text2)">${esc(z.notes)}</div>`:''}
+      ${z.notes?`<div class="detail-sec">Notatki</div><div style="background:var(--surface2);border-radius:7px;padding:8px 10px;font-size:12px;color:var(--text2);white-space:pre-wrap;line-height:1.7">${esc(z.notes)}</div>`:''}
       ${total?`<div class="detail-sec">Zadania — ${done}/${total} (${pct}%)</div><div class="pbar-bg"><div class="pbar-fill" style="width:${pct}%;background:${cat.color}"></div></div>`:'<div class="detail-sec">Zadania</div>'}
       <div class="tasks-list">${tasksHtml}</div>
       <div style="display:flex;gap:6px;margin-top:8px">
