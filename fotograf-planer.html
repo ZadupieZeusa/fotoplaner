@@ -601,24 +601,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 
 <!-- ── QUICK ADD ── -->
 <button class="qa-fab" onclick="openAddModal()" title="Nowe zlecenie (N)">+</button>
-<div class="qa-overlay" id="qa-overlay" onclick="if(event.target===this)closeQuickAdd()">
-  <div class="qa-box">
-    <div class="qa-title">Nowe zlecenie</div>
-    <div class="qa-hint">Skrót klawiszowy: N</div>
-    <div class="qa-cat-row" id="qa-cat-row"></div>
-    <div class="qa-row">
-      <input class="qa-input" id="qa-name" placeholder="Nazwa klienta / zlecenia" />
-    </div>
-    <div class="qa-row">
-      <input class="qa-input" id="qa-date" type="date" style="flex:.6" />
-      <input class="qa-input" id="qa-deadline" type="date" placeholder="Termin oddania (opcja)" style="flex:.6" />
-    </div>
-    <div class="qa-btns">
-      <button class="qa-cancel" onclick="closeQuickAdd()">Anuluj</button>
-      <button class="qa-save" onclick="saveQuickAdd()">Zapisz + otwórz pełną edycję</button>
-    </div>
-  </div>
-</div>
 
 <!-- ── ADD/EDIT MODAL ── -->
 <div class="modal-overlay" id="modal-add" onclick="if(event.target===this)closeAddModal()">
@@ -985,13 +967,32 @@ let PACKAGES = (()=>{
   }catch{return clonePackages(PACKAGES_DEFAULTS);}
 })();
 function savePackages(){localStorage.setItem('foto_packages',JSON.stringify(PACKAGES));}
+
+// ── USTAWIENIA JAKO DANE SYNCHRONIZOWANE ─────────────────────────────────
+// Czasy obróbki, pakiety i podpowiedzi dodatków jeżdżą razem ze zleceniami —
+// inaczej każde urządzenie liczy terminy po swojemu, a eksport nie jest pełną
+// kopią zapasową. Scalanie po znaczniku czasu: nowsza konfiguracja wygrywa.
+let settingsAt=Number(localStorage.getItem('foto_settings_at')||0);
+function touchSettings(){ settingsAt=Date.now(); localStorage.setItem('foto_settings_at',String(settingsAt)); }
+function settingsPayload(){ return {editDays:EDIT_DAYS,packages:PACKAGES,addons:ADDONS,settingsAt}; }
+function applySettings(data,force){
+  if(!data) return false;
+  if(!(data.editDays||data.packages||data.addons)) return false;
+  const remoteAt=Number(data.settingsAt||0);
+  if(!force && remoteAt<=settingsAt) return false;
+  if(data.editDays&&typeof data.editDays==='object'){
+    EDIT_DAYS=Object.assign({},EDIT_DAYS_DEFAULTS,data.editDays);
+    localStorage.setItem('foto_edit_days',JSON.stringify(EDIT_DAYS));
+  }
+  if(data.packages&&typeof data.packages==='object'){ PACKAGES=clonePackages(data.packages); savePackages(); }
+  if(data.addons&&typeof data.addons==='object'){ ADDONS=JSON.parse(JSON.stringify(data.addons)); saveAddons(); }
+  settingsAt=remoteAt||Date.now();
+  localStorage.setItem('foto_settings_at',String(settingsAt));
+  return true;
+}
 function getPackages(cat){return PACKAGES[cat]||[];}
 function findPackage(cat,pkgId){return getPackages(cat).find(p=>p.id===pkgId)||null;}
 // szukaj pakietu też poza własną kategorią (stare karty, roczek zapisany jako urodziny itp.)
-function findPackageAnywhere(pkgId){
-  for(const c of Object.keys(PACKAGES)){const p=findPackage(c,pkgId);if(p)return {cat:c,pkg:p};}
-  return null;
-}
 // Tekst pakietu zapisywany w zleceniu: 1. linia = nazwa, kolejne = "- pozycja"
 function packageToText(p){return p?[p.name,...(p.items||[]).map(i=>'- '+i)].join('\n'):'';}
 // Rozbicie zapisanego pakietu na [nazwa, ...pozycje].
@@ -1210,7 +1211,6 @@ function save(){
   if(zlecenia.length>0) scheduleDriveSave();
 }
 // zapis samego stanu lokalnego (bez stemplowania updatedAt), np. po nadaniu gcalEventId
-function persistLocal(){ localStorage.setItem('foto_v4', JSON.stringify(zlecenia)); }
 function saveCols() { localStorage.setItem('foto_cols', JSON.stringify(cols)); }
 
 // ══ ARCHIWUM CZASU OBRÓBKI ═════════════════════════════════════════════════
@@ -1277,7 +1277,6 @@ const SESSION_KINDS=[
   {key:'slub',field:'sesjaSlub',ev:'gcalSesSlubId',label:'sesja ślubna',icon:'📸'},
 ];
 function hasSessions(cat){ return cat==='wesele'; }
-function sessionKind(key){ return SESSION_KINDS.find(k=>k.key===key); }
 // Wpisane terminy sesji danego zlecenia (posortowane chronologicznie).
 function sessionEntries(z){
   if(!z||!hasSessions(z.cat))return [];
@@ -1319,7 +1318,6 @@ function editDaysOf(z){
 // Zakończone zlecenia chowamy (z.archived), nigdy nie kasujemy — Dashboard musi
 // widzieć cały rok, żeby policzyć, ile zostało do zarobienia. Archiwum jest
 // odwracalne: każde zlecenie wraca jednym kliknięciem.
-function isArchived(z){ return !!z && !!z.archived; }
 // Zlecenia widoczne w kalendarzu, na kanbanie, na osi czasu i w powiadomieniach.
 function visibleZ(){ return zlecenia.filter(z=>!z.archived); }
 
@@ -2478,7 +2476,7 @@ function renderPkgPicker(){
   el.innerHTML=list.map(p=>{
     const sel=selPkg===p.id;
     const col=CATS[selCat]?.color||'#888';
-    return `<button class="cat-btn ${sel?'sel':''}" style="${sel?'background:'+col+';border-color:'+col:''}" onclick="selectPackage('${p.id}')">${esc(p.name)}${p.price?' · '+p.price+' zł':''}</button>`;
+    return `<button class="cat-btn ${sel?'sel':''}" style="${sel?'background:'+col+';border-color:'+col:''}" onclick="selectPackage('${p.id}')">${esc(p.name)}</button>`;
   }).join('')+`<button class="cat-btn ${!selPkg?'sel':''}" onclick="clearPackage()" title="Bez pakietu z cennika">✎ Własny</button>`;
 }
 
@@ -2718,6 +2716,7 @@ function renderDetailModal(id){
     <div class="detail-tabs">
       <button class="dtab ${detailTab==='info'?'active':''}" onclick="switchDetailTab('${id}','info')">Zadania</button>
       <button class="dtab ${detailTab==='ordered'?'active':''}" onclick="switchDetailTab('${id}','ordered')">📦 Zamówienia</button>
+      ${hasSessions(z.cat)?`<button class="dtab ${detailTab==='sched'?'active':''}" onclick="switchDetailTab('${id}','sched')">🕐 Harmonogram</button>`:''}
     </div>
 
     <div class="dtab-panel ${detailTab==='info'?'active':''}">
@@ -2738,6 +2737,7 @@ function renderDetailModal(id){
     <div class="dtab-panel ${detailTab==='ordered'?'active':''}">
       ${orderedHtml}
     </div>
+    ${hasSessions(z.cat)?`<div class="dtab-panel ${detailTab==='sched'?'active':''}">${renderDaySchedule(z)}</div>`:''}
     <div style="height:6px"></div>
   `;
 }
@@ -2752,7 +2752,7 @@ function renderDetailPackage(z){
   if(detailPkgEdit){
     const opts=getPackages(z.cat);
     const pickers=opts.length?`<div class="cat-picker" style="margin-bottom:6px">${opts.map(p=>
-      `<button class="cat-btn" onclick="applyPackageToDetail('${id}','${p.id}')" title="Wstaw zawartość z cennika">${esc(p.name)}${p.price?' · '+p.price+' zł':''}</button>`).join('')}</div>`:'';
+      `<button class="cat-btn" onclick="applyPackageToDetail('${id}','${p.id}')" title="Wstaw zawartość z cennika">${esc(p.name)}</button>`).join('')}</div>`:'';
     return `<div class="detail-sec">Pakiet — edycja</div>
       ${pickers}
       <textarea class="form-textarea" id="d-pakiet-${id}" style="min-height:130px;font-size:12px">${esc(z.pakiet||'')}</textarea>
@@ -2811,23 +2811,6 @@ function renderDetailAddons(z){
     </div>`;
 }
 
-function dodajDodatekDoZlecenia(zId,i){
-  const z=zlecenia.find(x=>x.id===zId);if(!z)return;
-  if(!Array.isArray(z.dodatki))z.dodatki=[];
-  const nazwa=i>=0?addonSuggestions(z.cat)[i]:'';
-  if(i>=0&&!nazwa)return;
-  let cena=null;
-  if(i>=0){ cena=zapytajOCene(nazwa); if(cena===undefined)return; }   // Anuluj
-  const d={id:'d_'+uid(),name:nazwa,price:cena};
-  z.dodatki.push(d);
-  if(nazwa){
-    if(!z.tasks)z.tasks=[];
-    if(!z.tasks.some(t=>t.id==='dod_'+d.id))
-      z.tasks.push({id:'dod_'+d.id,label:czystaNazwa(nazwa),done:false});
-  }
-  detailDodatekEdit=nazwa?null:d.id;      // „Własny" od razu w edycji
-  save();renderDetailModal(zId);renderAll();
-}
 function edytujDodatek(zId,dId){ detailDodatekEdit=dId; renderDetailModal(zId); }
 function zapiszDodatek(zId,dId){
   const z=zlecenia.find(x=>x.id===zId);if(!z)return;
@@ -3030,6 +3013,7 @@ function saveSettings(){
   readAddonEditor();
   ADDONS=JSON.parse(JSON.stringify(addonDraft));
   saveAddons();
+  touchSettings();   // ustawienia pojadą na Drive i do eksportu
   closeSettings();
   // otwarty formularz / karta klienta mają od razu nową listę podpowiedzi
   if(document.getElementById('modal-add').classList.contains('open'))renderAddons();
@@ -3077,8 +3061,6 @@ function renderPkgEditor(){
     <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px;margin-bottom:8px">
       <div style="display:flex;gap:6px;align-items:center;margin-bottom:8px">
         <input class="form-input pkg-f" data-i="${i}" data-f="name" value="${esc(p.name||'')}" placeholder="Nazwa pakietu" style="flex:1;font-size:13px;padding:6px 8px" />
-        <input class="form-input pkg-f" data-i="${i}" data-f="price" type="number" min="0" value="${p.price||''}" placeholder="Cena" style="width:100px;font-size:13px;padding:6px 8px" />
-        <span style="font-size:11px;color:var(--text3)">zł</span>
         <button class="task-del-btn" onclick="deletePackageFromDraft(${i})" title="Usuń pakiet">✕</button>
       </div>
       <label style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px">Zawartość (1 pozycja = 1 linia)</label>
@@ -3095,7 +3077,6 @@ function readPkgEditor(){
     const p=list[+el.dataset.i];if(!p)return;
     const f=el.dataset.f;
     if(f==='name')p.name=el.value.trim()||'Pakiet';
-    else if(f==='price')p.price=Number(el.value)||null;
     else if(f==='items')p.items=el.value.split('\n').map(s=>s.replace(/^[-–•]\s*/,'').trim()).filter(Boolean);
     else if(f==='tasks'){
       const old=p.tasks||[];
@@ -3112,7 +3093,7 @@ function readPkgEditor(){
 function addPackageToDraft(){
   readPkgEditor();
   if(!pkgDraft[pkgTab])pkgDraft[pkgTab]=[];
-  pkgDraft[pkgTab].push({id:'p_'+uid(),name:'Nowy pakiet',price:null,items:[],tasks:T(['selekcja','obrobka'])});
+  pkgDraft[pkgTab].push({id:'p_'+uid(),name:'Nowy pakiet',items:[],tasks:T(['selekcja','obrobka'])});
   renderPkgCatTabs();renderPkgEditor();
 }
 
@@ -3131,50 +3112,10 @@ function restoreDefaultPackages(){
 }
 
 // ══ QUICK ADD (#20) ════════════════════════════════════════════════════════
-let qaCat=null;
 
-function openQuickAdd(){
-  qaCat=null;
-  const row=document.getElementById('qa-cat-row');
-  row.innerHTML=Object.entries(CATS).map(([k,v])=>
-    `<button class="qa-cat-btn" data-cat="${k}" style="" onclick="selectQaCat('${k}')">${v.icon} ${v.label}</button>`
-  ).join('');
-  document.getElementById('qa-name').value='';
-  document.getElementById('qa-date').value=selectedDate||todayISO();
-  document.getElementById('qa-deadline').value='';
-  document.getElementById('qa-overlay').classList.add('open');
-  setTimeout(()=>document.getElementById('qa-name').focus(),80);
-}
 
-function selectQaCat(cat){
-  qaCat=cat;
-  document.querySelectorAll('.qa-cat-btn').forEach(b=>{
-    const c=b.dataset.cat;const v=CATS[c];
-    b.classList.toggle('sel',c===cat);
-    b.style.background=c===cat?v.color:'';b.style.borderColor=c===cat?v.color:'';
-  });
-}
 
-function closeQuickAdd(){document.getElementById('qa-overlay').classList.remove('open');}
 
-function saveQuickAdd(){
-  const name=document.getElementById('qa-name').value.trim();
-  if(!name){document.getElementById('qa-name').focus();return;}
-  const cat=qaCat||'sesja';
-  const tasks=(CAT_TASKS[cat]||DEFAULT_TASKS).map(t=>({...t,done:false}));
-  const id=uid();
-  zlecenia.push({
-    id,name,date:document.getElementById('qa-date').value,cat,
-    status:cols[0]?.id||'nowe',
-    deliveryDeadline:document.getElementById('qa-deadline').value,
-    price:null,deposit:null,deliveryTime:'',customCat:'',secondShooter:'',location:'',notes:'',
-    orderedItems:[],daySchedule:[],editingFinished:'',tasks,updatedAt:Date.now()
-  });
-  save();closeQuickAdd();renderAll();
-  const nz=zlecenia.find(z=>z.id===id);
-  if(nz&&nz.date)gcalSyncZlecenie(nz);
-  openEditModal(id);
-}
 
 // Keyboard shortcut
 document.addEventListener('keydown',e=>{
@@ -3182,7 +3123,7 @@ document.addEventListener('keydown',e=>{
     e.preventDefault();openAddModal();
   }
   if(e.key==='Escape'){
-    closeQuickAdd();closeAddModal();closeDetail();closeMonthPicker();
+    closeAddModal();closeDetail();closeMonthPicker();
   }
 });
 
@@ -3226,9 +3167,9 @@ async function requestNotifPermission(){
   else alert('Powiadomienia zablokowane w przeglądarce.');
 }
 function fireNotifications(){
-  if(Notification.permission!=='granted')return;
+  if(typeof Notification==='undefined'||Notification.permission!=='granted')return;
   const today=todayISO();
-  const shown=JSON.parse(localStorage.getItem('foto_notif_shown')||'{}');
+  let shown={}; try{ shown=JSON.parse(localStorage.getItem('foto_notif_shown')||'{}')||{}; }catch(e){ shown={}; }
   getUpcoming(3).forEach(z=>{
     const key=`${z.id}_${z._alertType}_${z._alertDate}_${today}`;
     if(shown[key])return;
@@ -3244,7 +3185,7 @@ function fireNotifications(){
 
 // ══ EXPORT / IMPORT ════════════════════════════════════════════════════════
 function exportData(){
-  const data={zlecenia,cols,todos,todosDeleted,editArchive,deleted:deletedIds,exported:new Date().toISOString(),version:6};
+  const data={zlecenia,cols,todos,todosDeleted,editArchive,deleted:deletedIds,...settingsPayload(),exported:new Date().toISOString(),version:7};
   const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
   const url=URL.createObjectURL(blob);
   const a=document.createElement('a');a.href=url;a.download=`fotoplaner-${todayISO()}.json`;a.click();URL.revokeObjectURL(url);
@@ -3267,6 +3208,7 @@ function importData(){
           localStorage.setItem('foto_todos',JSON.stringify(todos));
         }
         mergeEditArchive(data.editArchive||[]);
+        if(applySettings(data,true)) refreshAllDeadlines();   // ustawienia z kopii
         syncSignatures();
         save();saveCols();renderAll();
       }catch(e){alert('Błąd: nieprawidłowy plik JSON.');}
@@ -3297,7 +3239,7 @@ function togglePaidDetail(id){
 function markEditingDoneDetail(id){
   const z=zlecenia.find(x=>x.id===id);if(!z)return;
   const inp=document.createElement('input');inp.type='date';
-  inp.value=todayISO();
+  inp.value='';   // puste — inaczej wybór dzisiejszej daty nie wywołuje 'change' i nic się nie zapisuje
   inp.style.cssText='position:fixed;opacity:0;pointer-events:none';
   document.body.appendChild(inp);inp.focus();inp.showPicker?.();
   inp.addEventListener('change',()=>{if(inp.value){z.editingFinished=inp.value;save();renderDetailModal(id);renderKanban();}inp.remove();});
@@ -3330,7 +3272,7 @@ function editDeadlineDetail(id){
 function markEditingDone(id){
   const z=zlecenia.find(x=>x.id===id);if(!z)return;
   const inp=document.createElement('input');inp.type='date';
-  inp.value=todayISO();
+  inp.value='';   // puste — inaczej wybór dzisiejszej daty nie wywołuje 'change' i nic się nie zapisuje
   inp.style.cssText='position:fixed;opacity:0;pointer-events:none';
   document.body.appendChild(inp);inp.focus();inp.showPicker?.();
   inp.addEventListener('change',()=>{if(inp.value){z.editingFinished=inp.value;save();renderKanban();}inp.remove();});
@@ -3372,7 +3314,7 @@ let autoSyncTimer=null;
 // Lista usuniętych zleceń (tombstones) — żeby skasowane nie wracały przy scalaniu z Drive
 let deletedIds=[];
 try{deletedIds=JSON.parse(localStorage.getItem('foto_deleted')||'[]');}catch(e){deletedIds=[];}
-function markDeleted(ids){deletedIds=[...new Set([...deletedIds,...ids])].slice(-500);localStorage.setItem('foto_deleted',JSON.stringify(deletedIds));}
+function markDeleted(ids){deletedIds=[...new Set([...deletedIds,...ids])].slice(-5000);localStorage.setItem('foto_deleted',JSON.stringify(deletedIds));}
 
 function toggleDriveMenu(){const m=document.getElementById('drive-menu');m.style.display=m.style.display==='none'?'':'none';}
 function hideDriveMenu(){const m=document.getElementById('drive-menu');if(m)m.style.display='none';}
@@ -3521,7 +3463,7 @@ async function gdriveSave(){
   showDriveToast('☁ Zapisuję na Drive...');
   try{
     await findDriveFile();
-    const content=JSON.stringify({zlecenia,cols,deleted:deletedIds,todos,todosDeleted,editArchive,exported:new Date().toISOString(),version:6},null,2);
+    const content=JSON.stringify({zlecenia,cols,deleted:deletedIds,todos,todosDeleted,editArchive,...settingsPayload(),exported:new Date().toISOString(),version:7},null,2);
     const bnd='---fotoplaner---boundary---';
     const method=gdriveFileId?'PATCH':'POST';
     const metaObj=gdriveFileId?{name:GDRIVE_FNAME}:{name:GDRIVE_FNAME,parents:['appDataFolder']};
@@ -3619,6 +3561,7 @@ async function gdriveLoad(){
     todos=mergeTodosByNewest(todos,data.todos||[],new Set(todosDeleted)).list;
     localStorage.setItem('foto_todos',JSON.stringify(todos));
     mergeEditArchive(data.editArchive||[]);   // historia obróbki — zawsze suma zbiorów
+    if(applySettings(data,!doMerge)) refreshAllDeadlines();   // ustawienia: nowsze wygrywają
     migratePackageFormat();migrateDropRedundantTasks();migrateAddons();
     save();renderAll();
     showDriveToast(doMerge?`☁ Scalono! +${added} nowych, ${updated} zaktualizowanych.`:`☁ Wczytano z Drive! (${zlecenia.length} zleceń)`);
@@ -3652,6 +3595,8 @@ async function gdriveAutoSync(){
     todos=tm.list;
     localStorage.setItem('foto_todos',JSON.stringify(todos));
     mergeEditArchive(data.editArchive||[]);
+    const ustZmienione=applySettings(data);                   // nowsza konfiguracja z drugiego urządzenia
+    if(ustZmienione) refreshAllDeadlines();
     renderAll();
     if(zlecenia.length>0)await gdriveSave();
     if(added||updated||removed||tm.added)showDriveToast(`☁ Zsynchronizowano:${added?' +'+added+' nowych':''}${updated?' '+updated+' zaktualizowanych':''}${removed?' '+removed+' usuniętych':''}${tm.added?' +'+tm.added+' zadań':''}`);
@@ -3870,14 +3815,12 @@ async function gcalSyncZlecenie(z){
   finally{ gcalInFlight.delete(z.id); }
 }
 // zgodność wstecz
-async function gcalCreateZlecenie(z){ return gcalSyncZlecenie(z); }
 
 // ZASADA: FotoPlaner nigdy nie kasuje terminów z Google Calendar. Wydarzenie raz
 // wpisane zostaje — także po usunięciu zlecenia z aplikacji. Kasujemy wyłącznie
 // własne DUPLIKATY (druga kopia tego samego terminu), co robią gcalSyncZlecenie
 // i gcalReconcile. Funkcja zostawiona pusta celowo, żeby nikt jej nie przywrócił
 // przez przypadek.
-async function gcalDeleteZlecenie(z){ return; }
 
 // Przegląd wszystkich terminów naraz: brakujące dodaje, zmienione poprawia,
 // skasowane przywraca, DUPLIKATY kasuje. Jedno listowanie kalendarza na całość.
@@ -4045,7 +3988,7 @@ syncSignatures();   // punkt odniesienia dla wykrywania zmian w tej sesji
 initCal();
 initPWA();
 updateDriveBtn();
-if(Notification.permission==='granted')fireNotifications();
+if(typeof Notification!=='undefined'&&Notification.permission==='granted')fireNotifications();
 // Auto-reconnect Drive silently (no popup) if user already authorized before
 if(GDRIVE_CLIENT_ID){
   silentStart=true;
