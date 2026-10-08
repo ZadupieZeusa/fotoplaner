@@ -378,6 +378,14 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .sched-time{font-size:13px;font-weight:700;color:var(--text);min-width:44px}
 .sched-act{font-size:13px;color:var(--text2);flex:1}
 .sched-del{background:none;border:none;color:var(--text3);cursor:pointer;padding:2px 4px}
+.sched-item .sched-time-in{width:86px;flex-shrink:0;background:transparent;border:1px solid transparent;color:var(--text);font-size:13px;font-weight:700;padding:4px 4px;border-radius:6px;font-family:inherit}
+.sched-item .sched-act-in{flex:1;min-width:0;background:transparent;border:1px solid transparent;color:var(--text2);font-size:13px;padding:4px 6px;border-radius:6px;font-family:inherit}
+.sched-item .sched-time-in:hover,.sched-item .sched-act-in:hover{border-color:var(--border2)}
+.sched-item .sched-time-in:focus,.sched-item .sched-act-in:focus{outline:none;border-color:var(--sesja);background:var(--surface2);color:var(--text)}
+.dp-overlay{position:fixed;inset:0;background:#000a;z-index:600;display:flex;align-items:center;justify-content:center;padding:14px}
+.dp-box{background:var(--surface);border:1px solid var(--border2);border-radius:12px;padding:16px;width:100%;max-width:300px;display:flex;flex-direction:column;gap:10px}
+.dp-title{font-size:14px;font-weight:700;color:var(--text)}
+.dp-btns{display:flex;gap:8px}
 .sched-del:hover{color:#ff6666}
 .sched-add-row{display:flex;gap:6px;margin-top:8px}
 .sched-add-row .form-input{font-size:12px;padding:6px 8px}
@@ -700,7 +708,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 </div>
 
 <!-- ── DETAIL MODAL ── -->
-<div class="modal-overlay" id="modal-detail" onclick="if(event.target===this)closeDetail()">
+<div class="modal-overlay" id="modal-detail">
   <div class="modal" id="modal-detail-body"></div>
 </div>
 
@@ -1016,7 +1024,7 @@ const WEDDING_SCHEDULE_TEMPLATE = [
   {id:'s5',time:'16:00',activity:'Przyjęcie weselne — wejście gości'},
   {id:'s6',time:'16:30',activity:'Pierwsza para'},
   {id:'s7',time:'19:00',activity:'Tort weselny'},
-  {id:'s8',time:'24:00',activity:'Koniec pracy fotografa'},
+  {id:'s8',time:'23:59',activity:'Koniec pracy fotografa'},
 ];
 
 const MONTHS_PL    = ['Styczeń','Luty','Marzec','Kwiecień','Maj','Czerwiec','Lipiec','Sierpień','Wrzesień','Październik','Listopad','Grudzień'];
@@ -2919,7 +2927,8 @@ function renderDaySchedule(z){
   let h=`<div class="detail-sec">Harmonogram dnia ślubu</div>`;
   if(!items.length)h+=`<div style="color:var(--text3);font-size:12px;margin-bottom:8px">Brak harmonogramu. Dodaj punkty lub użyj szablonu.</div>`;
   else items.forEach(s=>{
-    h+=`<div class="sched-item"><span class="sched-time">${esc(s.time)}</span><span class="sched-act">${esc(s.activity)}</span><button class="sched-del" onclick="deleteSchedItem('${z.id}','${s.id}')">✕</button></div>`;
+    const t=s.time==='24:00'?'23:59':(s.time||'');
+    h+=`<div class="sched-item"><input type="time" class="sched-time-in" value="${esc(t)}" onchange="updateSchedItem('${z.id}','${s.id}','time',this.value)" /><input class="sched-act-in" value="${esc(s.activity)}" placeholder="Opis punktu..." onchange="updateSchedItem('${z.id}','${s.id}','activity',this.value)" onkeydown="if(event.key==='Enter')this.blur()" /><button class="sched-del" title="Usuń punkt" onclick="deleteSchedItem('${z.id}','${s.id}')">✕</button></div>`;
   });
   h+=`<div class="sched-add-row">
     <input class="form-input" id="sched-time-${z.id}" type="time" style="flex:.3" value="10:00" />
@@ -2939,6 +2948,16 @@ function addSchedItem(zId){
   z.daySchedule.push({id:uid(),time,activity:act});
   z.daySchedule.sort((a,b)=>a.time.localeCompare(b.time));
   save();renderDetailModal(zId);
+}
+
+// Edycja istniejącego punktu (szablon i własne) — godzina przesortowuje listę.
+function updateSchedItem(zId,sId,field,val){
+  const z=zlecenia.find(x=>x.id===zId);if(!z)return;
+  const s=(z.daySchedule||[]).find(x=>x.id===sId);if(!s)return;
+  if(field==='activity'){val=val.trim();if(!val){renderDetailModal(zId);return;}}
+  s[field]=val;
+  save();
+  if(field==='time'){z.daySchedule.sort((a,b)=>(a.time||'').localeCompare(b.time||''));renderDetailModal(zId);}
 }
 
 function deleteSchedItem(zId,sId){
@@ -3236,14 +3255,24 @@ function togglePaidDetail(id){
   z.paid=!z.paid;
   save();renderDetailModal(id);renderKanban();
 }
+// Okienko wyboru daty z przyciskiem „Zapisz" — zamiast ukrytego <input>, który
+// przy otwarciu kalendarza tracił fokus i sam się usuwał (picker znikał).
+function pickDate(title,initial,onSave){
+  document.querySelector('.dp-overlay')?.remove();
+  const ov=document.createElement('div');ov.className='dp-overlay';
+  ov.innerHTML=`<div class="dp-box"><div class="dp-title">${esc(title)}</div>
+    <input type="date" class="form-input" value="${esc(initial||'')}" />
+    <div class="dp-btns"><button class="btn-ghost" data-a="x">Anuluj</button><button class="btn-primary" data-a="ok">Zapisz</button></div></div>`;
+  const inp=ov.querySelector('input');
+  const close=()=>ov.remove();
+  ov.querySelector('[data-a="x"]').onclick=close;
+  ov.querySelector('[data-a="ok"]').onclick=()=>{if(!inp.value){inp.focus();return;}close();onSave(inp.value);};
+  inp.addEventListener('keydown',e=>{if(e.key==='Enter')ov.querySelector('[data-a="ok"]').click();if(e.key==='Escape'){e.stopPropagation();close();}});
+  document.body.appendChild(ov);
+}
 function markEditingDoneDetail(id){
   const z=zlecenia.find(x=>x.id===id);if(!z)return;
-  const inp=document.createElement('input');inp.type='date';
-  inp.value='';   // puste — inaczej wybór dzisiejszej daty nie wywołuje 'change' i nic się nie zapisuje
-  inp.style.cssText='position:fixed;opacity:0;pointer-events:none';
-  document.body.appendChild(inp);inp.focus();inp.showPicker?.();
-  inp.addEventListener('change',()=>{if(inp.value){z.editingFinished=inp.value;save();renderDetailModal(id);renderKanban();}inp.remove();});
-  inp.addEventListener('blur',()=>setTimeout(()=>inp.remove(),200));
+  pickDate('Data zakończenia obróbki',todayISO(),v=>{z.editingFinished=v;save();renderDetailModal(id);renderKanban();});
 }
 function unmarkEditingDoneDetail(id){
   const z=zlecenia.find(x=>x.id===id);if(!z)return;
@@ -3262,21 +3291,12 @@ function resetDeadlineAuto(id){
 }
 function editDeadlineDetail(id){
   const z=zlecenia.find(x=>x.id===id);if(!z)return;
-  const inp=document.createElement('input');inp.type='date';inp.value=z.deliveryDeadline||'';
-  inp.style.cssText='position:fixed;opacity:0;pointer-events:none';
-  document.body.appendChild(inp);inp.focus();inp.showPicker?.();
-  inp.addEventListener('change',()=>{z.deliveryDeadline=inp.value;z.deadlineManual=!!inp.value;save();renderDetailModal(id);renderKanban();inp.remove();});
-  inp.addEventListener('blur',()=>setTimeout(()=>inp.remove(),200));
+  pickDate('Termin obróbki',z.deliveryDeadline||todayISO(),v=>{z.deliveryDeadline=v;z.deadlineManual=true;save();renderDetailModal(id);renderKanban();});
 }
 
 function markEditingDone(id){
   const z=zlecenia.find(x=>x.id===id);if(!z)return;
-  const inp=document.createElement('input');inp.type='date';
-  inp.value='';   // puste — inaczej wybór dzisiejszej daty nie wywołuje 'change' i nic się nie zapisuje
-  inp.style.cssText='position:fixed;opacity:0;pointer-events:none';
-  document.body.appendChild(inp);inp.focus();inp.showPicker?.();
-  inp.addEventListener('change',()=>{if(inp.value){z.editingFinished=inp.value;save();renderKanban();}inp.remove();});
-  inp.addEventListener('blur',()=>setTimeout(()=>inp.remove(),200));
+  pickDate('Data zakończenia obróbki',todayISO(),v=>{z.editingFinished=v;save();renderKanban();});
 }
 // Sesja narzeczeńska rozliczana osobno — jeden klik zmienia stan opłacenia.
 function toggleSesjaNarzPaid(id){
