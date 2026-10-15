@@ -391,7 +391,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .sched-add-row .form-input{font-size:12px;padding:6px 8px}
 
 /* ── LISTA ZADAŃ (pod kalendarzem) ── */
-.todo-panel{border-top:1px solid var(--border);padding:9px;flex-shrink:0;display:flex;flex-direction:column;gap:7px}
+.todo-panel{border-top:1px solid var(--border);padding:9px;flex:1 0 auto;display:flex;flex-direction:column;gap:7px}
 .todo-head{display:flex;align-items:center;gap:7px}
 .todo-title{font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.6px}
 .todo-count{font-size:11px;color:var(--text3)}
@@ -401,7 +401,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .todo-input::placeholder{color:var(--text3)}
 .todo-add-btn{background:var(--sesja);border:none;color:#0d0d0d;font-size:16px;font-weight:800;line-height:1;width:32px;flex-shrink:0;border-radius:7px;cursor:pointer}
 .todo-add-btn:active{opacity:.7}
-.todo-list{display:flex;flex-direction:column;gap:4px;max-height:210px;overflow-y:auto}
+.todo-list{display:flex;flex-direction:column;gap:4px;min-height:300px}
 .todo-item{display:flex;align-items:flex-start;gap:8px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:8px 9px;transition:opacity .28s,transform .28s,background .15s}
 .todo-item:hover{background:var(--surface2)}
 .todo-item.leaving{opacity:0;transform:translateX(22px)}
@@ -467,7 +467,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 
 <!-- ── TOPBAR ── -->
 <header class="topbar">
-  <div class="logo">📷 <span>Foto</span>Planer</div>
+  <div class="logo">📷 <span>Foto</span>Planer <small style="font-size:9px;font-weight:500;color:var(--text3);letter-spacing:0" title="Wersja pliku">v15.10</small></div>
   <nav class="main-nav">
     <button class="mnav active" onclick="setMainView('planer')">📅 Planer</button>
     <button class="mnav" onclick="setMainView('timeline')">📊 Timeline</button>
@@ -635,12 +635,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     </div>
     <div class="form-row">
       <div class="form-group">
-        <label class="form-label">Data sesji / ślubu</label>
+        <label class="form-label">Termin zlecenia</label>
         <input class="form-input" id="f-date" type="date" onchange="renderSesjeNote()" />
       </div>
       <div class="form-group" id="deadline-row" style="display:none">
         <label class="form-label">Zakończenie obróbki</label>
-        <input class="form-input" id="f-deadline" type="date" />
+        <input class="form-input" id="f-deadline" type="date" oninput="this.dataset.touched='1'" onchange="this.dataset.touched='1'" />
       </div>
     </div>
     <div id="sesje-block" style="display:none">
@@ -1564,9 +1564,10 @@ function renderCalGrid() {
 function renderDayStrip() {
   const strip=document.getElementById('cal-day-strip');
   const monthPrefix=`${calYear}-${String(calMonth+1).padStart(2,'0')}`;
-  const monthItems=calItemsForMonth(monthPrefix);
-  let h=`<div class="strip-label">${MONTHS_PL[calMonth]} ${calYear}</div>`;
-  if(!monthItems.length) h+=`<div class="strip-empty">Brak terminów w tym miesiącu</div>`;
+  const dzis=todayISO();
+  const monthItems=calItemsForMonth(monthPrefix).filter(it=>it.date>=dzis);   // tylko nadchodzące
+  let h=`<div class="strip-label">Nadchodzące · ${MONTHS_PL[calMonth]} ${calYear}</div>`;
+  if(!monthItems.length) h+=`<div class="strip-empty">Brak nadchodzących terminów w tym miesiącu</div>`;
   else monthItems.forEach(it=>{
     const z=it.z, cat=CATS[z.cat]||{};
     const done=(z.tasks||[]).filter(t=>t.done).length,total=(z.tasks||[]).length;
@@ -1709,11 +1710,12 @@ function makeCard(z){
 
   // Delivery deadline badge (#11) — ukryj jeśli obróbka zakończona
   let ddHtml='';
-  if(z.deliveryDeadline && !z.editingFinished){
+  // pokazuj tylko po imprezie, gdy zlecenie jest już w pracy; w kolumnie „W edycji" termin ma własny wiersz
+  if(z.deliveryDeadline && !z.editingFinished && z.status && z.status!=='edycja_st' && !(z.date&&z.date>todayISO())){
     const diff=daysUntil(z.deliveryDeadline);
     const cls=diff<0?'overdue':diff<=7?'warn':'ok';
     const txt=diff<0?`Przekroczony (${Math.abs(diff)}d)`:diff===0?'Dziś!':diff<=7?`Za ${diff} dni`:`${formatDate(z.deliveryDeadline)}`;
-    ddHtml=`<div class="card-deadline ${cls}">📦 ${txt}</div>`;
+    ddHtml=`<div class="card-deadline ${cls}">🎬 Obróbka: ${txt}</div>`;
   }
 
   // Finance badge (#2)
@@ -2283,7 +2285,7 @@ function openAddModal(defaultStatus){
   document.getElementById('modal-add-title').textContent='Nowe zlecenie';
   document.getElementById('f-name').value='';
   document.getElementById('f-date').value=selectedDate||todayISO();
-  document.getElementById('f-deadline').value='';
+  document.getElementById('f-deadline').value='';document.getElementById('f-deadline').dataset.touched='0';
   document.getElementById('f-sesja-narz').value='';
   document.getElementById('f-sesja-slub').value='';
   document.getElementById('f-sesja-narz-price').value='';
@@ -2311,6 +2313,7 @@ function openEditModal(id){
   document.getElementById('f-name').value=z.name;
   document.getElementById('f-date').value=z.date||'';
   document.getElementById('f-deadline').value=z.deadlineManual?(z.deliveryDeadline||''):(suggestedDeadline(z)||z.deliveryDeadline||'');
+  document.getElementById('f-deadline').dataset.touched='0';
   document.getElementById('f-sesja-narz').value=z.sesjaNarz||'';
   document.getElementById('f-sesja-slub').value=z.sesjaSlub||'';
   document.getElementById('f-sesja-narz-price').value=z.sesjaNarzPrice||'';
@@ -2586,7 +2589,12 @@ function saveZlecenie(){
   // Pusty lub równy podpowiedzi = termin automatyczny (śledzi ustawienia).
   // Wpisany własny (różny od podpowiedzi) = ręczny i nienaruszalny.
   let deliveryDeadline='', deadlineManual=false;
-  if(fieldDeadline && fieldDeadline!==sug){
+  const dlField=document.getElementById('f-deadline');
+  const dlVisible=selStatus==='edycja_st';
+  const dlTyped=dlField.dataset.touched==='1';            // użytkownik sam zmienił termin
+  if(!selStatus){
+    deliveryDeadline=''; deadlineManual=false;            // impreza jeszcze przed nami — bez terminu obróbki
+  } else if(dlVisible && fieldDeadline && fieldDeadline!==sug && (dlTyped||(prevZ&&prevZ.deadlineManual))){
     deliveryDeadline=fieldDeadline; deadlineManual=true;
   } else {
     deliveryDeadline=(selStatus==='edycja_st'||(prevZ&&prevZ.deliveryDeadline))?sug:'';
@@ -3375,10 +3383,47 @@ function showDriveToast(msg,err=false){
   clearTimeout(t._to);t._to=setTimeout(()=>t.style.opacity='0',3500);
 }
 
+// Urządzenie — żeby wiedzieć, kto zrobił ostatni zapis na Drive.
+function deviceId(){
+  let id=localStorage.getItem('foto_device_id');
+  if(!id){id='dev_'+uid();localStorage.setItem('foto_device_id',id);}
+  return id;
+}
+function deviceName(){
+  const ua=navigator.userAgent||'';
+  const ipad=/iPad/.test(ua)||(/Macintosh/.test(ua)&&navigator.maxTouchPoints>1);
+  const dev=ipad?'iPad':/iPhone/.test(ua)?'iPhone':/Android/.test(ua)?'Android':/Macintosh/.test(ua)?'Mac':/Windows/.test(ua)?'Windows':'Komputer';
+  const br=/CriOS|Chrome\//.test(ua)&&!/Edg/.test(ua)?'Chrome':/Edg/.test(ua)?'Edge':/Firefox|FxiOS/.test(ua)?'Firefox':/Safari/.test(ua)?'Safari':'';
+  return dev+(br?' · '+br:'');
+}
+function googleHint(){ return localStorage.getItem('foto_google_email')||''; }
+async function rememberGoogleAccount(){
+  try{
+    const r=await driveRequest('https://www.googleapis.com/drive/v3/about?fields=user(emailAddress)');
+    const d=await r.json();
+    const mail=d?.user?.emailAddress;
+    if(mail&&mail!==googleHint()){localStorage.setItem('foto_google_email',mail);tokenClient=null;initGIS();}
+  }catch(e){}
+}
+// Pasek-przypomnienie, gdy ciche logowanie nie przeszło (np. Safari blokuje okienko bez kliknięcia).
+function showConnectBanner(show){
+  let b=document.getElementById('gconnect-banner');
+  if(!show){if(b)b.remove();return;}
+  if(b)return;
+  b=document.createElement('div');b.id='gconnect-banner';
+  b.style.cssText='position:fixed;top:10px;left:50%;transform:translateX(-50%);z-index:9000;background:var(--surface);border:1px solid var(--urodziny);border-radius:10px;padding:8px 10px 8px 14px;display:flex;align-items:center;gap:10px;font-size:13px;box-shadow:0 6px 24px #0008;max-width:calc(100% - 24px)';
+  const mail=googleHint();
+  b.innerHTML=`<span>☁ Nie połączono z Google${mail?' ('+esc(mail)+')':''} — dane mogą być nieaktualne</span>
+    <button class="btn-sm" style="background:var(--sesja);color:#0d0d0d;border:none;font-weight:800" onclick="showConnectBanner(false);gdriveConnect()">Połącz</button>
+    <button class="btn-sm" style="border:none;background:none" onclick="showConnectBanner(false)" title="Ukryj">✕</button>`;
+  document.body.appendChild(b);
+}
+
 function initGIS(){
   if(!window.google||!GDRIVE_CLIENT_ID)return;
   tokenClient=google.accounts.oauth2.initTokenClient({
     client_id:GDRIVE_CLIENT_ID,scope:GDRIVE_SCOPE,
+    ...(googleHint()?{login_hint:googleHint()}:{}),
     callback:async(r)=>{
       const resolver=tokenResolve; tokenResolve=null;
       if(r.error){
@@ -3391,7 +3436,8 @@ function initGIS(){
       gdriveToken=r.access_token;
       // token GIS żyje ~1h; odświeżamy 2 min przed końcem, zanim poleci 401
       tokenExpiresAt=Date.now()+((Number(r.expires_in)||3600)-120)*1000;
-      updateDriveBtn();
+      updateDriveBtn();showConnectBanner(false);
+      if(!googleHint())setTimeout(rememberGoogleAccount,0);   // zapamiętaj konto → następnym razem bez wybierania
       if(resolver){resolver(true);return;}
       if(!silentStart)showDriveToast('✅ Połączono z Google Drive');
       silentStart=false;
@@ -3418,7 +3464,7 @@ async function ensureToken(){
         let settled=false;
         tokenResolve=(ok)=>{ if(settled)return; settled=true; res(ok); };
         setTimeout(()=>{ if(!settled){settled=true;tokenResolve=null;res(false);} },10000);
-        try{ tokenClient.requestAccessToken({prompt:''}); }
+        try{ tokenClient.requestAccessToken({prompt:'',...(googleHint()?{login_hint:googleHint()}:{})}); }
         catch(e){ if(!settled){settled=true;tokenResolve=null;res(false);} }
       });
     }catch(e){ return false; }
@@ -3450,7 +3496,7 @@ async function gdriveConnect(){
   try{
     await loadGIS();initGIS();
     if(!tokenClient){showDriveToast('Błąd inicjalizacji GIS',true);return false;}
-    tokenClient.requestAccessToken();return true;
+    tokenClient.requestAccessToken(googleHint()?{prompt:'',login_hint:googleHint()}:{});return true;
   }catch(e){showDriveToast('Błąd ładowania GIS: '+e.message,true);return false;}
 }
 
@@ -3483,7 +3529,8 @@ async function gdriveSave(){
   showDriveToast('☁ Zapisuję na Drive...');
   try{
     await findDriveFile();
-    const content=JSON.stringify({zlecenia,cols,deleted:deletedIds,todos,todosDeleted,editArchive,...settingsPayload(),exported:new Date().toISOString(),version:7},null,2);
+    const savedAt=Date.now();
+    const content=JSON.stringify({zlecenia,cols,deleted:deletedIds,todos,todosDeleted,editArchive,...settingsPayload(),exported:new Date(savedAt).toISOString(),savedAt,savedBy:{id:deviceId(),name:deviceName()},version:7},null,2);
     const bnd='---fotoplaner---boundary---';
     const method=gdriveFileId?'PATCH':'POST';
     const metaObj=gdriveFileId?{name:GDRIVE_FNAME}:{name:GDRIVE_FNAME,parents:['appDataFolder']};
@@ -3497,6 +3544,7 @@ async function gdriveSave(){
     if(json.id){
       gdriveFileId=json.id;
       localStorage.setItem('foto_last_sync',String(Date.now()));
+      localStorage.setItem('foto_known_drive_at',String(savedAt));   // ta wersja na Drive jest nasza
       clearDirty();
       showDriveToast('☁ Zapisano na Drive! ('+new Date().toLocaleTimeString('pl')+')');
     }
@@ -3590,44 +3638,69 @@ async function gdriveLoad(){
 
 // Cicha synchronizacja przy starcie: najpierw wczytaj i scal dane z Drive, dopiero potem zapisz.
 // Naprawia błąd nadpisywania Drive starą lokalną kopią z innego urządzenia.
-async function gdriveAutoSync(){
-  if(!await ensureToken())return;
+let lastAutoSync=0,autoSyncRunning=false;
+async function gdriveAutoSync(opts={}){
+  if(autoSyncRunning)return;
+  if(!await ensureToken()){ if(!opts.quiet)showConnectBanner(true); return; }
+  autoSyncRunning=true;lastAutoSync=Date.now();
   try{
     const fid=await findDriveFile();
     if(!fid){if(zlecenia.length>0)await gdriveSave();return;}
     const r=await driveRequest(`https://www.googleapis.com/drive/v3/files/${fid}?alt=media`);
     const data=await r.json();
+    const remoteAt=Number(data.savedAt||Date.parse(data.exported||'')||0);
+    const knownAt=Number(localStorage.getItem('foto_known_drive_at')||0);
+    const fromMe=data.savedBy?.id===deviceId();
+    // Na Drive leży dokładnie ta wersja, którą to urządzenie zapisało/pobrało — nic do pobrania.
+    if(remoteAt&&remoteAt===knownAt){
+      if(syncDirty)await gdriveSave();
+      else if(!opts.quiet)showDriveToast('✓ Dane aktualne'+(fromMe?' — ostatni zapis z tego urządzenia':''));
+      return;
+    }
     const driveZ=data.zlecenia||[];
     markDeleted(data.deleted||[]);
     const delSet=new Set(deletedIds);
     const before=zlecenia.length;
     const localClean=zlecenia.filter(z=>!delSet.has(z.id));
     const removed=before-localClean.length;
+    // czy lokalnie jest coś, czego Drive nie ma (nowsze/brakujące) → po scaleniu trzeba zapisać
+    const driveMap={};driveZ.forEach(z=>driveMap[z.id]=z);
+    const ahead=localClean.filter(z=>!driveMap[z.id]||(z.updatedAt||0)>(driveMap[z.id].updatedAt||0)).length;
     const {list,added,updated}=mergeByNewest(localClean,driveZ,delSet);
     zlecenia=list;
     migratePackageFormat();migrateDropRedundantTasks();migrateAddons();
     syncSignatures();
     localStorage.setItem('foto_v4',JSON.stringify(zlecenia));
     if(data.cols&&!localStorage.getItem('foto_cols')){cols=data.cols;saveCols();}
-    // lista zadań
     markTodoDeleted(data.todosDeleted||[]);
     const tm=mergeTodosByNewest(todos,data.todos||[],new Set(todosDeleted));
     todos=tm.list;
     localStorage.setItem('foto_todos',JSON.stringify(todos));
     mergeEditArchive(data.editArchive||[]);
-    const ustZmienione=applySettings(data);                   // nowsza konfiguracja z drugiego urządzenia
+    const localSettingsNewer=Number(settingsAt||0)>Number(data.settingsAt||0);
+    const ustZmienione=applySettings(data);
     if(ustZmienione) refreshAllDeadlines();
+    localStorage.setItem('foto_known_drive_at',String(remoteAt));
     renderAll();
-    if(zlecenia.length>0)await gdriveSave();
-    if(added||updated||removed||tm.added)showDriveToast(`☁ Zsynchronizowano:${added?' +'+added+' nowych':''}${updated?' '+updated+' zaktualizowanych':''}${removed?' '+removed+' usuniętych':''}${tm.added?' +'+tm.added+' zadań':''}`);
-    // raz na dobę sprawdź, czy terminy faktycznie są w Google Calendar
+    if(zlecenia.length>0&&(syncDirty||ahead||localSettingsNewer||(todos.length!==(data.todos||[]).length)))await gdriveSave();
+    const kto=data.savedBy?.name&&!fromMe?` z: ${data.savedBy.name}`:'';
+    const kiedy=remoteAt?' ('+new Date(remoteAt).toLocaleString('pl',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})+')':'';
+    if(added||updated||removed||tm.added||ustZmienione)
+      showDriveToast(`⬇ Pobrano zmiany${kto}${kiedy}:${added?' +'+added+' nowych':''}${updated?' '+updated+' zaktualizowanych':''}${removed?' '+removed+' usuniętych':''}${tm.added?' +'+tm.added+' zadań':''}${ustZmienione?' ustawienia':''}`);
+    else if(!opts.quiet) showDriveToast('✓ Dane aktualne');
     const lastRec=Number(localStorage.getItem('foto_gcal_check')||0);
     if(Date.now()-lastRec>20*3600*1000){
       localStorage.setItem('foto_gcal_check',String(Date.now()));
       gcalReconcile(true);
     }
   }catch(e){showDriveToast('Błąd synchronizacji: '+e.message,true);}
+  finally{autoSyncRunning=false;}
 }
+// Powrót do aplikacji (np. iPad z tła) i co 5 minut — dociągnij zmiany z innego urządzenia.
+document.addEventListener('visibilitychange',()=>{
+  if(document.visibilityState==='visible'&&gdriveToken&&Date.now()-lastAutoSync>60000)gdriveAutoSync({quiet:true});
+});
+setInterval(()=>{ if(document.visibilityState==='visible'&&gdriveToken&&Date.now()-lastAutoSync>290000)gdriveAutoSync({quiet:true}); },60000);
 
 function gdriveSetup(){
   const id=prompt('Obecny Client ID:\n'+(GDRIVE_CLIENT_ID||'brak')+'\n\nWklej nowy Client ID, wpisz RESET aby przywrócić domyślny (puste = zachowaj):');
@@ -3641,6 +3714,7 @@ function gdriveSetup(){
 
 function gdriveDisconnect(){
   gdriveToken=null;gdriveFileId=null;tokenClient=null;
+  localStorage.removeItem('foto_google_email');   // następne połączenie pozwoli wybrać inne konto
   updateDriveBtn();showDriveToast('Odłączono od Google Drive');
 }
 
@@ -4014,15 +4088,14 @@ if(GDRIVE_CLIENT_ID){
   silentStart=true;
   loadGIS().then(()=>{
     initGIS();
-    if(tokenClient)tokenClient.requestAccessToken({prompt:''});
-    // jeśli ciche logowanie nie przejdzie, a mamy niewysłane zmiany — powiedz o tym wprost
+    if(tokenClient)tokenClient.requestAccessToken({prompt:'',...(googleHint()?{login_hint:googleHint()}:{})});
+    // ciche logowanie nie przeszło → przypomnienie z przyciskiem „Połącz" (kliknięcie = okienko nie jest blokowane)
     setTimeout(()=>{
       silentStart=false;
       updateDriveBtn();
-      if(!gdriveToken&&syncDirty)
-        showDriveToast('⚠ Zmiany nie trafiły jeszcze na Drive — kliknij ☁ Drive i zaloguj się',true);
-    },12000);
-  }).catch(()=>{silentStart=false;});
+      if(!gdriveToken)showConnectBanner(true);
+    },6000);
+  }).catch(()=>{silentStart=false;showConnectBanner(true);});
 }
 // Sieć wróciła — dokończ zaległy zapis
 window.addEventListener('online',()=>{ if(syncDirty)scheduleDriveSave(); });
