@@ -1,0 +1,1482 @@
+{
+  "zlecenia": [
+    {
+      "id": "mqo5fkv2eop1",
+      "orderedItems": [],
+      "daySchedule": [],
+      "name": "Monika i Kamil",
+      "date": "2026-06-27",
+      "cat": "wesele",
+      "status": "",
+      "deliveryDeadline": "",
+      "customCat": "",
+      "price": 4379,
+      "deposit": 1100,
+      "pakiet": "PLATINUM\n- Książka Pro\n- Pendrive \n- Książki dla rodziców - DO ZAPŁATY\n- Sesja narzeczeńska - OPŁACONE",
+      "adresy": {
+        "kosciol": "Parafia Maksymiliana Kolbe, Konin",
+        "pan": "Krągola Pierwsza , 62-571 Stare Miasto",
+        "pani": "Międzylesie 21 , 62-510 Konin",
+        "sala": "Karsianka, Stare Miasto"
+      },
+      "notes": "Zespół Green\nCelleronPro",
+      "tasks": [
+        {
+          "id": "selekcja",
+          "label": "Selekcja zdjęć",
+          "done": false
+        },
+        {
+          "id": "obrobka",
+          "label": "Obróbka",
+          "done": false
+        },
+        {
+          "id": "sesja_plenerowa",
+          "label": "Sesja plenerowa",
+          "done": false
+        },
+        {
+          "id": "pendrive",
+          "label": "Pendrive",
+          "done": false
+        },
+        {
+          "id": "fotoksiazka_prem",
+          "label": "Fotoksiążka Premium",
+          "done": false
+        },
+        {
+          "id": "fotoksiazka_bas",
+          "label": "Fotoksiążka Basic",
+          "done": false
+        },
+        {
+          "id": "zamowienie",
+          "label": "Zamówienie",
+          "done": false
+        },
+        {
+          "id": "oddanie",
+          "label": "Oddanie materiału",
+          "done": false
+        }
+      ],
+      "gcalEventId": "oh106iq1ltlhu1ab30g9lf5et0"
+    },
+    {
+      "id": "mqo5lebqzo7q",
+      "orderedItems": [],
+      "daySchedule": [],
+      "name": "Aleksandra i Kamil",
+      "date": "2026-07-04",
+      "cat": "wesele",
+      "status": "",
+      "deliveryDeadline": "",
+      "customCat": "",
+      "price": 3879,
+      "deposit": 700,
+      "pakiet": "PAKIET GOLD:\n- Fotoksiążka Basic\n- Fotoksiążki dla rodziców - do zapłaty (ujęte w wynagrodzeniu)\n- Pendrive\n- Sesja innego dnia",
+      "adresy": {
+        "kosciol": "Ślub na sali",
+        "pan": "–",
+        "pani": "—",
+        "sala": "Folwark Kowalewek , Kowalewek 49"
+      },
+      "notes": "",
+      "tasks": [
+        {
+          "id": "selekcja",
+          "label": "Selekcja zdjęć",
+          "done": false
+        },
+        {
+          "id": "obrobka",
+          "label": "Obróbka",
+          "done": false
+        },
+        {
+          "id": "sesja_plenerowa",
+          "label": "Sesja plenerowa",
+          "done": false
+        },
+        {
+          "id": "pendrive",
+          "label": "Pendrive",
+          "done": false
+        },
+        {
+          "id": "fotoksiazka_prem",
+          "label": "Fotoksiążka Premium",
+          "done": false
+        },
+        {
+          "id": "fotoksiazka_bas",
+          "label": "Fotoksiążka Basic",
+          "done": false
+        },
+        {
+          "id": "zamowienie",
+          "label": "Zamówienie",
+          "done": false
+        },
+        {
+          "id": "oddanie",
+          "label": "Oddanie materiału",
+          "done": false
+        }
+      ],
+      "gcalEventId": "q844ku5tv190gchpnml8lou8fk"
+    },
+    {
+      "id": "mqo72l6p8q1k",
+      "orderedItems": [],
+      "daySchedule": [],
+      "name": "Klaudia i Rafał",
+      "date": "2026-07-11",
+      "cat": "wesele",
+      "status": "",
+      "deliveryDeadline": "",
+      "customCat": "",
+      "price": 3800,
+      "deposit": 800,
+      "pakiet": "Pakiet GOLD:\n- Sesja w inny dzień\n- Galeria 6 miesięcy\n- Książka Basic\n- Pendrive\n- 600szt zdjec",
+      "adresy": {
+        "kosciol": "Kazimierz Biskupi",
+        "pan": "Reja 3 , Kazimierz Biskupi",
+        "pani": "Nieświastów 3/6",
+        "sala": "Akacjowy Gaj, Tomaszewo"
+      },
+      "notes": "",
+      "tasks": [
+        {
+          "id": "selekcja",
+          "label": "Selekcja zdjęć",
+          "done": false
+        },
+        {
+          "id": "obrobka",
+          "label": "Obróbka",
+          "done": false
+        },
+        {
+          "id": "sesja_plenerowa",
+          "label": "Sesja plenerowa",
+          "done": false
+        },
+        {
+          "id": "pendrive",
+          "label": "Pendrive",
+          "done": false
+        },
+        {
+          "id": "fotoksiazka_prem",
+          "label": "Fotoksiążka Premium",
+          "done": false
+        },
+        {
+          "id": "fotoksiazka_bas",
+          "label": "Fotoksiążka Basic",
+          "done": false
+        },
+        {
+          "id": "zamowienie",
+          "label": "Zamówienie",
+          "done": false
+        },
+        {
+          "id": "oddanie",
+          "label": "Oddanie materiału",
+          "done": false
+        }
+      ]
+    },
+    {
+      "id": "mqo7afxxt1qu",
+      "orderedItems": [],
+      "daySchedule": [],
+      "name": "Jakub Popielec",
+      "date": "2026-08-01",
+      "cat": "urodziny",
+      "status": "",
+      "deliveryDeadline": "",
+      "customCat": "",
+      "price": 1000,
+      "deposit": 400,
+      "pakiet": "- Pendrive \n- Książka Basic 20x30cm",
+      "adresy": {
+        "sala": "Anna Sala weselna, Rzgów"
+      },
+      "notes": "",
+      "tasks": [
+        {
+          "id": "selekcja",
+          "label": "Selekcja zdjęć",
+          "done": false
+        },
+        {
+          "id": "obrobka",
+          "label": "Obróbka",
+          "done": false
+        },
+        {
+          "id": "pendrive",
+          "label": "Pendrive",
+          "done": false
+        },
+        {
+          "id": "fotoksiazka",
+          "label": "Fotoksiążka",
+          "done": false
+        },
+        {
+          "id": "zamowienie",
+          "label": "Zamówienie",
+          "done": false
+        },
+        {
+          "id": "oddanie",
+          "label": "Oddanie materiału",
+          "done": false
+        }
+      ]
+    },
+    {
+      "id": "mqo7m6nb7qzv",
+      "orderedItems": [],
+      "daySchedule": [],
+      "name": "Agata i Daniel",
+      "date": "2026-08-15",
+      "cat": "wesele",
+      "status": "",
+      "deliveryDeadline": "",
+      "customCat": "",
+      "price": 4000,
+      "deposit": 800,
+      "pakiet": "Platinum\n- Pakiet 700zdj\n- Sesja w inny dzień\n- Galeria 6 miesięcy\n- Fotoksiążka Premium 30x30cm\n- Pendrive",
+      "adresy": {
+        "kosciol": "Ciążeń",
+        "pan": "Ciążeń Wolności 29a",
+        "pani": "Ciążeń Wolności 68b",
+        "sala": "Dolina Warty, Nowa Wieś Podgórna 9, 62-320"
+      },
+      "notes": "",
+      "tasks": [
+        {
+          "id": "selekcja",
+          "label": "Selekcja zdjęć",
+          "done": false
+        },
+        {
+          "id": "obrobka",
+          "label": "Obróbka",
+          "done": false
+        },
+        {
+          "id": "sesja_plenerowa",
+          "label": "Sesja plenerowa",
+          "done": false
+        },
+        {
+          "id": "pendrive",
+          "label": "Pendrive",
+          "done": false
+        },
+        {
+          "id": "fotoksiazka_prem",
+          "label": "Fotoksiążka Premium",
+          "done": false
+        },
+        {
+          "id": "fotoksiazka_bas",
+          "label": "Fotoksiążka Basic",
+          "done": false
+        },
+        {
+          "id": "zamowienie",
+          "label": "Zamówienie",
+          "done": false
+        },
+        {
+          "id": "oddanie",
+          "label": "Oddanie materiału",
+          "done": false
+        }
+      ]
+    },
+    {
+      "id": "mqo7q4wplo3z",
+      "orderedItems": [],
+      "daySchedule": [],
+      "name": "Zuza i Mateusz",
+      "date": "2026-08-29",
+      "cat": "wesele",
+      "status": "",
+      "deliveryDeadline": "",
+      "customCat": "",
+      "price": 3500,
+      "deposit": 800,
+      "pakiet": "Gold:\n- Pendrive\n- Książka Basic 30x30cm\n- Sesja ślubna inny dzień\n- Galeria 6 miesięcy",
+      "adresy": {
+        "kosciol": "Skulsk",
+        "pan": "",
+        "pani": "",
+        "sala": "Bella Vista"
+      },
+      "notes": "",
+      "tasks": [
+        {
+          "id": "selekcja",
+          "label": "Selekcja zdjęć",
+          "done": false
+        },
+        {
+          "id": "obrobka",
+          "label": "Obróbka",
+          "done": false
+        },
+        {
+          "id": "sesja_plenerowa",
+          "label": "Sesja plenerowa",
+          "done": false
+        },
+        {
+          "id": "pendrive",
+          "label": "Pendrive",
+          "done": false
+        },
+        {
+          "id": "fotoksiazka_bas",
+          "label": "Fotoksiążka Basic",
+          "done": false
+        },
+        {
+          "id": "zamowienie",
+          "label": "Zamówienie",
+          "done": false
+        },
+        {
+          "id": "oddanie",
+          "label": "Oddanie materiału",
+          "done": false
+        }
+      ]
+    },
+    {
+      "id": "mqo7tjyamh0h",
+      "orderedItems": [],
+      "daySchedule": [],
+      "name": "Natalia i Dawid",
+      "date": "2026-09-05",
+      "cat": "wesele",
+      "status": "",
+      "deliveryDeadline": "",
+      "customCat": "",
+      "price": 3900,
+      "deposit": 800,
+      "pakiet": "Platinum:\n- Sesja w inny dzień\n- Pakiet 700szt zdjęć\n- Pendrive\n- Książka Premium 30x30cm.",
+      "adresy": {
+        "kosciol": "",
+        "pan": "",
+        "pani": "",
+        "sala": "Madera"
+      },
+      "notes": "",
+      "tasks": [
+        {
+          "id": "selekcja",
+          "label": "Selekcja zdjęć",
+          "done": false
+        },
+        {
+          "id": "obrobka",
+          "label": "Obróbka",
+          "done": false
+        },
+        {
+          "id": "sesja_plenerowa",
+          "label": "Sesja plenerowa",
+          "done": false
+        },
+        {
+          "id": "pendrive",
+          "label": "Pendrive",
+          "done": false
+        },
+        {
+          "id": "fotoksiazka_prem",
+          "label": "Fotoksiążka Premium",
+          "done": false
+        },
+        {
+          "id": "zamowienie",
+          "label": "Zamówienie",
+          "done": false
+        },
+        {
+          "id": "oddanie",
+          "label": "Oddanie materiału",
+          "done": false
+        }
+      ]
+    },
+    {
+      "id": "mqo7wcv1ijwj",
+      "orderedItems": [],
+      "daySchedule": [],
+      "name": "Monika Gręda",
+      "date": "2026-09-11",
+      "cat": "urodziny",
+      "status": "",
+      "deliveryDeadline": "",
+      "customCat": "",
+      "price": 1050,
+      "deposit": 400,
+      "pakiet": "- Pendrive\n- Książka 20x30cm",
+      "adresy": {
+        "sala": "Bejro, Babiak"
+      },
+      "notes": "",
+      "tasks": [
+        {
+          "id": "selekcja",
+          "label": "Selekcja zdjęć",
+          "done": false
+        },
+        {
+          "id": "obrobka",
+          "label": "Obróbka",
+          "done": false
+        },
+        {
+          "id": "pendrive",
+          "label": "Pendrive",
+          "done": false
+        },
+        {
+          "id": "fotoksiazka",
+          "label": "Fotoksiążka",
+          "done": false
+        },
+        {
+          "id": "zamowienie",
+          "label": "Zamówienie",
+          "done": false
+        },
+        {
+          "id": "oddanie",
+          "label": "Oddanie materiału",
+          "done": false
+        }
+      ]
+    },
+    {
+      "id": "mqo7zc2sn26g",
+      "orderedItems": [],
+      "daySchedule": [],
+      "name": "Katarzyna Lenart",
+      "date": "2026-09-12",
+      "cat": "urodziny",
+      "status": "",
+      "deliveryDeadline": "",
+      "customCat": "",
+      "price": 750,
+      "deposit": 200,
+      "pakiet": "- Pendrive",
+      "adresy": {
+        "sala": "Remiza OSP, Grójec"
+      },
+      "notes": "",
+      "tasks": [
+        {
+          "id": "selekcja",
+          "label": "Selekcja zdjęć",
+          "done": false
+        },
+        {
+          "id": "obrobka",
+          "label": "Obróbka",
+          "done": false
+        },
+        {
+          "id": "pendrive",
+          "label": "Pendrive",
+          "done": false
+        },
+        {
+          "id": "fotoksiazka",
+          "label": "Fotoksiążka",
+          "done": false
+        },
+        {
+          "id": "zamowienie",
+          "label": "Zamówienie",
+          "done": false
+        },
+        {
+          "id": "oddanie",
+          "label": "Oddanie materiału",
+          "done": false
+        }
+      ]
+    },
+    {
+      "id": "mqo836qmkf2o",
+      "orderedItems": [],
+      "daySchedule": [],
+      "name": "Martyna i Kamil",
+      "date": "2026-09-26",
+      "cat": "wesele",
+      "status": "",
+      "deliveryDeadline": "",
+      "customCat": "",
+      "price": 4000,
+      "deposit": 800,
+      "pakiet": "Platinum:\n- Sesja w inny dzień\n- Galeria 6 miesięcy\n- Pendrive\n- Książka Pro 30x30cm",
+      "adresy": {
+        "kosciol": "Parafia św. Jakuba, Rzgów",
+        "pan": "Goździków 3B, Rzgów",
+        "pani": "Goździków 3B, Rzgów",
+        "sala": "Madera, Królików 16B"
+      },
+      "notes": "",
+      "tasks": [
+        {
+          "id": "selekcja",
+          "label": "Selekcja zdjęć",
+          "done": false
+        },
+        {
+          "id": "obrobka",
+          "label": "Obróbka",
+          "done": false
+        },
+        {
+          "id": "sesja_plenerowa",
+          "label": "Sesja plenerowa",
+          "done": false
+        },
+        {
+          "id": "pendrive",
+          "label": "Pendrive",
+          "done": false
+        },
+        {
+          "id": "fotoksiazka_prem",
+          "label": "Fotoksiążka Premium",
+          "done": false
+        },
+        {
+          "id": "zamowienie",
+          "label": "Zamówienie",
+          "done": false
+        },
+        {
+          "id": "oddanie",
+          "label": "Oddanie materiału",
+          "done": false
+        }
+      ]
+    },
+    {
+      "id": "mqo88p2r1krh",
+      "orderedItems": [],
+      "daySchedule": [],
+      "name": "Klaudia i Mateusz",
+      "date": "2026-10-10",
+      "cat": "wesele",
+      "status": "",
+      "deliveryDeadline": "",
+      "customCat": "",
+      "price": 3900,
+      "deposit": 800,
+      "pakiet": "Platinum:\n- Sesja w inny dzień\n- Pakiet 700zdj\n- Fotoksiążka Pro 30x30cm\n- Pendrive",
+      "adresy": {
+        "kosciol": "Lubotyń",
+        "pan": "Ośno Dolne 6",
+        "pani": "Ośno Dolne 3a",
+        "sala": "Bejro, Babiak"
+      },
+      "notes": "",
+      "tasks": [
+        {
+          "id": "selekcja",
+          "label": "Selekcja zdjęć",
+          "done": false
+        },
+        {
+          "id": "obrobka",
+          "label": "Obróbka",
+          "done": false
+        },
+        {
+          "id": "sesja_plenerowa",
+          "label": "Sesja plenerowa",
+          "done": false
+        },
+        {
+          "id": "pendrive",
+          "label": "Pendrive",
+          "done": false
+        },
+        {
+          "id": "fotoksiazka_prem",
+          "label": "Fotoksiążka Premium",
+          "done": false
+        },
+        {
+          "id": "fotoksiazka_bas",
+          "label": "Fotoksiążka Basic",
+          "done": false
+        },
+        {
+          "id": "zamowienie",
+          "label": "Zamówienie",
+          "done": false
+        },
+        {
+          "id": "oddanie",
+          "label": "Oddanie materiału",
+          "done": false
+        }
+      ]
+    },
+    {
+      "id": "mqo8dky4vwmu",
+      "orderedItems": [],
+      "daySchedule": [],
+      "name": "Julia Wichrowska",
+      "date": "2027-02-12",
+      "cat": "inne",
+      "status": "",
+      "deliveryDeadline": "",
+      "customCat": "Studniówka",
+      "price": 4000,
+      "deposit": 500,
+      "pakiet": "Patryk Murawiak 2 Fotograf",
+      "adresy": {
+        "adres": ""
+      },
+      "notes": "",
+      "tasks": [
+        {
+          "id": "selekcja",
+          "label": "Selekcja zdjęć",
+          "done": false
+        },
+        {
+          "id": "obrobka",
+          "label": "Obróbka",
+          "done": false
+        },
+        {
+          "id": "oddanie",
+          "label": "Oddanie materiału",
+          "done": false
+        }
+      ]
+    },
+    {
+      "id": "mqo8ga5t1otb",
+      "orderedItems": [],
+      "daySchedule": [],
+      "name": "Magdalena Radolak",
+      "date": "2027-04-09",
+      "cat": "urodziny",
+      "status": "",
+      "deliveryDeadline": "",
+      "customCat": "",
+      "price": 1000,
+      "deposit": 400,
+      "pakiet": "Pendrive\nKsiążka 20x30cm\nGaleria 2 miesiące",
+      "adresy": {
+        "sala": "Peryferia, Gizałki"
+      },
+      "notes": "",
+      "tasks": [
+        {
+          "id": "selekcja",
+          "label": "Selekcja zdjęć",
+          "done": false
+        },
+        {
+          "id": "obrobka",
+          "label": "Obróbka",
+          "done": false
+        },
+        {
+          "id": "pendrive",
+          "label": "Pendrive",
+          "done": false
+        },
+        {
+          "id": "fotoksiazka",
+          "label": "Fotoksiążka",
+          "done": false
+        },
+        {
+          "id": "zamowienie",
+          "label": "Zamówienie",
+          "done": false
+        },
+        {
+          "id": "oddanie",
+          "label": "Oddanie materiału",
+          "done": false
+        }
+      ]
+    },
+    {
+      "id": "mqo8ipxpctod",
+      "orderedItems": [],
+      "daySchedule": [],
+      "name": "Lidia Chojnacka",
+      "date": "2027-04-10",
+      "cat": "urodziny",
+      "status": "",
+      "deliveryDeadline": "",
+      "customCat": "",
+      "price": 1100,
+      "deposit": 400,
+      "pakiet": "- Pendrive\n- Fotoksiążka 20x30cm",
+      "adresy": {
+        "sala": "Restauracja dla każdego, Licheń"
+      },
+      "notes": "",
+      "tasks": [
+        {
+          "id": "selekcja",
+          "label": "Selekcja zdjęć",
+          "done": false
+        },
+        {
+          "id": "obrobka",
+          "label": "Obróbka",
+          "done": false
+        },
+        {
+          "id": "pendrive",
+          "label": "Pendrive",
+          "done": false
+        },
+        {
+          "id": "fotoksiazka",
+          "label": "Fotoksiążka",
+          "done": false
+        },
+        {
+          "id": "zamowienie",
+          "label": "Zamówienie",
+          "done": false
+        },
+        {
+          "id": "oddanie",
+          "label": "Oddanie materiału",
+          "done": false
+        }
+      ]
+    },
+    {
+      "id": "mqo8l4hxqz21",
+      "orderedItems": [],
+      "daySchedule": [],
+      "name": "Wiktoria Grześkiewicz",
+      "date": "2027-04-16",
+      "cat": "urodziny",
+      "status": "",
+      "deliveryDeadline": "",
+      "customCat": "",
+      "price": 1200,
+      "deposit": 400,
+      "pakiet": "- Fotoksiążka 30x30cm\n- Pendrive",
+      "adresy": {
+        "sala": "Gościniec na Trójce, Stare Miasto"
+      },
+      "notes": "",
+      "tasks": [
+        {
+          "id": "selekcja",
+          "label": "Selekcja zdjęć",
+          "done": false
+        },
+        {
+          "id": "obrobka",
+          "label": "Obróbka",
+          "done": false
+        },
+        {
+          "id": "pendrive",
+          "label": "Pendrive",
+          "done": false
+        },
+        {
+          "id": "fotoksiazka",
+          "label": "Fotoksiążka",
+          "done": false
+        },
+        {
+          "id": "zamowienie",
+          "label": "Zamówienie",
+          "done": false
+        },
+        {
+          "id": "oddanie",
+          "label": "Oddanie materiału",
+          "done": false
+        }
+      ]
+    },
+    {
+      "id": "mqo8rd6s3u5d",
+      "orderedItems": [],
+      "daySchedule": [],
+      "name": "Marta i Adrian",
+      "date": "2027-05-29",
+      "cat": "wesele",
+      "status": "",
+      "deliveryDeadline": "",
+      "customCat": "",
+      "price": 3100,
+      "deposit": 800,
+      "pakiet": "MINI\n- Reportaż 4h\n- Pendrive\n- 250 zdj.",
+      "adresy": {
+        "kosciol": "Skansen Bicz, Kapliczka na wodzie",
+        "pan": "-",
+        "pani": "—",
+        "sala": "BIZON, Skansen Bicz"
+      },
+      "notes": "",
+      "tasks": [
+        {
+          "id": "selekcja",
+          "label": "Selekcja zdjęć",
+          "done": false
+        },
+        {
+          "id": "obrobka",
+          "label": "Obróbka",
+          "done": false
+        },
+        {
+          "id": "sesja_plenerowa",
+          "label": "Sesja plenerowa",
+          "done": false
+        },
+        {
+          "id": "pendrive",
+          "label": "Pendrive",
+          "done": false
+        },
+        {
+          "id": "zamowienie",
+          "label": "Zamówienie",
+          "done": false
+        },
+        {
+          "id": "oddanie",
+          "label": "Oddanie materiału",
+          "done": false
+        }
+      ]
+    },
+    {
+      "id": "mqo8u4xrb0iu",
+      "orderedItems": [],
+      "daySchedule": [],
+      "name": "Przemek Przyjemski",
+      "date": "2027-06-06",
+      "cat": "komunia",
+      "status": "",
+      "deliveryDeadline": "",
+      "customCat": "",
+      "price": 1000,
+      "deposit": 200,
+      "pakiet": "- MIni sesja\n- Pendrive\n- Fotoksiążka 30x30cm",
+      "adresy": {
+        "kosciol": "-",
+        "sala": "Ciążeń, Małe co nie co"
+      },
+      "notes": "",
+      "tasks": [
+        {
+          "id": "selekcja",
+          "label": "Selekcja zdjęć",
+          "done": false
+        },
+        {
+          "id": "obrobka",
+          "label": "Obróbka",
+          "done": false
+        },
+        {
+          "id": "pendrive",
+          "label": "Pendrive",
+          "done": false
+        },
+        {
+          "id": "fotoksiazka",
+          "label": "Fotoksiążka",
+          "done": false
+        },
+        {
+          "id": "zamowienie",
+          "label": "Zamówienie",
+          "done": false
+        },
+        {
+          "id": "oddanie",
+          "label": "Oddanie materiału",
+          "done": false
+        }
+      ]
+    },
+    {
+      "id": "mqo8xp3urvpy",
+      "orderedItems": [],
+      "daySchedule": [],
+      "name": "Agnieszka i Kacper",
+      "date": "2027-07-17",
+      "cat": "wesele",
+      "status": "",
+      "deliveryDeadline": "",
+      "customCat": "",
+      "price": 4300,
+      "deposit": 800,
+      "pakiet": "Platinum\n- Książka PRO 30x30cm\n- Pendrive\n- Sesja inny dzień\n- Galeria 6 miesięcy",
+      "adresy": {
+        "kosciol": "NNMPW Pyzdry",
+        "pan": "-",
+        "pani": "—",
+        "sala": "Greys Polonia , Motelowa 1 62-330 Nekla"
+      },
+      "notes": "",
+      "tasks": [
+        {
+          "id": "selekcja",
+          "label": "Selekcja zdjęć",
+          "done": false
+        },
+        {
+          "id": "obrobka",
+          "label": "Obróbka",
+          "done": false
+        },
+        {
+          "id": "sesja_plenerowa",
+          "label": "Sesja plenerowa",
+          "done": false
+        },
+        {
+          "id": "pendrive",
+          "label": "Pendrive",
+          "done": false
+        },
+        {
+          "id": "fotoksiazka_prem",
+          "label": "Fotoksiążka Premium",
+          "done": false
+        },
+        {
+          "id": "fotoksiazka_bas",
+          "label": "Fotoksiążka Basic",
+          "done": false
+        },
+        {
+          "id": "zamowienie",
+          "label": "Zamówienie",
+          "done": false
+        },
+        {
+          "id": "oddanie",
+          "label": "Oddanie materiału",
+          "done": false
+        }
+      ]
+    },
+    {
+      "id": "mqo90ir7gai9",
+      "orderedItems": [],
+      "daySchedule": [],
+      "name": "Iwona Węglewska",
+      "date": "2027-07-24",
+      "cat": "urodziny",
+      "status": "",
+      "deliveryDeadline": "",
+      "customCat": "",
+      "price": 1400,
+      "deposit": 400,
+      "pakiet": "GOLD\n- Pendrive\n- Fotoksiążka 30x30cm",
+      "adresy": {
+        "sala": "Gwarek, Ślesin"
+      },
+      "notes": "",
+      "tasks": [
+        {
+          "id": "selekcja",
+          "label": "Selekcja zdjęć",
+          "done": false
+        },
+        {
+          "id": "obrobka",
+          "label": "Obróbka",
+          "done": false
+        },
+        {
+          "id": "pendrive",
+          "label": "Pendrive",
+          "done": false
+        },
+        {
+          "id": "fotoksiazka",
+          "label": "Fotoksiążka",
+          "done": false
+        },
+        {
+          "id": "zamowienie",
+          "label": "Zamówienie",
+          "done": false
+        },
+        {
+          "id": "oddanie",
+          "label": "Oddanie materiału",
+          "done": false
+        }
+      ]
+    },
+    {
+      "id": "mqo92smyqgaf",
+      "orderedItems": [],
+      "daySchedule": [],
+      "name": "Dominika i Damian",
+      "date": "2027-08-07",
+      "cat": "wesele",
+      "status": "",
+      "deliveryDeadline": "",
+      "customCat": "",
+      "price": 4300,
+      "deposit": 800,
+      "pakiet": "Platinum:\n- Fotoksiążka pro 30x30cm\n- Pendrive\n- Sesja innego dnia",
+      "adresy": {
+        "kosciol": "-",
+        "pan": "–",
+        "pani": "—",
+        "sala": "Sosnova, Salomonowi 11"
+      },
+      "notes": "",
+      "tasks": [
+        {
+          "id": "selekcja",
+          "label": "Selekcja zdjęć",
+          "done": false
+        },
+        {
+          "id": "obrobka",
+          "label": "Obróbka",
+          "done": false
+        },
+        {
+          "id": "sesja_plenerowa",
+          "label": "Sesja plenerowa",
+          "done": false
+        },
+        {
+          "id": "pendrive",
+          "label": "Pendrive",
+          "done": false
+        },
+        {
+          "id": "fotoksiazka_prem",
+          "label": "Fotoksiążka Premium",
+          "done": false
+        },
+        {
+          "id": "fotoksiazka_bas",
+          "label": "Fotoksiążka Basic",
+          "done": false
+        },
+        {
+          "id": "zamowienie",
+          "label": "Zamówienie",
+          "done": false
+        },
+        {
+          "id": "oddanie",
+          "label": "Oddanie materiału",
+          "done": false
+        }
+      ]
+    },
+    {
+      "id": "mqo96qktakix",
+      "orderedItems": [],
+      "daySchedule": [],
+      "name": "Weronika i Kacer",
+      "date": "2027-08-14",
+      "cat": "wesele",
+      "status": "",
+      "deliveryDeadline": "",
+      "customCat": "",
+      "price": 4300,
+      "deposit": 800,
+      "pakiet": "Platinum:\n- Książka pro 30x30cm\n- Pendrive\n- Sesja innego dnia",
+      "adresy": {
+        "kosciol": "Grodziec",
+        "pan": "Biskupice 57b, 62-580 Grodziec",
+        "pani": "Wierzbowa 12, 62-580 Grodziec",
+        "sala": "Madera, Królików"
+      },
+      "notes": "",
+      "tasks": [
+        {
+          "id": "selekcja",
+          "label": "Selekcja zdjęć",
+          "done": false
+        },
+        {
+          "id": "obrobka",
+          "label": "Obróbka",
+          "done": false
+        },
+        {
+          "id": "sesja_plenerowa",
+          "label": "Sesja plenerowa",
+          "done": false
+        },
+        {
+          "id": "pendrive",
+          "label": "Pendrive",
+          "done": false
+        },
+        {
+          "id": "fotoksiazka_prem",
+          "label": "Fotoksiążka Premium",
+          "done": false
+        },
+        {
+          "id": "zamowienie",
+          "label": "Zamówienie",
+          "done": false
+        },
+        {
+          "id": "oddanie",
+          "label": "Oddanie materiału",
+          "done": false
+        }
+      ]
+    },
+    {
+      "id": "mqo9c9vmjroi",
+      "orderedItems": [],
+      "daySchedule": [],
+      "name": "Edyta i Patryk",
+      "date": "2027-08-21",
+      "cat": "wesele",
+      "status": "",
+      "deliveryDeadline": "",
+      "customCat": "",
+      "price": 4300,
+      "deposit": 800,
+      "pakiet": "Platinum:\n- Książka pro 30x30cm\n- Pendrive\n- Sesja innego dnia\n- Galeria 6 miesięcy",
+      "adresy": {
+        "kosciol": "Zagórów",
+        "pan": "Babia 24, Zagórów",
+        "pani": "Babia 24, Zagórów",
+        "sala": "Nova, mała sala"
+      },
+      "notes": "",
+      "tasks": [
+        {
+          "id": "selekcja",
+          "label": "Selekcja zdjęć",
+          "done": false
+        },
+        {
+          "id": "obrobka",
+          "label": "Obróbka",
+          "done": false
+        },
+        {
+          "id": "sesja_plenerowa",
+          "label": "Sesja plenerowa",
+          "done": false
+        },
+        {
+          "id": "pendrive",
+          "label": "Pendrive",
+          "done": false
+        },
+        {
+          "id": "fotoksiazka_prem",
+          "label": "Fotoksiążka Premium",
+          "done": false
+        },
+        {
+          "id": "zamowienie",
+          "label": "Zamówienie",
+          "done": false
+        },
+        {
+          "id": "oddanie",
+          "label": "Oddanie materiału",
+          "done": false
+        }
+      ]
+    },
+    {
+      "id": "mqo9fjr3d3uo",
+      "orderedItems": [],
+      "daySchedule": [],
+      "name": "Katarzyna i Jan",
+      "date": "2027-09-11",
+      "cat": "wesele",
+      "status": "",
+      "deliveryDeadline": "",
+      "customCat": "",
+      "price": 3600,
+      "deposit": 800,
+      "pakiet": "GOLD\n- Książka Basic 30x30cm\n- Pendrive\n- Sesja innego dnia\n- Galeria 6 miesięcy",
+      "adresy": {
+        "kosciol": "Grabienice",
+        "pan": "Wojciechowo 16, Rzgów",
+        "pani": "Wojciechowo 16, Rzgów",
+        "sala": "-"
+      },
+      "notes": "",
+      "tasks": [
+        {
+          "id": "selekcja",
+          "label": "Selekcja zdjęć",
+          "done": false
+        },
+        {
+          "id": "obrobka",
+          "label": "Obróbka",
+          "done": false
+        },
+        {
+          "id": "sesja_plenerowa",
+          "label": "Sesja plenerowa",
+          "done": false
+        },
+        {
+          "id": "pendrive",
+          "label": "Pendrive",
+          "done": false
+        },
+        {
+          "id": "fotoksiazka_bas",
+          "label": "Fotoksiążka Basic",
+          "done": false
+        },
+        {
+          "id": "zamowienie",
+          "label": "Zamówienie",
+          "done": false
+        },
+        {
+          "id": "oddanie",
+          "label": "Oddanie materiału",
+          "done": false
+        }
+      ]
+    },
+    {
+      "id": "mqo9iqcai1hv",
+      "orderedItems": [],
+      "daySchedule": [],
+      "name": "Izabela i Marcin",
+      "date": "2027-09-25",
+      "cat": "wesele",
+      "status": "",
+      "deliveryDeadline": "",
+      "customCat": "",
+      "price": 4300,
+      "deposit": 800,
+      "pakiet": "Platinum:\n- Pendrive\n- Książka pro 30x30cm\n- Galeria 6 miesięcy\n- Sesja innego dnia",
+      "adresy": {
+        "kosciol": "Trąbczyn 37",
+        "pan": "Trąbczyn 51",
+        "pani": "Trąbczyn 51",
+        "sala": "Karsianka, Stare Miasto"
+      },
+      "notes": "",
+      "tasks": [
+        {
+          "id": "selekcja",
+          "label": "Selekcja zdjęć",
+          "done": false
+        },
+        {
+          "id": "obrobka",
+          "label": "Obróbka",
+          "done": false
+        },
+        {
+          "id": "sesja_plenerowa",
+          "label": "Sesja plenerowa",
+          "done": false
+        },
+        {
+          "id": "pendrive",
+          "label": "Pendrive",
+          "done": false
+        },
+        {
+          "id": "fotoksiazka_prem",
+          "label": "Fotoksiążka Premium",
+          "done": false
+        },
+        {
+          "id": "zamowienie",
+          "label": "Zamówienie",
+          "done": false
+        },
+        {
+          "id": "oddanie",
+          "label": "Oddanie materiału",
+          "done": false
+        }
+      ]
+    },
+    {
+      "id": "mqo9nnpc4f2b",
+      "orderedItems": [],
+      "daySchedule": [],
+      "name": "Marietta i Sebastian",
+      "date": "2028-08-19",
+      "cat": "wesele",
+      "status": "",
+      "deliveryDeadline": "",
+      "customCat": "",
+      "price": 4300,
+      "deposit": 800,
+      "pakiet": "GOLD:\n- Książka Basic 30x30cm\n- Pendrive \n- Galeria 6 miesięcy\n- Sesja innego dnia",
+      "adresy": {
+        "kosciol": "Kramsk",
+        "pan": "Lisewo 26",
+        "pani": "Stukol 2",
+        "sala": "Bella Vista, Sławoszewek"
+      },
+      "notes": "",
+      "tasks": [
+        {
+          "id": "selekcja",
+          "label": "Selekcja zdjęć",
+          "done": false
+        },
+        {
+          "id": "obrobka",
+          "label": "Obróbka",
+          "done": false
+        },
+        {
+          "id": "sesja_plenerowa",
+          "label": "Sesja plenerowa",
+          "done": false
+        },
+        {
+          "id": "pendrive",
+          "label": "Pendrive",
+          "done": false
+        },
+        {
+          "id": "fotoksiazka_prem",
+          "label": "Fotoksiążka Premium",
+          "done": false
+        },
+        {
+          "id": "fotoksiazka_bas",
+          "label": "Fotoksiążka Basic",
+          "done": false
+        },
+        {
+          "id": "zamowienie",
+          "label": "Zamówienie",
+          "done": false
+        },
+        {
+          "id": "oddanie",
+          "label": "Oddanie materiału",
+          "done": false
+        }
+      ]
+    },
+    {
+      "id": "mqoa8av432m7",
+      "orderedItems": [],
+      "daySchedule": [],
+      "name": "Magda i Przemysław",
+      "date": "2027-05-22",
+      "cat": "wesele",
+      "status": "",
+      "deliveryDeadline": "",
+      "customCat": "",
+      "price": 2000,
+      "deposit": 500,
+      "pakiet": "Indywidual:\n- reportaż 4h\n- 250 zdjęć\n- Pendrive\n- Książka Basic 30x30cm",
+      "adresy": {
+        "kosciol": "Kazimierów 33",
+        "pan": "-",
+        "pani": "–",
+        "sala": "Ranczo , Kazimierów"
+      },
+      "notes": "",
+      "tasks": [
+        {
+          "id": "selekcja",
+          "label": "Selekcja zdjęć",
+          "done": false
+        },
+        {
+          "id": "obrobka",
+          "label": "Obróbka",
+          "done": false
+        },
+        {
+          "id": "pendrive",
+          "label": "Pendrive",
+          "done": false
+        },
+        {
+          "id": "fotoksiazka_bas",
+          "label": "Fotoksiążka Basic",
+          "done": false
+        },
+        {
+          "id": "zamowienie",
+          "label": "Zamówienie",
+          "done": false
+        },
+        {
+          "id": "oddanie",
+          "label": "Oddanie materiału",
+          "done": false
+        }
+      ]
+    }
+  ],
+  "cols": [
+    {
+      "id": "edycja_st",
+      "name": "W edycji",
+      "icon": "🖥️"
+    },
+    {
+      "id": "wysylka",
+      "name": "Zamówione",
+      "icon": "📦"
+    },
+    {
+      "id": "odbior",
+      "name": "Do odbioru",
+      "icon": "🎁"
+    },
+    {
+      "id": "zakonczone",
+      "name": "Zakończone",
+      "icon": "✅"
+    }
+  ],
+  "exported": "2026-06-21T21:12:14.017Z",
+  "version": 4
+}
