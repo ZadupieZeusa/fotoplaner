@@ -34,8 +34,8 @@ html{background:#141414}
 /* Czarny pasek na samej górze — to on łapie rozmycie systemu, a belka stoi niżej. */
 :root{--top-gap:0px}
 .top-spacer{display:none;flex-shrink:0;height:var(--top-gap);background:#000}
-@media (display-mode: standalone){ :root{--top-gap:calc(env(safe-area-inset-top) + 44px)} .top-spacer{display:block} }
-html.standalone{--top-gap:calc(env(safe-area-inset-top) + 44px)}
+@media (display-mode: standalone){ :root{--top-gap:calc(env(safe-area-inset-top) + 22px)} .top-spacer{display:block} }
+html.standalone{--top-gap:calc(env(safe-area-inset-top) + 22px)}
 html.standalone .top-spacer{display:block}
 .month-popup{top:calc(50px + var(--top-gap)) !important}
 
@@ -481,7 +481,7 @@ html.standalone .top-spacer{display:block}
 <!-- ── TOPBAR ── -->
 <div class="top-spacer"></div>
 <header class="topbar">
-  <div class="logo">📷 <span>Foto</span>Planer <small style="font-size:9px;font-weight:500;color:var(--text3);letter-spacing:0" title="Wersja pliku">v15.10c</small></div>
+  <div class="logo">📷 <span>Foto</span>Planer <small style="font-size:9px;font-weight:500;color:var(--text3);letter-spacing:0" title="Wersja pliku">v15.10d</small></div>
   <nav class="main-nav">
     <button class="mnav active" onclick="setMainView('planer')">📅 Planer</button>
     <button class="mnav" onclick="setMainView('timeline')">📊 Timeline</button>
