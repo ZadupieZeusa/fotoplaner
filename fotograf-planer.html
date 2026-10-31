@@ -176,6 +176,8 @@ html.standalone .top-spacer{display:block}
 .card-dots{display:flex;gap:3px;flex-wrap:wrap}
 .card-cal-retry{margin-top:6px;width:100%;background:none;border:1px dashed var(--border2);border-radius:5px;color:var(--text3);font-size:10px;padding:3px 6px;cursor:pointer;font-family:inherit;text-align:center}
 .card-cal-retry:hover{border-color:var(--chrzest);color:var(--chrzest)}
+.card-cancel-btn{margin-top:6px;width:100%;background:none;border:1px solid #ff666644;border-radius:5px;color:#ff8888;font-size:10px;padding:3px 6px;cursor:pointer;font-family:inherit;text-align:center}
+.card-cancel-btn:hover{background:#ff66661a;border-color:#ff6666}
 .card-dot{width:6px;height:6px;border-radius:50%;border:1.5px solid var(--border2)}
 .card-dot.done{border-color:transparent}
 /* all events col */
@@ -481,7 +483,7 @@ html.standalone .top-spacer{display:block}
 <!-- ── TOPBAR ── -->
 <div class="top-spacer"></div>
 <header class="topbar">
-  <div class="logo">📷 <span>Foto</span>Planer <small style="font-size:9px;font-weight:500;color:var(--text3);letter-spacing:0" title="Wersja pliku">v15.10d</small></div>
+  <div class="logo">📷 <span>Foto</span>Planer <small style="font-size:9px;font-weight:500;color:var(--text3);letter-spacing:0" title="Wersja pliku">v31.10b</small></div>
   <nav class="main-nav">
     <button class="mnav active" onclick="setMainView('planer')">📅 Planer</button>
     <button class="mnav" onclick="setMainView('timeline')">📊 Timeline</button>
@@ -1778,6 +1780,7 @@ function makeCard(z){
     ${editDoneBtn}
     ${paidBtn}
     ${calRetryBtn}
+    ${!z.status?`<button class="card-cancel-btn" onclick="event.stopPropagation();cancelZlecenie('${z.id}')" title="Klient odwołał — zadatek zostaje w przychodzie">⛔ Anuluj zlecenie</button>`:''}
   `;
   card.addEventListener('dragstart',()=>{draggingId=z.id;setTimeout(()=>card.classList.add('dragging'),0);});
   card.addEventListener('dragend',()=>{card.classList.remove('dragging');draggingId=null;});
@@ -2112,7 +2115,7 @@ function renderDashboard(){
   const wszystkieId=new Set(zlecenia.map(z=>z.id));
   // Skasowane zlecenia nadal liczą się do finansów roku (migawka z archiwum).
   const goneYear=editArchive
-    .filter(a=>a.date&&a.date.startsWith(rok)&&!wszystkieId.has(a.id)&&((a.total||0)>0||(a.paid||0)>0))
+    .filter(a=>a.cancelled&&a.date&&a.date.startsWith(rok)&&!wszystkieId.has(a.id)&&(a.paid||0)>0)
     .map(a=>({id:a.id,name:a.name,cat:a.cat,customCat:a.customCat||'',date:a.date,
               editingFinished:a.editingFinished||'',status:'zakonczone',
               price:a.paid||0,deposit:a.paid||0,_usuniete:true}));
@@ -2122,8 +2125,10 @@ function renderDashboard(){
   const sumaD=l=>l.reduce((s,z)=>s+zDueAmount(z),0);       // jeszcze do zapłaty
 
   // Rok dzieli się na dwie rozłączne części: to, co przed Tobą, i to, co zrobione.
-  const przedToba=yearZ.filter(czekaNaWykonanie);
-  const wykonane =yearZ.filter(z=>!czekaNaWykonanie(z));
+  // Liczymy tylko istniejące zlecenia. Skasowane (np. odwołane z zatrzymanym zadatkiem)
+  // wchodzą wyłącznie do pieniędzy — nie są „zrobione" ani „do wykonania".
+  const przedToba=liveYear.filter(czekaNaWykonanie);
+  const wykonane =liveYear.filter(z=>!czekaNaWykonanie(z));
 
   const totalIncome=sumaK(yearZ), totalDeposits=sumaW(yearZ), totalRemaining=sumaD(yearZ);
   const przedKontrakty=sumaK(przedToba), przedZadatki=sumaW(przedToba), przedDoZaplaty=sumaD(przedToba);
@@ -2144,17 +2149,17 @@ function renderDashboard(){
 
   // Busiest month
   const monthlyCounts=Array(12).fill(0);
-  yearZ.forEach(z=>{const m=Number(z.date.slice(5,7))-1;monthlyCounts[m]++;});
+  liveYear.forEach(z=>{const m=Number(z.date.slice(5,7))-1;monthlyCounts[m]++;});
   const busiestM=monthlyCounts.indexOf(Math.max(...monthlyCounts));
 
   const body=document.getElementById('dash-body');
   body.innerHTML=`
     <div class="stat-grid">
       <div class="stat-card"><div class="stat-num" style="color:var(--wesele)">${przedToba.length}</div><div class="stat-lbl">Zlecenia do wykonania ${dashYear}</div>
-        <div class="stat-sub">${przedToba.length?odm(wykonane.length,'zlecenie już zrobione','zlecenia już zrobione','zleceń już zrobionych'):'wszystko wykonane'}</div></div>
+        <div class="stat-sub">${!przedToba.length?'wszystko wykonane':wykonane.length?odm(wykonane.length,'zlecenie już po terminie (wykonane)','zlecenia już po terminie (wykonane)','zleceń już po terminie (wykonanych)'):'żadne jeszcze się nie odbyło'}</div></div>
 
-      <div class="stat-card"><div class="stat-num" style="color:var(--roczek,#fbbf24)">${yearZ.length}</div><div class="stat-lbl">Zlecenia w skali roku</div>
-        <div class="stat-sub">łącznie w bazie: ${zlecenia.length}${zlecenia.length-visibleZ().length?` (w tym ${zlecenia.length-visibleZ().length} w archiwum)`:''}${goneYear.length?` · +${goneYear.length} skasowanych liczy się do finansów`:''}</div></div>
+      <div class="stat-card"><div class="stat-num" style="color:var(--roczek,#fbbf24)">${liveYear.length}</div><div class="stat-lbl">Zlecenia w skali roku</div>
+        <div class="stat-sub">łącznie w bazie: ${zlecenia.length}${zlecenia.length-visibleZ().length?` (w tym ${zlecenia.length-visibleZ().length} w archiwum)`:''}${goneYear.length?` · ${odm(goneYear.length,'anulowane','anulowane','anulowanych')} (nie liczone) — ${zl(goneYear.reduce((s,z)=>s+zTotal(z),0))} zadatków zostaje w przychodzie`:''}</div></div>
 
       <div class="stat-card"><div class="stat-num" style="color:var(--sesja)">${totalIncome?zl(totalIncome):'—'}</div><div class="stat-lbl">Całoroczny przychód ${dashYear}</div>
         <div class="stat-sub">${totalIncome?`suma pakietów, dodatków i opłat · zadatki ${zl(totalZadatki)}`:'brak zleceń'}</div></div>
@@ -2196,7 +2201,7 @@ function renderDashboard(){
       backgroundColor:CATS[ck].color+'bb',
       borderRadius:3,
     }));
-    yearZ.forEach(z=>{
+    liveYear.forEach(z=>{
       const mi=Number(z.date.slice(5,7))-1;
       const ci=catKeys.indexOf(z.cat);
       if(ci>=0)monthlyData[ci].data[mi]++;
@@ -2211,7 +2216,7 @@ function renderDashboard(){
     }
 
     // Category donut
-    const catCounts=catKeys.map(ck=>yearZ.filter(z=>z.cat===ck).length);
+    const catCounts=catKeys.map(ck=>liveYear.filter(z=>z.cat===ck).length);
     const ctx2=document.getElementById('chart-cat');
     if(ctx2){
       chartInstances.push(new Chart(ctx2,{
@@ -2650,11 +2655,30 @@ function saveZlecenie(){
   save();closeAddModal();renderAll();
 }
 
+// Anulacja: klient odwołał, zadatek zostaje u fotografa → liczy się do przychodu, karta znika.
+function cancelZlecenie(id){
+  const z=zlecenia.find(x=>x.id===id);if(!z)return;
+  const kwota=zPaidAmount(z);
+  const kw=Math.round(kwota).toLocaleString('pl')+' zł';
+  if(!confirm(`Anulować zlecenie „${z.name}"?\n\nKarta zniknie z tablicy i z Planera.\nZadatek ${kw} zostaje i liczy się do przychodu ${(z.date||'').slice(0,4)}.`))return;
+  archiveEditStats([z]);
+  const map=new Map(editArchive.map(a=>[a.id,a]));
+  const snap=map.get(z.id)||{id:z.id,name:z.name,cat:z.cat,customCat:z.customCat||'',date:z.date,startDate:z.date,editingFinished:''};
+  map.set(z.id,{...snap,total:kwota,paid:kwota,cancelled:true,cancelledAt:Date.now(),archivedAt:Date.now()});
+  editArchive=[...map.values()];saveEditArchive();
+  markDeleted([z.id]);
+  zlecenia=zlecenia.filter(x=>x.id!==z.id);
+  save();closeDetail();renderAll();
+  if(document.getElementById('view-dashboard')?.classList.contains('active'))renderDashboard();
+  showDriveToast(`⛔ Anulowano „${z.name}" — zadatek ${kw} w przychodzie`);
+  if(gdriveToken)gdriveSave();
+}
+
 async function deleteZlecenie(){
   if(!editingId)return;
   const _z=zlecenia.find(x=>x.id===editingId);
   const _n=(_z&&_z.name)?_z.name:'to zlecenie';
-  if(!confirm(`Usunąć zlecenie „${_n}"?\n\nZniknie z tablicy, kalendarza i osi czasu.`))return;
+  if(!confirm(`Usunąć zlecenie „${_n}"?\n\nZniknie z tablicy, kalendarza i osi czasu.\nZadatek NIE będzie liczony do przychodu.\n(Jeśli klient odwołał i zadatek zostaje u Ciebie — użyj „⛔ Anuluj zlecenie" na karcie.)`))return;
   if(!confirm(`NA PEWNO? Tej operacji nie można cofnąć.\n\n„${_n}" zostanie skasowane bezpowrotnie.\nJeśli chcesz je tylko schować — użyj archiwum (🗄).`))return;
   const z=zlecenia.find(x=>x.id===editingId);
   if(z){ archiveEditStats([z]); }   // terminu w Google Calendar NIE kasujemy — zostaje jako zapis
