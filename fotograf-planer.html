@@ -176,6 +176,8 @@ html.standalone .top-spacer{display:block}
 .card-dots{display:flex;gap:3px;flex-wrap:wrap}
 .card-cal-retry{margin-top:6px;width:100%;background:none;border:1px dashed var(--border2);border-radius:5px;color:var(--text3);font-size:10px;padding:3px 6px;cursor:pointer;font-family:inherit;text-align:center}
 .card-cal-retry:hover{border-color:var(--chrzest);color:var(--chrzest)}
+.card-finish-order-btn{margin-top:6px;width:100%;background:#4ade801a;border:1px solid #4ade8066;border-radius:6px;color:#4ade80;font-size:11px;font-weight:700;padding:5px 6px;cursor:pointer;font-family:inherit;text-align:center}
+.card-finish-order-btn:hover{background:#4ade8033}
 .card-cancel-btn{margin-top:6px;width:100%;background:none;border:1px solid #ff666644;border-radius:5px;color:#ff8888;font-size:10px;padding:3px 6px;cursor:pointer;font-family:inherit;text-align:center}
 .card-cancel-btn:hover{background:#ff66661a;border-color:#ff6666}
 .card-dot{width:6px;height:6px;border-radius:50%;border:1.5px solid var(--border2)}
@@ -483,7 +485,7 @@ html.standalone .top-spacer{display:block}
 <!-- ── TOPBAR ── -->
 <div class="top-spacer"></div>
 <header class="topbar">
-  <div class="logo">📷 <span>Foto</span>Planer <small style="font-size:9px;font-weight:500;color:var(--text3);letter-spacing:0" title="Wersja pliku">v31.10b</small></div>
+  <div class="logo">📷 <span>Foto</span>Planer <small style="font-size:9px;font-weight:500;color:var(--text3);letter-spacing:0" title="Wersja pliku">v31.10e</small></div>
   <nav class="main-nav">
     <button class="mnav active" onclick="setMainView('planer')">📅 Planer</button>
     <button class="mnav" onclick="setMainView('timeline')">📊 Timeline</button>
@@ -507,6 +509,7 @@ html.standalone .top-spacer{display:block}
       <div class="notif-list-el" id="notif-list"></div>
     </div>
   </div>
+  <button class="tb-btn" id="trash-btn" onclick="openArchive()" title="Archiwum — zakończone, anulowane i usunięte zlecenia">🗄 Archiwum</button>
   <div class="notif-wrap" id="drive-wrap">
     <button class="tb-btn" id="drive-btn" onclick="toggleDriveMenu()">☁ Drive</button>
     <div class="drive-menu" id="drive-menu" style="display:none">
@@ -1053,7 +1056,6 @@ const DEFAULT_COLS = [
   {id:'fotoksiazka',name:'Projekt fotoksiążki', icon:'📕'},
   {id:'wysylka',    name:'Zamówione',  icon:'📦'},
   {id:'odbior',     name:'Do odbioru', icon:'🎁'},
-  {id:'zakonczone', name:'Zakończone', icon:'✅'},
 ];
 
 let zlecenia = [], cols = [];
@@ -1247,6 +1249,32 @@ function saveEditArchive(){
   editArchive=editArchive.slice(-2000);
   localStorage.setItem('foto_edit_archive',JSON.stringify(editArchive));
 }
+// ══ KOSZ — usunięte i anulowane zlecenia z możliwością przywrócenia ══════════
+// Wpis: {id, z (pełna karta), kind:'deleted'|'cancelled', deletedAt, restoredAt?, purgedAt?}
+// Nic nie znika z listy fizycznie — przywrócenie/skasowanie to znacznik czasu,
+// dzięki temu scalanie między urządzeniami działa (nowszy znacznik wygrywa).
+let trash=[];
+try{ trash=JSON.parse(localStorage.getItem('foto_trash')||'[]'); }catch(e){ trash=[]; }
+function saveTrash(){ trash=trash.slice(-400); localStorage.setItem('foto_trash',JSON.stringify(trash)); }
+function trashStamp(t){ return Math.max(t.deletedAt||0,t.restoredAt||0,t.purgedAt||0); }
+function trashActive(){ return trash.filter(t=>!t.restoredAt&&!t.purgedAt).sort((a,b)=>(b.deletedAt||0)-(a.deletedAt||0)); }
+function putInTrash(z,kind){
+  trash=trash.filter(t=>t.id!==z.id);
+  trash.push({id:z.id,z:JSON.parse(JSON.stringify(z)),kind,deletedAt:Date.now()});
+  saveTrash();updateTrashBtn();
+}
+function mergeTrash(remote){
+  if(!Array.isArray(remote)||!remote.length)return 0;
+  const map=new Map(trash.map(t=>[t.id,t]));let n=0;
+  remote.forEach(t=>{ if(!t||!t.id)return; const prev=map.get(t.id); if(!prev||trashStamp(t)>trashStamp(prev)){map.set(t.id,t);n++;} });
+  if(n){trash=[...map.values()];saveTrash();updateTrashBtn();}
+  return n;
+}
+function updateTrashBtn(){
+  const b=document.getElementById('trash-badge');if(!b)return;
+  const n=trashActive().length;b.textContent=n;b.style.display=n?'':'none';
+}
+
 // Migawka każdego zlecenia z datą: historia obróbki ORAZ finanse.
 // Dzięki temu rok pamięta zarobek nawet po skasowaniu karty.
 function archiveEditStats(list){
@@ -1287,7 +1315,7 @@ function mergeEditArchive(remote){
 function editStatsSource(){
   const live=zlecenia.filter(z=>z.date&&z.editingFinished);
   const wszystkieId=new Set(zlecenia.map(z=>z.id));
-  const gone=editArchive.filter(a=>!wszystkieId.has(a.id)&&a.editingFinished).map(a=>({...a,_archived:true}));
+  const gone=editArchive.filter(a=>!wszystkieId.has(a.id)&&!a.restoredAs&&a.editingFinished).map(a=>({...a,_archived:true}));
   // startDate: dla wpisów sprzed tej wersji spada do daty zlecenia
   return [...live,...gone];
 }
@@ -1643,7 +1671,19 @@ function renderMp(){
 // ══ KANBAN ═════════════════════════════════════════════════════════════════
 let draggingId=null;
 
+// Kolumny „Zakończone" już nie ma — zakończone zlecenia idą prosto do 🗄 Archiwum.
+// Działa też na danych z Drive/importu ze starszych wersji.
+function migrateNoZakonczone(){
+  let ch=false;
+  if(cols.some(c=>c.id==='zakonczone')){cols=cols.filter(c=>c.id!=='zakonczone');saveCols();}
+  const t=Date.now();
+  zlecenia.forEach(z=>{if(z.status==='zakonczone'&&!z.archived){z.archived=true;z.archivedAt=t;ch=true;}});
+  if(ch)save();
+}
+function lastColId(){ return cols.length?cols[cols.length-1].id:''; }
+
 function renderKanban(){
+  migrateNoZakonczone();
   const c=document.getElementById('kanban-columns');c.innerHTML='';
   const arch=zlecenia.length-visibleZ().length;
   document.getElementById('kanban-count').textContent=visibleZ().length+' zleceń'+(arch?` · ${arch} w archiwum`:'');
@@ -1780,7 +1820,7 @@ function makeCard(z){
     ${editDoneBtn}
     ${paidBtn}
     ${calRetryBtn}
-    ${!z.status?`<button class="card-cancel-btn" onclick="event.stopPropagation();cancelZlecenie('${z.id}')" title="Klient odwołał — zadatek zostaje w przychodzie">⛔ Anuluj zlecenie</button>`:''}
+    ${z.status&&z.status===lastColId()?`<button class="card-finish-order-btn" onclick="event.stopPropagation();finishZlecenie('${z.id}')" title="Klient odebrał — zlecenie trafia do 🗄 Archiwum">✅ Zakończ zlecenie</button>`:''}
   `;
   card.addEventListener('dragstart',()=>{draggingId=z.id;setTimeout(()=>card.classList.add('dragging'),0);});
   card.addEventListener('dragend',()=>{card.classList.remove('dragging');draggingId=null;});
@@ -1824,52 +1864,67 @@ function clearZakonczone(){
 }
 
 // ── Okno archiwum ──────────────────────────────────────────────────────────
-function openArchive(){
+let archTab='zakonczone';
+function openArchive(tab){
+  if(tab)archTab=tab;
   let box=document.getElementById('modal-archive');
   if(!box){
     box=document.createElement('div');
     box.className='modal-overlay';box.id='modal-archive';
-    box.onclick=e=>{if(e.target===box)closeArchive();};
-    box.innerHTML='<div class="modal" style="max-width:620px" id="modal-archive-body"></div>';
+    box.innerHTML='<div class="modal" style="max-width:640px" id="modal-archive-body"></div>';
     document.body.appendChild(box);
   }
   renderArchive();
   box.classList.add('open');
 }
 function closeArchive(){document.getElementById('modal-archive')?.classList.remove('open');}
-
+function archRow(cat,z,lines,buttons){
+  return `<div style="display:flex;align-items:center;gap:10px;background:var(--surface2);border-radius:8px;padding:8px 10px;margin-bottom:6px">
+    <div style="width:4px;align-self:stretch;border-radius:2px;background:${cat.color||'#888'}"></div>
+    <div style="flex:1;min-width:0">
+      <div style="font-size:13px;font-weight:600">${esc(z.name||'(bez nazwy)')}</div>
+      <div style="font-size:11px;color:var(--text3)">${cat.icon||''} ${esc(getCatLabel(z))} · ${z.date?formatDate(z.date):'bez daty'}${zTotal(z)?` · ${zTotal(z).toLocaleString('pl')} zł`:''}</div>
+      ${lines}
+    </div>${buttons}</div>`;
+}
 function renderArchive(){
   const el=document.getElementById('modal-archive-body');if(!el)return;
-  const lista=zlecenia.filter(z=>z.archived).sort((a,b)=>(b.date||'').localeCompare(a.date||''));
-  const suma=lista.reduce((s,z)=>s+zTotal(z),0);
-  const doZaplaty=lista.reduce((s,z)=>s+Math.max(0,zTotal(z)-zPaidAmount(z)),0);
+  const zak=zlecenia.filter(z=>z.archived).sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+  const tr=trashActive();
+  const anul=tr.filter(t=>t.kind==='cancelled'), usun=tr.filter(t=>t.kind!=='cancelled');
+  const tabs=[['zakonczone','✅ Zakończone',zak.length],['anulowane','⛔ Anulowane',anul.length],['usuniete','🗑 Usunięte',usun.length]];
   let h=`<div class="modal-top">
-      <div class="modal-title">🗄 Archiwum zleceń <span style="font-size:12px;color:var(--text3);font-weight:400">(${lista.length})</span></div>
+      <div class="modal-title">🗄 Archiwum</div>
       <button class="modal-close" onclick="closeArchive()">✕</button>
     </div>
-    <div style="font-size:12px;color:var(--text2);margin-bottom:12px;line-height:1.6">
-      Zlecenia schowane z tablicy. <b>Nie są skasowane</b> — liczą się w Dashboardzie i w historii
-      czasu obróbki, a ich terminy zostają w Google Calendar.
-      ${lista.length?`<br>Razem: <b style="color:var(--sesja)">${suma.toLocaleString('pl')} zł</b>${doZaplaty?` · niezapłacone: <b style="color:var(--warn)">${doZaplaty.toLocaleString('pl')} zł</b>`:''}`:''}
-    </div>`;
-  if(!lista.length){
-    h+=`<div style="text-align:center;color:var(--text3);padding:30px 10px;font-size:13px">
-      Archiwum jest puste.<br><small>Kolumna „Zakończone" → 📥 chowa zlecenia tutaj.</small></div>`;
-  } else {
-    let rok=null;
-    lista.forEach(z=>{
-      const y=(z.date||'—').slice(0,4);
-      if(y!==rok){rok=y;h+=`<div class="detail-sec">${y}</div>`;}
-      const cat=CATS[z.cat]||{};
+    <div class="detail-tabs" style="margin-bottom:12px">${tabs.map(([k,l,n])=>`<button class="dtab ${archTab===k?'active':''}" onclick="archTab='${k}';renderArchive()">${l} <span style="opacity:.6">(${n})</span></button>`).join('')}</div>`;
+  const opis=t=>`<div style="font-size:12px;color:var(--text2);margin-bottom:12px;line-height:1.6">${t}</div>`;
+  const pusto=t=>`<div style="text-align:center;color:var(--text3);padding:30px 10px;font-size:13px">${t}</div>`;
+  if(archTab==='zakonczone'){
+    const suma=zak.reduce((s,z)=>s+zTotal(z),0);
+    const doZaplaty=zak.reduce((s,z)=>s+Math.max(0,zTotal(z)-zPaidAmount(z)),0);
+    h+=opis(`Zlecenia odebrane przez klienta („✅ Zakończ zlecenie"). Liczą się w Dashboardzie i w historii obróbki.
+      ${zak.length?`<br>Razem: <b style="color:var(--sesja)">${suma.toLocaleString('pl')} zł</b>${doZaplaty?` · niezapłacone: <b style="color:var(--warn)">${doZaplaty.toLocaleString('pl')} zł</b>`:''}`:''}`);
+    if(!zak.length)h+=pusto('Brak zakończonych zleceń.<br><small>Na karcie w kolumnie „'+esc((cols.find(c=>c.id===lastColId())||{}).name||'Do odbioru')+'" kliknij „✅ Zakończ zlecenie".</small>');
+    else{let rok=null;zak.forEach(z=>{
+      const y=(z.date||'—').slice(0,4);if(y!==rok){rok=y;h+=`<div class="detail-sec">${y}</div>`;}
       const reszta=Math.max(0,zTotal(z)-zPaidAmount(z));
-      h+=`<div style="display:flex;align-items:center;gap:10px;background:var(--surface2);border-radius:8px;padding:8px 10px;margin-bottom:6px">
-        <div style="width:4px;align-self:stretch;border-radius:2px;background:${cat.color||'#888'}"></div>
-        <div style="flex:1;min-width:0">
-          <div style="font-size:13px;font-weight:600">${esc(z.name)}</div>
-          <div style="font-size:11px;color:var(--text3)">${cat.icon||''} ${esc(getCatLabel(z))} · ${z.date?formatDate(z.date):'bez daty'}${zTotal(z)?` · ${zTotal(z).toLocaleString('pl')} zł`:''}${reszta?` · <span style="color:var(--warn)">do zapłaty ${reszta.toLocaleString('pl')} zł</span>`:''}</div>
-        </div>
-        <button class="btn-ghost" style="font-size:11px;padding:4px 10px;white-space:nowrap" onclick="restoreFromArchive('${z.id}')">↩ Przywróć</button>
-      </div>`;
+      h+=archRow(CATS[z.cat]||{},z,reszta?`<div style="font-size:11px;color:var(--warn)">do zapłaty ${reszta.toLocaleString('pl')} zł</div>`:'',
+        `<button class="btn-ghost" style="font-size:11px;padding:4px 10px;white-space:nowrap" onclick="restoreFromArchive('${z.id}')">↩ Przywróć</button>`);
+    });}
+  } else {
+    const lista=archTab==='anulowane'?anul:usun;
+    h+=opis(archTab==='anulowane'
+      ?'Klient odwołał. Karta zniknęła, a <b>zadatek liczy się do przychodu</b>. „↩ Przywróć" cofa anulację.'
+      :'Usunięte karty. <b>Nie liczą się nigdzie</b> — ani zlecenie, ani zadatek. „↩ Przywróć" wstawia kartę z powrotem.');
+    if(!lista.length)h+=pusto(archTab==='anulowane'?'Brak anulowanych zleceń.':'Brak usuniętych zleceń.');
+    else lista.forEach(t=>{
+      const z=t.z||{};
+      const kiedy=new Date(t.deletedAt).toLocaleDateString('pl',{day:'2-digit',month:'2-digit',year:'numeric'});
+      const tag=t.kind==='cancelled'?`anulowane ${kiedy} · zadatek ${Math.round(zPaidAmount(z)).toLocaleString('pl')} zł w przychodzie`:`usunięte ${kiedy}`;
+      h+=archRow(CATS[z.cat]||{},z,`<div style="font-size:11px;color:var(--text3)">${tag}</div>`,
+        `<button class="btn-ghost" style="font-size:11px;padding:4px 10px;white-space:nowrap" onclick="restoreFromTrash('${t.id}')">↩ Przywróć</button>
+         <button class="btn-ghost" style="font-size:11px;padding:4px 8px;color:var(--danger)" title="Usuń na stałe" onclick="purgeFromTrash('${t.id}')">✕</button>`);
     });
   }
   el.innerHTML=h;
@@ -1877,7 +1932,9 @@ function renderArchive(){
 
 function restoreFromArchive(id){
   const z=zlecenia.find(x=>x.id===id);if(!z)return;
+  if(!confirm(`Przywrócić „${z.name}" na tablicę?`))return;
   z.archived=false;delete z.archivedAt;
+  if(z.status==='zakonczone'||!cols.some(c=>c.id===z.status))z.status=lastColId();
   save();renderAll();renderArchive();
   showDriveToast('↩ Zlecenie wróciło na tablicę');
 }
@@ -2115,7 +2172,7 @@ function renderDashboard(){
   const wszystkieId=new Set(zlecenia.map(z=>z.id));
   // Skasowane zlecenia nadal liczą się do finansów roku (migawka z archiwum).
   const goneYear=editArchive
-    .filter(a=>a.cancelled&&a.date&&a.date.startsWith(rok)&&!wszystkieId.has(a.id)&&(a.paid||0)>0)
+    .filter(a=>a.cancelled&&!a.restoredAs&&a.date&&a.date.startsWith(rok)&&!wszystkieId.has(a.id)&&(a.paid||0)>0)
     .map(a=>({id:a.id,name:a.name,cat:a.cat,customCat:a.customCat||'',date:a.date,
               editingFinished:a.editingFinished||'',status:'zakonczone',
               price:a.paid||0,deposit:a.paid||0,_usuniete:true}));
@@ -2655,22 +2712,102 @@ function saveZlecenie(){
   save();closeAddModal();renderAll();
 }
 
+function finishZlecenie(id){
+  const z=zlecenia.find(x=>x.id===id);if(!z)return;
+  if(!confirm(`Zakończyć zlecenie „${z.name}"?\n\nKlient odebrał — karta zniknie z tablicy i trafi do 🗄 Archiwum (Zakończone).`))return;
+  if(!confirm(`NA PEWNO zakończyć „${z.name}"?\n\nW razie pomyłki przywrócisz je z 🗄 Archiwum w górnej belce.`))return;
+  z.status='zakonczone';z.archived=true;z.archivedAt=Date.now();
+  save();closeDetail();renderAll();
+  showDriveToast(`✅ Zakończono „${z.name}" — w Archiwum`);
+  if(gdriveToken)gdriveSave();
+}
+
+function openTrash(){ openArchive('usuniete'); }
+function closeTrash(){ closeArchive(); }
+function renderTrash(){ renderArchive(); }
+function _unusedOpenTrash(){
+  let box=document.getElementById('modal-trash');
+  if(!box){
+    box=document.createElement('div');box.className='modal-overlay';box.id='modal-trash';
+    box.innerHTML='<div class="modal" style="max-width:620px" id="modal-trash-body"></div>';
+    document.body.appendChild(box);
+  }
+  renderTrash();box.classList.add('open');
+}
+function closeTrash(){document.getElementById('modal-trash')?.classList.remove('open');}
+function renderTrash(){
+  const el=document.getElementById('modal-trash-body');if(!el)return;
+  const lista=trashActive();
+  let h=`<div class="modal-top">
+      <div class="modal-title">🗑 Kosz <span style="font-size:12px;color:var(--text3);font-weight:400">(${lista.length})</span></div>
+      <button class="modal-close" onclick="closeTrash()">✕</button>
+    </div>
+    <div style="font-size:12px;color:var(--text2);margin-bottom:12px;line-height:1.6">
+      Usunięte i anulowane zlecenia. <b>Usunięte</b> nie liczą się nigdzie. <b>Anulowane</b> — tylko ich zadatek liczy się do przychodu.
+      „↩ Przywróć" wstawia kartę z powrotem na tablicę (anulowana wraca jako zwykłe zlecenie).
+    </div>`;
+  if(!lista.length) h+=`<div style="text-align:center;color:var(--text3);padding:30px 10px;font-size:13px">Kosz jest pusty.</div>`;
+  else lista.forEach(t=>{
+    const z=t.z||{},cat=CATS[z.cat]||{};
+    const kiedy=new Date(t.deletedAt).toLocaleDateString('pl',{day:'2-digit',month:'2-digit',year:'numeric'});
+    const tag=t.kind==='cancelled'
+      ?`<span style="color:#ff8888">⛔ anulowane</span> · zadatek ${Math.round(zPaidAmount(z)).toLocaleString('pl')} zł w przychodzie`
+      :`<span style="color:var(--text3)">🗑 usunięte</span>`;
+    h+=`<div style="display:flex;align-items:center;gap:10px;background:var(--surface2);border-radius:8px;padding:8px 10px;margin-bottom:6px">
+      <div style="width:4px;align-self:stretch;border-radius:2px;background:${cat.color||'#888'}"></div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px;font-weight:600">${esc(z.name||'(bez nazwy)')}</div>
+        <div style="font-size:11px;color:var(--text3)">${cat.icon||''} ${esc(getCatLabel(z))} · ${z.date?formatDate(z.date):'bez daty'}${zTotal(z)?` · ${zTotal(z).toLocaleString('pl')} zł`:''}</div>
+        <div style="font-size:11px;color:var(--text3)">${tag} · ${kiedy}</div>
+      </div>
+      <button class="btn-ghost" style="font-size:11px;padding:4px 10px;white-space:nowrap" onclick="restoreFromTrash('${t.id}')">↩ Przywróć</button>
+      <button class="btn-ghost" style="font-size:11px;padding:4px 8px;color:var(--danger)" title="Usuń z kosza na stałe" onclick="purgeFromTrash('${t.id}')">✕</button>
+    </div>`;
+  });
+  el.innerHTML=h;
+}
+function restoreFromTrash(id){
+  const t=trash.find(x=>x.id===id);if(!t||!t.z)return;
+  const z=t.z;
+  if(!confirm(`Przywrócić „${z.name}" na tablicę?${t.kind==='cancelled'?'\n\nAnulacja zostanie cofnięta — zlecenie znowu liczy się normalnie.':''}`))return;
+  // nowe id: stare jest na liście skasowanych (synchronizacja), więc wracamy jako kopia
+  const nz={...JSON.parse(JSON.stringify(z)),id:uid(),archived:false,updatedAt:Date.now()};
+  const a=editArchive.find(x=>x.id===id);
+  if(a){Object.assign(a,{cancelled:false,restoredAs:nz.id,archivedAt:Date.now()});saveEditArchive();}
+  t.restoredAt=Date.now();saveTrash();updateTrashBtn();
+  zlecenia.push(nz);
+  save();renderAll();renderTrash();
+  if(document.getElementById('view-dashboard')?.classList.contains('active'))renderDashboard();
+  showDriveToast(`↩ Przywrócono „${z.name}"`);
+  if(gdriveToken)gdriveSave();
+}
+function purgeFromTrash(id){
+  const t=trash.find(x=>x.id===id);if(!t)return;
+  const n=t.z?.name||'to zlecenie';
+  if(!confirm(`Usunąć „${n}" z kosza na stałe?`))return;
+  if(!confirm(`NA PEWNO? „${n}" zniknie bezpowrotnie${t.kind==='cancelled'?' (zadatek nadal zostaje w przychodzie)':''}.`))return;
+  t.purgedAt=Date.now();delete t.z;saveTrash();updateTrashBtn();renderTrash();
+  if(gdriveToken)gdriveSave();
+}
+
 // Anulacja: klient odwołał, zadatek zostaje u fotografa → liczy się do przychodu, karta znika.
 function cancelZlecenie(id){
   const z=zlecenia.find(x=>x.id===id);if(!z)return;
   const kwota=zPaidAmount(z);
   const kw=Math.round(kwota).toLocaleString('pl')+' zł';
   if(!confirm(`Anulować zlecenie „${z.name}"?\n\nKarta zniknie z tablicy i z Planera.\nZadatek ${kw} zostaje i liczy się do przychodu ${(z.date||'').slice(0,4)}.`))return;
+  if(!confirm(`NA PEWNO anulować „${z.name}"?\n\nKarta trafi do 🗄 Archiwum (górna belka) — stamtąd możesz ją przywrócić.`))return;
   archiveEditStats([z]);
   const map=new Map(editArchive.map(a=>[a.id,a]));
   const snap=map.get(z.id)||{id:z.id,name:z.name,cat:z.cat,customCat:z.customCat||'',date:z.date,startDate:z.date,editingFinished:''};
   map.set(z.id,{...snap,total:kwota,paid:kwota,cancelled:true,cancelledAt:Date.now(),archivedAt:Date.now()});
   editArchive=[...map.values()];saveEditArchive();
+  putInTrash(z,'cancelled');
   markDeleted([z.id]);
   zlecenia=zlecenia.filter(x=>x.id!==z.id);
   save();closeDetail();renderAll();
   if(document.getElementById('view-dashboard')?.classList.contains('active'))renderDashboard();
-  showDriveToast(`⛔ Anulowano „${z.name}" — zadatek ${kw} w przychodzie`);
+  showDriveToast(`⛔ Anulowano „${z.name}" — zadatek ${kw} w przychodzie, karta w Archiwum`);
   if(gdriveToken)gdriveSave();
 }
 
@@ -2678,10 +2815,10 @@ async function deleteZlecenie(){
   if(!editingId)return;
   const _z=zlecenia.find(x=>x.id===editingId);
   const _n=(_z&&_z.name)?_z.name:'to zlecenie';
-  if(!confirm(`Usunąć zlecenie „${_n}"?\n\nZniknie z tablicy, kalendarza i osi czasu.\nZadatek NIE będzie liczony do przychodu.\n(Jeśli klient odwołał i zadatek zostaje u Ciebie — użyj „⛔ Anuluj zlecenie" na karcie.)`))return;
-  if(!confirm(`NA PEWNO? Tej operacji nie można cofnąć.\n\n„${_n}" zostanie skasowane bezpowrotnie.\nJeśli chcesz je tylko schować — użyj archiwum (🗄).`))return;
+  if(!confirm(`Usunąć zlecenie „${_n}"?\n\nZniknie z tablicy, kalendarza i osi czasu.\nZadatek NIE będzie liczony do przychodu.\n(Jeśli klient odwołał i zadatek zostaje u Ciebie — otwórz kartę i użyj „⛔ Anuluj zlecenie".)`))return;
+  if(!confirm(`NA PEWNO usunąć „${_n}"?\n\nKarta trafi do 🗄 Archiwum (górna belka) — stamtąd możesz ją przywrócić.`))return;
   const z=zlecenia.find(x=>x.id===editingId);
-  if(z){ archiveEditStats([z]); }   // terminu w Google Calendar NIE kasujemy — zostaje jako zapis
+  if(z){ archiveEditStats([z]); putInTrash(z,'deleted'); }   // terminu w Google Calendar NIE kasujemy — zostaje jako zapis
   markDeleted([editingId]);
   zlecenia=zlecenia.filter(x=>x.id!==editingId);
   save();closeAddModal();renderAll();
@@ -2756,6 +2893,8 @@ function renderDetailModal(id){
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
       <button class="card-paid-btn ${z.paid?'paid':''}" style="flex:1;margin-top:0" onclick="togglePaidDetail('${id}')">${z.paid?'✓ Zapłacone':'○ Oznacz jako zapłacone'}</button>
     </div>
+    ${z.status&&z.status===lastColId()?`<button class="card-finish-order-btn" style="margin:0 0 10px" onclick="finishZlecenie('${id}')">✅ Zakończ zlecenie — klient odebrał</button>`:''}
+    ${!z.status?`<button class="card-cancel-btn" style="margin:0 0 10px;font-size:11px;padding:5px 6px" onclick="cancelZlecenie('${id}')" title="Klient odwołał — zadatek zostaje w przychodzie">⛔ Anuluj zlecenie (zadatek zostaje)</button>`:''}
     ${z.status==='edycja_st'?`<div style="margin-bottom:10px;font-size:12px;display:flex;align-items:center;gap:6px;flex-wrap:wrap">
       ${z.editingFinished
         ?`<span style="color:#4ade80">✓ Zakończono edycję: <b>${formatDate(z.editingFinished)}</b></span>
@@ -3250,7 +3389,7 @@ function fireNotifications(){
 
 // ══ EXPORT / IMPORT ════════════════════════════════════════════════════════
 function exportData(){
-  const data={zlecenia,cols,todos,todosDeleted,editArchive,deleted:deletedIds,...settingsPayload(),exported:new Date().toISOString(),version:7};
+  const data={zlecenia,cols,todos,todosDeleted,editArchive,trash,deleted:deletedIds,...settingsPayload(),exported:new Date().toISOString(),version:7};
   const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
   const url=URL.createObjectURL(blob);
   const a=document.createElement('a');a.href=url;a.download=`fotoplaner-${todayISO()}.json`;a.click();URL.revokeObjectURL(url);
@@ -3272,7 +3411,7 @@ function importData(){
           todos=mergeTodosByNewest(todos,data.todos,new Set(todosDeleted)).list;
           localStorage.setItem('foto_todos',JSON.stringify(todos));
         }
-        mergeEditArchive(data.editArchive||[]);
+        mergeEditArchive(data.editArchive||[]);mergeTrash(data.trash||[]);
         if(applySettings(data,true)) refreshAllDeadlines();   // ustawienia z kopii
         syncSignatures();
         save();saveCols();renderAll();
@@ -3568,7 +3707,7 @@ async function gdriveSave(){
   try{
     await findDriveFile();
     const savedAt=Date.now();
-    const content=JSON.stringify({zlecenia,cols,deleted:deletedIds,todos,todosDeleted,editArchive,...settingsPayload(),exported:new Date(savedAt).toISOString(),savedAt,savedBy:{id:deviceId(),name:deviceName()},version:7},null,2);
+    const content=JSON.stringify({zlecenia,cols,deleted:deletedIds,todos,todosDeleted,editArchive,trash,...settingsPayload(),exported:new Date(savedAt).toISOString(),savedAt,savedBy:{id:deviceId(),name:deviceName()},version:7},null,2);
     const bnd='---fotoplaner---boundary---';
     const method=gdriveFileId?'PATCH':'POST';
     const metaObj=gdriveFileId?{name:GDRIVE_FNAME}:{name:GDRIVE_FNAME,parents:['appDataFolder']};
@@ -3667,6 +3806,7 @@ async function gdriveLoad(){
     todos=mergeTodosByNewest(todos,data.todos||[],new Set(todosDeleted)).list;
     localStorage.setItem('foto_todos',JSON.stringify(todos));
     mergeEditArchive(data.editArchive||[]);   // historia obróbki — zawsze suma zbiorów
+    mergeTrash(data.trash||[]);
     if(applySettings(data,!doMerge)) refreshAllDeadlines();   // ustawienia: nowsze wygrywają
     migratePackageFormat();migrateDropRedundantTasks();migrateAddons();
     save();renderAll();
@@ -3715,12 +3855,14 @@ async function gdriveAutoSync(opts={}){
     todos=tm.list;
     localStorage.setItem('foto_todos',JSON.stringify(todos));
     mergeEditArchive(data.editArchive||[]);
+    const trashAhead=trash.some(t=>{const r=(data.trash||[]).find(x=>x.id===t.id);return !r||trashStamp(t)>trashStamp(r);});
+    mergeTrash(data.trash||[]);
     const localSettingsNewer=Number(settingsAt||0)>Number(data.settingsAt||0);
     const ustZmienione=applySettings(data);
     if(ustZmienione) refreshAllDeadlines();
     localStorage.setItem('foto_known_drive_at',String(remoteAt));
     renderAll();
-    if(zlecenia.length>0&&(syncDirty||ahead||localSettingsNewer||(todos.length!==(data.todos||[]).length)))await gdriveSave();
+    if(zlecenia.length>0&&(syncDirty||ahead||trashAhead||localSettingsNewer||(todos.length!==(data.todos||[]).length)))await gdriveSave();
     const kto=data.savedBy?.name&&!fromMe?` z: ${data.savedBy.name}`:'';
     const kiedy=remoteAt?' ('+new Date(remoteAt).toLocaleString('pl',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})+')':'';
     if(added||updated||removed||tm.added||ustZmienione)
@@ -4119,7 +4261,7 @@ archiveEditStats(zlecenia);   // domknij historię obróbki dla danych sprzed te
 syncSignatures();   // punkt odniesienia dla wykrywania zmian w tej sesji
 initCal();
 initPWA();
-updateDriveBtn();
+updateDriveBtn();updateTrashBtn();
 if(typeof Notification!=='undefined'&&Notification.permission==='granted')fireNotifications();
 // Auto-reconnect Drive silently (no popup) if user already authorized before
 if(GDRIVE_CLIENT_ID){
