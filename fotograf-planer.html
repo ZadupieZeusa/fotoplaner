@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#141414">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,400;0,600;0,700;0,800;1,400&family=Montserrat:wght@400;700;800&family=Tenor+Sans&display=swap" rel="stylesheet">
 <script>if(navigator.standalone||matchMedia('(display-mode: standalone)').matches)document.documentElement.classList.add('standalone');</script>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -497,6 +499,10 @@ html.standalone .top-spacer{display:block}
 .of-edit .oe.sel{outline:1.5px solid #e84393;z-index:5}
 .of-edit .oe.editing{cursor:text;outline:1.5px solid #4ade80;touch-action:auto}
 .of-edit .oe-t[contenteditable=true]:focus{outline:1.5px solid #4ade80}
+.of-scale .opg{margin-bottom:24px;box-shadow:0 6px 30px #0008}
+.of-guide{position:absolute;background:#ff2d95;z-index:30;pointer-events:none}
+.of-zoom{display:flex;align-items:center;gap:2px}
+.of-zoom span{font-size:11px;color:var(--text2);min-width:40px;text-align:center}
 .of-handle{position:absolute;width:14px;height:14px;background:#e84393;border:2px solid #fff;border-radius:50%;z-index:20;touch-action:none;cursor:nwse-resize}
 @media(max-width:900px){#view-oferty{flex-direction:column-reverse}.of-side{width:auto;max-height:38vh;border-right:none;border-top:1px solid var(--border)}}
 </style>
@@ -518,13 +524,14 @@ html.standalone .top-spacer{display:block}
 <!-- ── TOPBAR ── -->
 <div class="top-spacer"></div>
 <header class="topbar">
-  <div class="logo">📷 <span>Foto</span>Planer <small style="font-size:9px;font-weight:500;color:var(--text3);letter-spacing:0" title="Wersja pliku">v1.12</small></div>
+  <div class="logo">📷 <span>Foto</span>Planer <small style="font-size:9px;font-weight:500;color:var(--text3);letter-spacing:0" title="Wersja pliku">v1.14</small></div>
   <nav class="main-nav">
     <button class="mnav active" onclick="setMainView('planer')">📅 Planer</button>
     <button class="mnav" onclick="setMainView('timeline')">📊 Timeline</button>
     <button class="mnav" onclick="setMainView('dashboard')">📈 Dashboard</button>
     <button class="mnav" onclick="setMainView('rok')">🗓️ Rok</button>
     <button class="mnav" onclick="setMainView('oferty')">📄 Oferty</button>
+    <button class="mnav" onclick="setMainView('umowy')">📝 Umowy</button>
   </nav>
   <div class="month-nav" id="month-nav-area">
     <button class="month-arrow" onclick="shiftMonth(-1)">‹</button>
@@ -663,14 +670,17 @@ html.standalone .top-spacer{display:block}
     <div class="of-side" id="of-side"></div>
     <div class="of-main">
       <div class="of-toolbar">
+        <div class="dash-title" id="of-title" style="margin-right:2px">📄 Oferty</div>
         <select class="form-input" id="of-pick" style="width:auto;min-width:170px;font-size:12px;padding:6px 8px" onchange="ofSelect(this.value)"></select>
         <button class="btn-ghost" onclick="ofNew()">+ Nowa</button>
         <button class="btn-ghost" onclick="ofDuplicate()">⧉ Duplikuj</button>
         <button class="btn-ghost" onclick="ofUndo()" title="Cofnij ostatnią zmianę">↶ Cofnij</button>
+        <div class="of-zoom"><button class="btn-ghost" onclick="ofZoomStep(1/1.2)" title="Oddal (Cmd/Ctrl −)">−</button><span id="of-zoom-lbl">100%</span><button class="btn-ghost" onclick="ofZoomStep(1.2)" title="Przybliż (Cmd/Ctrl +)">+</button><button class="btn-ghost" onclick="ofSetZoom('fit')" title="Dopasuj (Cmd/Ctrl 0)">⤢</button></div>
         <div class="tb-spacer"></div>
-        <button class="btn-ghost" onclick="ofExport('png')">⬇ PNG</button>
-        <button class="btn-ghost" onclick="ofExport('jpeg')">⬇ JPEG</button>
-        <button class="btn-primary" style="flex:0 0 auto;font-size:12px;padding:6px 12px" onclick="ofExport('share')">📤 Udostępnij</button>
+        <button class="btn-ghost" onclick="ofExport('pdf')">⬇ PDF</button>
+        <button class="btn-ghost of-img-exp" onclick="ofExport('png')">⬇ PNG</button>
+        <button class="btn-ghost of-img-exp" onclick="ofExport('jpeg')">⬇ JPEG</button>
+        <button class="btn-primary" style="flex:0 0 auto;font-size:12px;padding:6px 12px" onclick="ofExport(ofMode==='umowa'?'pdfshare':'share')">📤 Udostępnij</button>
       </div>
       <div class="of-stage" id="of-stage"><div class="of-scale" id="of-scale"></div></div>
     </div>
@@ -1548,15 +1558,15 @@ function setMainView(v) {
   mainView = v;
   document.querySelectorAll('.main-view').forEach(el=>el.classList.remove('active'));
   document.querySelectorAll('.mnav').forEach(el=>el.classList.remove('active'));
-  document.getElementById('view-'+v).classList.add('active');
-  document.querySelectorAll('.mnav')[['planer','timeline','dashboard','rok','oferty'].indexOf(v)].classList.add('active');
+  document.getElementById('view-'+(v==='umowy'?'oferty':v)).classList.add('active');
+  document.querySelectorAll('.mnav')[['planer','timeline','dashboard','rok','oferty','umowy'].indexOf(v)].classList.add('active');
   document.getElementById('month-nav-area').style.display = v==='planer' ? '' : 'none';
   document.getElementById('cal-view-toggle').style.display = v==='planer' ? '' : 'none';
   if(v==='timeline') renderTimeline();
   if(v==='dashboard') renderDashboard();
   if(v==='rok') renderYear();
-  if(v==='oferty') renderOffers();
-  const fab=document.querySelector('.qa-fab');if(fab)fab.style.display=v==='oferty'?'none':'';
+  if(v==='oferty'||v==='umowy') ofSetMode(v==='umowy'?'umowa':'oferta');
+  const fab=document.querySelector('.qa-fab');if(fab)fab.style.display=(v==='oferty'||v==='umowy')?'none':'';
 }
 
 // ══ CALENDAR ═══════════════════════════════════════════════════════════════
@@ -4315,14 +4325,20 @@ async function installPWA(){
 let offers=[];
 try{offers=JSON.parse(localStorage.getItem('foto_offers')||'[]');}catch(e){offers=[];}
 if(!Array.isArray(offers))offers=[];
-let ofCurId=localStorage.getItem('foto_offer_cur')||'';
-let ofSelIdx=-1, ofEditing=false, ofCropMode=false, ofK=1;
+let ofMode='oferta';                    // 'oferta' | 'umowa' — ten sam edytor, osobne listy
+const ofCurIds={oferta:localStorage.getItem('foto_offer_cur')||'',umowa:localStorage.getItem('foto_umowa_cur')||''};
+let ofCurId=ofCurIds.oferta;
+let ofSelIdx=-1, ofEditing=false, ofCropMode=false, ofK=1, ofCurPage=0;
+let ofZoom='fit';                        // 'fit' albo liczba (skala)
+let ofSnapOn=localStorage.getItem('foto_of_snap')!=='0';
 const ofUndoStack=[];
 function saveOffersNow(){ try{localStorage.setItem('foto_offers',JSON.stringify(offers));}catch(e){showDriveToast('Za mało miejsca w przeglądarce na oferty',true);} markDirty(); scheduleDriveSave(); }
 let _ofSaveT=null;
 function saveOffers(){ clearTimeout(_ofSaveT); _ofSaveT=setTimeout(saveOffersNow,600); }
-function ofList(){ return offers.filter(o=>!o.deleted&&Array.isArray(o.els)).sort((a,b)=>(a.name||'').localeCompare(b.name||'','pl',{numeric:true})); }
-function ofCur(){ return offers.find(o=>o.id===ofCurId&&!o.deleted&&Array.isArray(o.els))||ofList()[0]||null; }
+function ofKind(o){ return o.kind||'oferta'; }
+function ofList(){ return offers.filter(o=>!o.deleted&&Array.isArray(o.els)&&ofKind(o)===ofMode).sort((a,b)=>((a.order??1e9)-(b.order??1e9))||(a.name||'').localeCompare(b.name||'','pl',{numeric:true})); }
+function ofCur(){ return offers.find(o=>o.id===ofCurId&&!o.deleted&&Array.isArray(o.els)&&ofKind(o)===ofMode)||ofList()[0]||null; }
+function ofPages(o){ return Math.max(1,o&&o.pages||1); }
 function ofSnap(){ const o=ofCur();if(!o)return; ofUndoStack.push({id:o.id,data:JSON.stringify(o)}); if(ofUndoStack.length>40)ofUndoStack.shift(); }
 function ofTouch(o){ o.updatedAt=Date.now(); saveOffers(); }
 function ofUndo(){
@@ -4409,8 +4425,9 @@ function ofElHtml(e,i,url){
   }
   return '';
 }
-function offerHtml(o,urlOf){
-  return `<div class="opg" style="width:${o.w||595}px;height:${o.h||842}px;background:${o.bg||'#dfe0e2'}">${(o.els||[]).map((e,i)=>ofElHtml(e,i,e.img?urlOf(e.img):'')).join('')}</div>`;
+function offerHtml(o,urlOf,pg){
+  pg=pg||0;
+  return `<div class="opg" data-pg="${pg}" style="width:${o.w||595}px;height:${o.h||842}px;background:${o.bg||'#dfe0e2'}">${(o.els||[]).map((e,i)=>(e.pg||0)===pg?ofElHtml(e,i,e.img?urlOf(e.img):''):'').join('')}</div>`;
 }
 function renderOfPick(){
   const sel=document.getElementById('of-pick');if(!sel)return;const cur=ofCur();
@@ -4425,22 +4442,44 @@ function renderOffers(){
 function renderOfPage(){
   const box=document.getElementById('of-scale');if(!box)return;
   const o=ofCur();
-  if(!o){box.innerHTML='<div class="of-hint" style="padding:40px;color:#aaa">Brak ofert. Kliknij „+ Nowa" albo zaimportuj oferty (panel po lewej).</div>';box.style.transform='';return;}
-  box.innerHTML=offerHtml(o,ofImgSync);
-  const pg=box.firstElementChild;pg.classList.add('of-edit');
+  const lbl=document.getElementById('of-zoom-lbl');
+  if(!o){box.innerHTML=`<div class="of-hint" style="padding:40px;color:#aaa">${ofMode==='umowa'?'Brak umów. Kliknij „+ Nowa" — możesz zacząć od wzoru umowy.':'Brak ofert. Kliknij „+ Nowa" albo zaimportuj oferty (panel po lewej).'}</div>`;box.style.transform='';box.style.width='';box.style.height='';return;}
+  let h='';for(let p=0;p<ofPages(o);p++)h+=offerHtml(o,ofImgSync,p);
+  box.innerHTML=h;
+  box.querySelectorAll('.opg').forEach(pg=>{pg.classList.add('of-edit');ofBindPage(pg);});
   ofFit();
-  if(ofSelIdx>=0){const el=pg.querySelector(`.oe[data-i="${ofSelIdx}"]`);if(el){el.classList.add('sel');ofAddHandle(el);}else ofSelIdx=-1;}
-  ofBindPage(pg);
+  if(ofSelIdx>=0){const el=box.querySelector(`.oe[data-i="${ofSelIdx}"]`);if(el){el.classList.add('sel');ofAddHandle(el);}else ofSelIdx=-1;}
 }
 function ofFit(){
   const st=document.getElementById('of-stage'),sc=document.getElementById('of-scale'),o=ofCur();if(!st||!sc||!o)return;
-  const W=o.w||595,H=o.h||842;
-  ofK=Math.max(0.35,Math.min(2,(st.clientWidth-36)/W,(st.clientHeight-36)/H));
-  sc.style.transform=`scale(${ofK})`;sc.style.width=W+'px';sc.style.height=H+'px';
-  sc.style.marginBottom=(H*ofK-H)+'px';sc.style.marginRight=(W*ofK-W)+'px';
+  const W=o.w||595,H=o.h||842,n=ofPages(o),GAP=24,TH=n*H+(n-1)*GAP;
+  const fit=Math.max(0.3,Math.min(2,(st.clientWidth-36)/W,n>1?9:(st.clientHeight-36)/H));
+  ofK=ofZoom==='fit'?fit:ofZoom;
+  sc.style.transform=`scale(${ofK})`;sc.style.width=W+'px';sc.style.height=TH+'px';
+  sc.style.marginBottom=(TH*ofK-TH)+'px';sc.style.marginRight=(W*ofK-W)+'px';
   sc.style.marginLeft=Math.max(0,(st.clientWidth-36-W*ofK)/2)+'px';
+  const lbl=document.getElementById('of-zoom-lbl');if(lbl)lbl.textContent=Math.round(ofK*100)+'%';
 }
+function ofSetZoom(z){
+  const st=document.getElementById('of-stage');
+  const cx=st?(st.scrollLeft+st.clientWidth/2)/ofK:0, cy=st?(st.scrollTop+st.clientHeight/2)/ofK:0;
+  ofZoom=z==='fit'?'fit':Math.max(0.3,Math.min(4,z));
+  ofFit();
+  if(st&&ofZoom!=='fit'){st.scrollLeft=cx*ofK-st.clientWidth/2;st.scrollTop=cy*ofK-st.clientHeight/2;}
+}
+function ofZoomStep(f){ ofSetZoom(ofK*f); }
 window.addEventListener('resize',()=>{if(document.getElementById('view-oferty')?.classList.contains('active')&&!ofEditing)renderOfPage();});
+(function ofZoomGestures(){
+  const st=()=>document.getElementById('of-stage');
+  document.addEventListener('wheel',ev=>{
+    if(!(ev.ctrlKey||ev.metaKey))return;const s=st();if(!s||!s.contains(ev.target))return;
+    ev.preventDefault();ofSetZoom(ofK*(ev.deltaY<0?1.1:1/1.1));
+  },{passive:false});
+  // szczypanie na iPadzie (Safari: gesturestart/change)
+  let g0=1;
+  document.addEventListener('gesturestart',ev=>{const s=st();if(s&&s.contains(ev.target)){ev.preventDefault();g0=ofK;}},{passive:false});
+  document.addEventListener('gesturechange',ev=>{const s=st();if(s&&s.contains(ev.target)){ev.preventDefault();ofSetZoom(g0*ev.scale);}},{passive:false});
+})();
 
 // ── zaznaczanie, przesuwanie, zmiana rozmiaru ──
 function ofAddHandle(el){
@@ -4460,7 +4499,7 @@ function ofPointerDown(ev){
   const o=ofCur();if(!o)return;
   const handle=ev.target.closest('.of-handle');
   const el=ev.target.closest('.oe');
-  if(!el&&!handle){ if(ofSelIdx!==-1){ofSelIdx=-1;renderOfPage();renderOfSide();} return; }
+  if(!el&&!handle){ const pgc=ev.target.closest('.opg'); if(pgc)ofCurPage=+pgc.dataset.pg; if(ofSelIdx!==-1){ofSelIdx=-1;renderOfPage();renderOfSide();} return; }
   const i=handle?ofSelIdx:+el.dataset.i;const e=o.els[i];if(!e)return;
   // dwuklik / podwójne stuknięcie w tekst = edycja
   const now=Date.now();
@@ -4469,7 +4508,8 @@ function ofPointerDown(ev){
   ev.preventDefault();
   const wasSel=(i===ofSelIdx);
   if(i!==ofSelIdx){ofSelIdx=i;renderOfSide();}
-  ofDrag={i,mode:handle?'resize':(ofCropMode&&e.t==='img'?'crop':'move'),sx:ev.clientX,sy:ev.clientY,
+  const pgEl0=(el||handle).closest('.opg');ofCurPage=+(pgEl0?.dataset.pg||0);
+  ofDrag={i,mode:handle?'resize':(ofCropMode&&e.t==='img'?'crop':'move'),sx:ev.clientX,sy:ev.clientY,snap:ofSnapTargets(i,pgEl0),
     o:{x:e.x,y:e.y,w:e.w,h:e.h,ix:e.ix||0,iy:e.iy||0,iw:e.iw,ih:e.ih},moved:false,
     // drugie stuknięcie w zaznaczony tekst (bez przesuwania) = edycja — iPad nie ma dwukliku
     tapEdit:wasSel&&!handle&&e.t==='text'&&ev.pointerType!=='mouse'};
@@ -4485,7 +4525,20 @@ function ofPointerMove(ev){
   const dx=(ev.clientX-ofDrag.sx)/ofK, dy=(ev.clientY-ofDrag.sy)/ofK;
   if(!ofDrag.moved&&Math.abs(dx)+Math.abs(dy)<1.5)return;
   if(!ofDrag.moved){ofSnap();ofDrag.moved=true;}
-  if(ofDrag.mode==='move'){ e.x=Math.round((ofDrag.o.x+dx)*2)/2; e.y=Math.round((ofDrag.o.y+dy)*2)/2; }
+  if(ofDrag.mode==='move'){
+    let nx=ofDrag.o.x+dx, ny=ofDrag.o.y+dy;
+    const sn=ofDrag.snap; let gx=null,gy=null;
+    if(sn&&ofSnapOn&&!ev.altKey){
+      const thr=6/ofK, ox=nx-ofDrag.o.x, oy=ny-ofDrag.o.y;
+      const me=sn.me, mx=[me.l+ox,me.l+me.w/2+ox,me.l+me.w+ox], my=[me.t+oy,me.t+me.h/2+oy,me.t+me.h+oy];
+      let best=thr;mx.forEach(v=>sn.xs.forEach(t=>{const d=Math.abs(t-v);if(d<best){best=d;gx=t;}}));
+      if(gx!==null){ let bd=1e9,adj=0; mx.forEach(v=>{const d=Math.abs(gx-v);if(d<bd){bd=d;adj=gx-v;}}); nx=ofDrag.o.x+ox+adj; }
+      best=thr;my.forEach(v=>sn.ys.forEach(t=>{const d=Math.abs(t-v);if(d<best){best=d;gy=t;}}));
+      if(gy!==null){ let bd=1e9,adj=0; my.forEach(v=>{const d=Math.abs(gy-v);if(d<bd){bd=d;adj=gy-v;}}); ny=ofDrag.o.y+oy+adj; }
+    }
+    e.x=Math.round(nx*2)/2; e.y=Math.round(ny*2)/2;
+    ofShowGuides(sn&&sn.pg,gx,gy);
+  }
   else if(ofDrag.mode==='crop'){
     if(!e.iw){e.iw=e.w;e.ih=e.h;e.ix=0;e.iy=0;ofDrag.o.ix=0;ofDrag.o.iy=0;}
     e.ix=Math.min(0,Math.max(e.w-e.iw,(ofDrag.o.ix||0)+dx)); e.iy=Math.min(0,Math.max(e.h-e.ih,(ofDrag.o.iy||0)+dy));
@@ -4502,8 +4555,26 @@ function ofPointerMove(ev){
     const n=tmp.firstElementChild;n.classList.add('sel');el.replaceWith(n);
     pg.querySelectorAll('.of-handle').forEach(x=>x.remove());ofAddHandle(n); }
 }
+function ofSnapTargets(i,pg){
+  if(!pg)return null;
+  const pr=pg.getBoundingClientRect(), k=ofK;
+  const rect=el=>{const r=el.getBoundingClientRect();return {l:(r.left-pr.left)/k,t:(r.top-pr.top)/k,w:r.width/k,h:r.height/k};};
+  const meEl=pg.querySelector(`.oe[data-i="${i}"]`);if(!meEl)return null;
+  const o=ofCur(),W=o.w||595,H=o.h||842;
+  const xs=[0,W/2,W],ys=[0,H/2,H];
+  pg.querySelectorAll('.oe').forEach(el=>{ if(el===meEl)return; const r=rect(el); xs.push(r.l,r.l+r.w/2,r.l+r.w); ys.push(r.t,r.t+r.h/2,r.t+r.h); });
+  return {pg,xs,ys,me:rect(meEl)};
+}
+function ofShowGuides(pg,gx,gy){
+  document.querySelectorAll('#of-scale .of-guide').forEach(x=>x.remove());
+  if(!pg)return;
+  const lw=Math.max(0.5,1/ofK);
+  if(gx!==null&&gx!==undefined){const g=document.createElement('div');g.className='of-guide';g.style.cssText=`left:${gx-lw/2}px;top:0;width:${lw}px;height:100%`;pg.appendChild(g);}
+  if(gy!==null&&gy!==undefined){const g=document.createElement('div');g.className='of-guide';g.style.cssText=`top:${gy-lw/2}px;left:0;height:${lw}px;width:100%`;pg.appendChild(g);}
+}
 function ofPointerUp(){
   document.removeEventListener('pointermove',ofPointerMove);
+  ofShowGuides(null);
   const d=ofDrag;ofDrag=null;
   if(d&&d.moved){ofTouch(ofCur());renderOfSide();}
   else if(d&&d.tapEdit) ofStartEdit(d.i);
@@ -4537,26 +4608,85 @@ function ofCmd(cmd,val){ // na zaznaczonym tekście w trakcie edycji
   document.querySelector('#of-scale .oe.editing')?.focus();
   document.execCommand(cmd,false,val);return true;
 }
-function ofScaleFont(f){
-  const e=ofSel();if(!e||e.t!=='text')return;
+const OF_FONTS=[
+  ['Open Sans',"'Open Sans',Helvetica,Arial,sans-serif"],['Montserrat',"Montserrat,Helvetica,Arial,sans-serif"],['Tenor Sans',"'Tenor Sans',Optima,Helvetica,sans-serif"],
+  ['Helvetica',"Helvetica,'Helvetica Neue',Arial,sans-serif"],['Helvetica Neue',"'Helvetica Neue',Helvetica,Arial,sans-serif"],
+  ['Arial',"Arial,Helvetica,sans-serif"],['Futura',"Futura,'Century Gothic','Trebuchet MS',Arial,sans-serif"],
+  ['Avenir Next',"'Avenir Next',Avenir,'Segoe UI',sans-serif"],['Gill Sans',"'Gill Sans','Gill Sans MT',Calibri,sans-serif"],
+  ['Optima',"Optima,Candara,sans-serif"],['Calibri',"Calibri,Carlito,Arial,sans-serif"],
+  ['Georgia',"Georgia,serif"],['Times New Roman',"'Times New Roman',Times,serif"],
+  ['Baskerville',"Baskerville,'Baskerville Old Face',Georgia,serif"],['Didot',"Didot,'Bodoni 72','Bodoni MT',serif"],
+  ['Palatino',"Palatino,'Palatino Linotype',serif"],['Snell Roundhand',"'Snell Roundhand','Apple Chancery',cursive"]];
+function ofFontLabel(fam){ const f=(fam||'').split(',')[0].replace(/["']/g,'').trim().toLowerCase(); const m=OF_FONTS.find(x=>x[0].toLowerCase()===f); return m?m[0]:(f?f:''); }
+let _ofRange=null;
+function ofSaveRange(){ const el=document.querySelector('#of-scale .oe.editing'); const s=window.getSelection(); if(el&&s.rangeCount&&el.contains(s.anchorNode))_ofRange=s.getRangeAt(0).cloneRange(); }
+function ofRestoreRange(){ const el=document.querySelector('#of-scale .oe.editing'); if(!el)return null; el.focus(); if(_ofRange){const s=window.getSelection();s.removeAllRanges();s.addRange(_ofRange);} return el; }
+document.addEventListener('selectionchange',()=>{ if(ofEditing){ofSaveRange();clearTimeout(ofSaveRange._t);ofSaveRange._t=setTimeout(ofSyncFontUI,80);} });
+// Bieżący styl: przy kursorze (w trakcie edycji) albo pierwszy fragment zaznaczonego tekstu.
+function ofCurStyle(){
+  let node=null;
+  if(ofEditing&&_ofRange){ node=_ofRange.startContainer; if(node.nodeType===3)node=node.parentElement; }
+  if(!node&&ofSelIdx>=0){ node=document.querySelector(`#of-scale .oe[data-i="${ofSelIdx}"] span`)||document.querySelector(`#of-scale .oe[data-i="${ofSelIdx}"]`); }
+  if(!node)return null;
+  const cs=getComputedStyle(node);
+  return {size:Math.round(parseFloat(cs.fontSize)*10)/10,fam:ofFontLabel(cs.fontFamily),bold:(parseInt(cs.fontWeight)||400)>=600,italic:cs.fontStyle==='italic',underline:(cs.textDecorationLine||'').includes('underline'),color:cs.color};
+}
+function ofSyncFontUI(){
+  const st=ofCurStyle();if(!st)return;
+  const fs=document.getElementById('of-fs');if(fs&&document.activeElement!==fs)fs.value=st.size;
+  const ff=document.getElementById('of-ff');if(ff){ if(![...ff.options].some(o=>o.value===st.fam)&&st.fam){const op=document.createElement('option');op.value=st.fam;op.textContent=st.fam;ff.appendChild(op);} ff.value=st.fam; }
+  [['of-fb',st.bold],['of-fi',st.italic],['of-fu',st.underline]].forEach(([id,on])=>{const b=document.getElementById(id);if(b)b.classList.toggle('on',on);});
+}
+// Zastosuj styl do zaznaczenia (w trakcie edycji) albo do całego tekstu.
+function ofApplyStyle(kind,val){
+  const o=ofCur(),e=ofSel();if(!e||e.t!=='text')return;
+  const el=ofEditing?ofRestoreRange():null;
+  const sel=window.getSelection();
+  const ranged=el&&sel.rangeCount&&!sel.isCollapsed&&el.contains(sel.anchorNode);
+  if(ranged){
+    try{document.execCommand('styleWithCSS',false,true);}catch(x){}
+    if(kind==='size'||kind==='font'){
+      const MARK='ofmark'+Date.now();
+      if(kind==='size') document.execCommand('fontSize',false,'7'); else document.execCommand('fontName',false,MARK);
+      const hits=kind==='size'?el.querySelectorAll('[style*="xxx-large"],font[size="7"]'):el.querySelectorAll(`[style*="${MARK}"],font[face="${MARK}"]`);
+      hits.forEach(n=>{
+        let sp=n; if(n.tagName==='FONT'){sp=document.createElement('span');sp.innerHTML=n.innerHTML;n.replaceWith(sp);}
+        if(kind==='size'){ sp.style.fontSize=val+'px'; sp.querySelectorAll('[style]').forEach(c=>c.style.fontSize=''); }
+        else { const f=(OF_FONTS.find(x=>x[0]===val)||[val,val])[1]; sp.style.fontFamily=f; sp.querySelectorAll('[style]').forEach(c=>c.style.fontFamily=''); }
+      });
+    } else if(kind==='bold') document.execCommand('bold');
+    else if(kind==='italic') document.execCommand('italic');
+    else if(kind==='underline') document.execCommand('underline');
+    else if(kind==='color') document.execCommand('foreColor',false,val);
+    ofSaveRange();setTimeout(ofSyncFontUI,30);
+    return;
+  }
+  // cały tekst
   if(ofEditing)ofStopEdit();
   ofSnap();
-  e.html=e.html.replace(/font-size:\s*([\d.]+)px/g,(m,n)=>`font-size:${Math.max(4,Math.round(parseFloat(n)*f*10)/10)}px`)
-               .replace(/line-height:\s*([\d.]+)px/g,(m,n)=>`line-height:${Math.round(parseFloat(n)*f*10)/10}px`);
-  ofTouch(ofCur());renderOfPage();renderOfSide();
+  const tmp=document.createElement('div');tmp.innerHTML=e.html;
+  const spans=[...tmp.querySelectorAll('span')];const paras=[...tmp.children];
+  if(kind==='size'){
+    const first=parseFloat((spans[0]&&spans[0].style.fontSize)||(paras[0]&&paras[0].style.fontSize)||val)||val;
+    const k=val/first;
+    tmp.querySelectorAll('[style]').forEach(n=>{
+      if(n.style.fontSize&&n.style.fontSize.endsWith('px'))n.style.fontSize=Math.max(3,Math.round(parseFloat(n.style.fontSize)*k*10)/10)+'px';
+      if(n.style.lineHeight&&n.style.lineHeight.endsWith('px'))n.style.lineHeight=Math.round(parseFloat(n.style.lineHeight)*k*10)/10+'px';
+    });
+  } else if(kind==='font'){ const f=(OF_FONTS.find(x=>x[0]===val)||[val,val])[1]; spans.forEach(n=>n.style.fontFamily=f); }
+  else if(kind==='bold'){ const on=!spans.every(n=>(parseInt(n.style.fontWeight)||400)>=600); spans.forEach(n=>n.style.fontWeight=on?'700':'400'); }
+  else if(kind==='italic'){ const on=!spans.every(n=>n.style.fontStyle==='italic'); spans.forEach(n=>n.style.fontStyle=on?'italic':'normal'); }
+  else if(kind==='underline'){ const on=!spans.every(n=>n.style.textDecoration.includes('underline')); spans.forEach(n=>n.style.textDecoration=on?'underline':'none'); }
+  else if(kind==='color'){ spans.forEach(n=>n.style.color=val); }
+  e.html=tmp.innerHTML;ofTouch(o);renderOfPage();setTimeout(ofSyncFontUI,30);
 }
-function ofBold(){
-  if(ofCmd('bold'))return;
-  const e=ofSel();if(!e||e.t!=='text')return;ofSnap();
-  const isBold=/font-weight:\s*(700|bold)/.test(e.html);
-  e.html=e.html.replace(/font-weight:\s*\w+/g,'font-weight:'+(isBold?400:700));
-  ofTouch(ofCur());renderOfPage();
-}
+function ofScaleFont(f){ const st=ofCurStyle(); if(st)ofApplyStyle('size',Math.max(3,Math.round(st.size*f*2)/2)); }
+function ofBold(){ ofApplyStyle('bold'); }
 function ofColor(c){
-  if(ofCmd('foreColor',c))return;
-  const e=ofSel();if(!e)return;ofSnap();
-  if(e.t==='text') e.html=e.html.replace(/([^-])color:\s*#[0-9a-fA-F]{3,8}/g,'$1color:'+c).replace(/^color:/,'color:');
-  else if(e.t==='line') e.c=c; else if(e.t==='box'){ if(e.bg)e.bg=c; else e.bc=c; }
+  const e=ofSel();if(!e)return;
+  if(e.t==='text'){ofApplyStyle('color',c);return;}
+  ofSnap();
+  if(e.t==='line') e.c=c; else if(e.t==='box'){ if(e.bg)e.bg=c; else e.bc=c; }
   ofTouch(ofCur());renderOfPage();
 }
 function ofAlign(a){
@@ -4572,11 +4702,11 @@ function ofLayer(d){ const o=ofCur(),e=ofSel();if(!e)return;ofSnap();o.els.splic
 function ofNudge(dx,dy){ const e=ofSel();if(!e)return;ofSnap();e.x+=dx;e.y+=dy;ofTouch(ofCur());renderOfPage(); }
 function ofAddText(){
   const o=ofCur();if(!o)return;ofSnap();
-  o.els.push({t:'text',x:60,y:60,w:220,h:0,rot:0,html:'<div style="text-align:left;font-size:14px"><span style="font-family:Helvetica,Arial,sans-serif;font-weight:400;font-size:14px;color:#2b2b2b">Nowy tekst</span></div>'});
+  o.els.push({pg:ofCurPage,t:'text',x:60,y:60,w:220,h:0,rot:0,html:'<div style="text-align:left;font-size:14px"><span style="font-family:Helvetica,Arial,sans-serif;font-weight:400;font-size:14px;color:#2b2b2b">Nowy tekst</span></div>'});
   ofSelIdx=o.els.length-1;ofTouch(o);renderOffers();
 }
-function ofAddLine(){ const o=ofCur();if(!o)return;ofSnap();o.els.push({t:'line',x:20,y:400,w:555,h:0,rot:0,c:'#160e0c',th:0.75});ofSelIdx=o.els.length-1;ofTouch(o);renderOffers(); }
-function ofAddBox(){ const o=ofCur();if(!o)return;ofSnap();o.els.push({t:'box',x:200,y:540,w:80,h:20,rot:0,bc:'#2b2b2b',bw:0.75,br:10});ofSelIdx=o.els.length-1;ofTouch(o);renderOffers(); }
+function ofAddLine(){ const o=ofCur();if(!o)return;ofSnap();o.els.push({pg:ofCurPage,t:'line',x:20,y:400,w:555,h:0,rot:0,c:'#160e0c',th:0.75});ofSelIdx=o.els.length-1;ofTouch(o);renderOffers(); }
+function ofAddBox(){ const o=ofCur();if(!o)return;ofSnap();o.els.push({pg:ofCurPage,t:'box',x:200,y:540,w:80,h:20,rot:0,bc:'#2b2b2b',bw:0.75,br:10});ofSelIdx=o.els.length-1;ofTouch(o);renderOffers(); }
 async function ofAddImage(replace){
   const o=ofCur();if(!o)return;
   const f=await ofPickFile('image/*');if(!f)return;
@@ -4593,7 +4723,7 @@ async function ofAddImage(replace){
       if(e.iw){ const ar=r.w/r.h; let iw=e.w,ih=e.w/ar; if(ih<e.h){ih=e.h;iw=e.h*ar;} e.iw=iw;e.ih=ih;e.ix=(e.w-iw)/2;e.iy=(e.h-ih)/2; }
     } else {
       const w=200,h=Math.round(200*r.h/r.w);
-      o.els.push({t:'img',x:200,y:200,w,h,rot:0,img:ref,fit:png?'contain':undefined});ofSelIdx=o.els.length-1;
+      o.els.push({pg:ofCurPage,t:'img',x:200,y:200,w,h,rot:0,img:ref,fit:png?'contain':undefined});ofSelIdx=o.els.length-1;
     }
     ofTouch(o);renderOffers();showDriveToast('✅ Zdjęcie zapisane na Dysku');
   }catch(e){showDriveToast('Błąd: '+e.message,true);}
@@ -4610,64 +4740,223 @@ function renderOfSide(){
   const side=document.getElementById('of-side');if(!side)return;
   const o=ofCur();const e=ofSel();
   const v=s=>esc(s==null?'':String(s));
+  const B=(lbl,fn,extra='')=>`<button class="of-btn" onmousedown="event.preventDefault()" onclick="${fn}" ${extra}>${lbl}</button>`;
   const catOpts=Object.keys(CATS).map(k=>`<option value="${k}" ${o&&o.cat===k?'selected':''}>${CATS[k].icon} ${CATS[k].label}</option>`).join('');
+  const clip=ofClipGet();
+  const what=ofMode==='umowa'?'Umowa':'Oferta';
   let h='';
-  if(o){
-    h+=`<div class="of-sec" style="margin-top:2px">Oferta</div>
-      <div class="of-row"><input class="form-input" value="${v(o.name)}" placeholder="Nazwa" onchange="ofRename(this.value)"></div>
-      <div class="of-row"><select class="form-input" onchange="ofSetOffer('cat',this.value)">${catOpts}</select>
-        <input class="form-input" type="color" value="${v(o.bg||'#dfe0e2')}" title="Kolor tła" style="flex:0 0 46px;padding:2px" onchange="ofSetOffer('bg',this.value)"></div>
-      <div class="of-sec">Dodaj</div>
-      <div class="of-row"><button class="of-btn" onclick="ofAddText()">＋ Tekst</button><button class="of-btn" onclick="ofAddImage(false)">＋ Zdjęcie</button>
-        <button class="of-btn" onclick="ofAddLine()">＋ Linia</button><button class="of-btn" onclick="ofAddBox()">＋ Ramka</button></div>`;
-  }
   if(e){
     const nm={text:'Tekst',img:'Zdjęcie',line:'Linia',box:'Ramka'}[e.t];
-    h+=`<div class="of-sec">Zaznaczone: ${nm}</div>`;
+    h+=`<div class="of-sec" style="margin-top:2px">Zaznaczone: ${nm}</div>`;
     if(e.t==='text'){
-      h+=`<div class="of-hint" style="margin-bottom:8px">${ofEditing?'Piszesz w tekście. Zaznacz fragment, żeby go pogrubić albo zmienić kolor. Esc lub klik obok = koniec.':'Przeciągnij, żeby przesunąć. Dwuklik (na iPadzie: drugie stuknięcie) = edycja tekstu.'}</div>
-        <div class="of-row">${ofEditing?`<button class="of-btn on" onmousedown="event.preventDefault()" onclick="ofStopEdit()">✓ Gotowe</button>`:`<button class="of-btn" onclick="ofStartEdit(ofSelIdx)">✎ Edytuj tekst</button>`}</div>
-        <div class="of-row"><button class="of-btn" onmousedown="event.preventDefault()" onclick="ofScaleFont(1/1.1)" title="Mniejsza czcionka">A−</button>
-          <button class="of-btn" onmousedown="event.preventDefault()" onclick="ofScaleFont(1.1)" title="Większa czcionka">A+</button>
-          <button class="of-btn" onmousedown="event.preventDefault()" onclick="ofBold()" style="font-weight:800">B</button>
-          <input type="color" class="form-input" style="flex:0 0 46px;padding:2px" onmousedown="ofKeepSel()" onchange="ofColor(this.value)" title="Kolor (zaznaczenia albo całego tekstu)"></div>
-        <div class="of-row"><button class="of-btn" onclick="ofAlign('left')">⯇ Do lewej</button><button class="of-btn" onclick="ofAlign('center')">Środek</button><button class="of-btn" onclick="ofAlign('right')">Do prawej ⯈</button></div>`;
+      const fontOpts=OF_FONTS.map(f=>`<option value="${f[0]}" style="font-family:${f[1].replace(/"/g,'&quot;')}">${f[0]}</option>`).join('');
+      h+=`<div class="of-row">${ofEditing?`<button class="of-btn on" onmousedown="event.preventDefault()" onclick="ofStopEdit()">✓ Gotowe</button>`:`<button class="of-btn" onclick="ofStartEdit(ofSelIdx)">✎ Edytuj tekst</button>`}</div>
+        <div class="of-hint" style="margin-bottom:8px">${ofEditing?'Zaznacz fragment — styl zmieni się tylko w nim. Bez zaznaczenia zmienia się cały tekst.':'Styl zmienia cały tekst. Żeby zmienić fragment: Edytuj tekst i zaznacz go.'}</div>
+        <div class="of-row"><select class="form-input" id="of-ff" style="flex:1 1 140px" onchange="ofApplyStyle('font',this.value)">${fontOpts}</select></div>
+        <div class="of-row" style="align-items:center">
+          ${B('A−',"ofScaleFont(1/1.1)",'title="Mniejsza"')}
+          <input class="form-input" id="of-fs" type="number" step="0.5" min="3" style="flex:0 0 64px;text-align:center" title="Rozmiar czcionki (pt)" onchange="ofApplyStyle('size',parseFloat(this.value)||10)">
+          <span class="of-hint">pt</span>
+          ${B('A+',"ofScaleFont(1.1)",'title="Większa"')}
+        </div>
+        <div class="of-row">
+          <button class="of-btn" id="of-fb" style="font-weight:800" onmousedown="event.preventDefault()" onclick="ofApplyStyle('bold')">B</button>
+          <button class="of-btn" id="of-fi" style="font-style:italic" onmousedown="event.preventDefault()" onclick="ofApplyStyle('italic')">I</button>
+          <button class="of-btn" id="of-fu" style="text-decoration:underline" onmousedown="event.preventDefault()" onclick="ofApplyStyle('underline')">U</button>
+          <input type="color" class="form-input" style="flex:0 0 46px;padding:2px" title="Kolor" onchange="ofApplyStyle('color',this.value)">
+        </div>
+        <div class="of-row">${B('⯇',"ofAlign('left')",'title="Do lewej"')}${B('≡',"ofAlign('center')",'title="Do środka"')}${B('⯈',"ofAlign('right')",'title="Do prawej"')}${B('☰',"ofAlign('justify')",'title="Wyjustuj"')}</div>`;
     }
     if(e.t==='img'){
       h+=`<div class="of-row"><button class="of-btn" onclick="ofAddImage(true)">🖼 Zmień zdjęcie</button></div>
         <div class="of-row"><button class="of-btn ${ofCropMode?'on':''}" onclick="ofCropMode=!ofCropMode;renderOfSide()">✥ Przesuwaj kadr</button>
           <button class="of-btn" onclick="ofCropZoom(1.1)" title="Przybliż kadr">＋</button><button class="of-btn" onclick="ofCropZoom(1/1.1)" title="Oddal kadr">－</button></div>
-        <div class="of-hint" style="margin-bottom:8px">${ofCropMode?'Teraz przeciąganie przesuwa zdjęcie wewnątrz ramki.':'Przeciągnij, żeby przesunąć. Kółko w rogu zmienia rozmiar.'}</div>`;
+        <div class="of-hint" style="margin-bottom:8px">${ofCropMode?'Przeciąganie przesuwa zdjęcie wewnątrz ramki.':'Przeciągnij, żeby przesunąć. Kółko w rogu zmienia rozmiar.'}</div>`;
     }
     if(e.t==='line') h+=`<div class="of-row"><input class="form-input" type="number" step="0.25" min="0.25" value="${v(e.th)}" title="Grubość" onchange="ofSetProp('th',parseFloat(this.value)||1)"><input type="color" class="form-input" style="flex:0 0 46px;padding:2px" value="${v(e.c||'#160e0c')}" onchange="ofColor(this.value)"></div>`;
     if(e.t==='box') h+=`<div class="of-row"><input type="color" class="form-input" style="flex:0 0 46px;padding:2px" value="${v(e.bc||e.bg||'#2b2b2b')}" onchange="ofColor(this.value)"><input class="form-input" type="number" step="1" min="0" value="${v(e.br||0)}" title="Zaokrąglenie" onchange="ofSetProp('br',parseFloat(this.value)||0)"></div>`;
-    h+=`<div class="of-row"><button class="of-btn" onclick="ofNudge(-1,0)">←</button><button class="of-btn" onclick="ofNudge(1,0)">→</button><button class="of-btn" onclick="ofNudge(0,-1)">↑</button><button class="of-btn" onclick="ofNudge(0,1)">↓</button><button class="of-btn" onclick="ofRotate()" title="Obróć o 90°">⟲ 90°</button></div>
-      <div class="of-row"><button class="of-btn" onclick="ofLayer(1)">Na wierzch</button><button class="of-btn" onclick="ofLayer(-1)">Pod spód</button><button class="of-btn" onclick="ofDupEl()">⧉</button><button class="of-btn danger" onclick="ofDelEl()">🗑</button></div>`;
-  } else if(o){
-    h+=`<div class="of-hint" style="margin-top:14px">Kliknij element na ofercie, żeby go zaznaczyć i przesunąć. Dwuklik na tekście (na iPadzie: drugie stuknięcie) — edycja treści.</div>`;
+    h+=`<div class="of-sec">Położenie</div>
+      <div class="of-row" style="align-items:center"><span class="of-hint">X</span><input class="form-input" type="number" step="0.5" value="${v(Math.round(e.x*10)/10)}" onchange="ofSetProp('x',parseFloat(this.value)||0)">
+        <span class="of-hint">Y</span><input class="form-input" type="number" step="0.5" value="${v(Math.round(e.y*10)/10)}" onchange="ofSetProp('y',parseFloat(this.value)||0)">
+        <span class="of-hint">Szer.</span><input class="form-input" type="number" step="1" value="${v(Math.round(e.w))}" onchange="ofSetProp('w',Math.max(5,parseFloat(this.value)||e.w))"></div>
+      <div class="of-row">${B('←',"ofNudge(-1,0)")}${B('→',"ofNudge(1,0)")}${B('↑',"ofNudge(0,-1)")}${B('↓',"ofNudge(0,1)")}${B('⟲ 90°',"ofRotate()",'title="Obróć o 90°"')}</div>
+      <div class="of-row">${B('⇤',"ofAlignPage('l')",'title="Do lewej krawędzi strony"')}${B('↔',"ofAlignPage('c')",'title="Na środek strony"')}${B('⇥',"ofAlignPage('r')",'title="Do prawej krawędzi strony"')}</div>
+      <div class="of-row">${B('⧉ Kopiuj',"ofCopy()",'title="Cmd/Ctrl+C"')}${B('Powiel',"ofDupEl()",'title="Cmd/Ctrl+D"')}${B('Na wierzch',"ofLayer(1)")}${B('Pod spód',"ofLayer(-1)")}<button class="of-btn danger" onclick="ofDelEl()">🗑</button></div>`;
   }
-  h+=`<div class="of-sec">Oferty</div>
-    <div class="of-row"><button class="of-btn" onclick="ofImport()">📥 Importuj oferty z pliku</button></div>
-    ${o?`<div class="of-row"><button class="of-btn danger" onclick="ofDelete()">🗑 Usuń tę ofertę</button></div>`:''}
-    <div class="of-hint">Wszystko zapisuje się na Twoim Dysku Google — oferty są takie same na każdym urządzeniu.</div>`;
+  if(o){
+    h+=`<div class="of-sec">Dodaj</div>
+      <div class="of-row">${B('＋ Tekst',"ofAddText()")}<button class="of-btn" onclick="ofAddImage(false)">＋ Zdjęcie</button>${B('＋ Linia',"ofAddLine()")}${B('＋ Ramka',"ofAddBox()")}</div>
+      ${clip?`<div class="of-row">${B(`📋 Wklej (${clip.els.length})`,"ofPaste()",'title="Cmd/Ctrl+V — wkleja też do innej oferty/umowy"')}</div>`:''}
+      <div class="of-row"><button class="of-btn ${ofSnapOn?'on':''}" onclick="ofSnapOn=!ofSnapOn;try{localStorage.setItem('foto_of_snap',ofSnapOn?'1':'0')}catch(x){};renderOfSide()">📐 Linie pomocnicze ${ofSnapOn?'wł.':'wył.'}</button></div>
+      <div class="of-sec">${what}</div>
+      <div class="of-row"><input class="form-input" value="${v(o.name)}" placeholder="Nazwa" onchange="ofRename(this.value)"></div>
+      <div class="of-row"><select class="form-input" onchange="ofSetOffer('cat',this.value)">${catOpts}</select>
+        <input class="form-input" type="color" value="${v(o.bg||'#dfe0e2')}" title="Kolor tła" style="flex:0 0 46px;padding:2px" onchange="ofSetOffer('bg',this.value)"></div>
+      <div class="of-row">${B('▲ Wyżej na liście',"ofMoveInList(-1)")}${B('▼ Niżej',"ofMoveInList(1)")}</div>
+      <div class="of-row">${B('＋ Strona',"ofAddPage()")}${ofPages(o)>1?B('Usuń stronę '+(ofCurPage+1),"ofDelPage()"):''}</div>
+      ${ofMode==='umowa'?`<div class="of-sec">Wypełnij dla zlecenia</div>
+        <div class="of-row"><select class="form-input" id="of-fill-z">${ofZlecOptions()}</select></div>
+        <div class="of-row">${B('📋 Utwórz umowę dla zlecenia',"ofFillFromZlecenie()")}</div>
+        <div class="of-hint">Tworzy kopię tej umowy i wstawia dane zlecenia w miejsca {{…}}. Pola: ${OF_TOKENS.map(t=>'{{'+t[0]+'}}').join(' ')}</div>`:''}`;
+  }
+  h+=`<div class="of-sec">${ofMode==='umowa'?'Umowy':'Oferty'}</div>
+    <div class="of-row"><button class="of-btn" onclick="ofImport()">📥 Importuj ${ofMode==='umowa'?'umowy':'oferty'} z pliku</button></div>
+    ${o?`<div class="of-row"><button class="of-btn danger" onclick="ofDelete()">🗑 Usuń: ${v(o.name)}</button></div>`:''}
+    <div class="of-hint">Skróty: dwuklik = edycja tekstu, Cmd/Ctrl+C / V / D, strzałki = przesuwanie (z Shift o 10), Cmd/Ctrl + kółko = powiększenie, Alt podczas przeciągania = bez przyciągania.</div>`;
   side.innerHTML=h;
+  if(e&&e.t==='text')setTimeout(ofSyncFontUI,0);
 }
-let _ofSavedRange=null;
-function ofKeepSel(){ const s=window.getSelection(); if(ofEditing&&s.rangeCount)_ofSavedRange=s.getRangeAt(0).cloneRange(); }
-const _ofColorOrig=ofColor;
-ofColor=function(c){ if(ofEditing&&_ofSavedRange){const el=document.querySelector('#of-scale .oe.editing');el&&el.focus();const s=window.getSelection();s.removeAllRanges();s.addRange(_ofSavedRange);_ofSavedRange=null;} _ofColorOrig(c); };
+function ofAlignPage(where){
+  const o=ofCur(),e=ofSel();if(!e)return;
+  const el=document.querySelector(`#of-scale .oe[data-i="${ofSelIdx}"]`);if(!el)return;
+  const pr=el.closest('.opg').getBoundingClientRect(),r=el.getBoundingClientRect();
+  const l=(r.left-pr.left)/ofK,w=r.width/ofK,W=o.w||595;
+  const target=where==='l'?20:where==='r'?W-20-w:(W-w)/2;
+  ofSnap();e.x+=target-l;ofTouch(o);renderOfPage();renderOfSide();
+}
+// ── schowek elementów (działa między ofertami i umowami) ──
+function ofClipGet(){ try{const c=JSON.parse(localStorage.getItem('foto_of_clip')||'null');return c&&Array.isArray(c.els)?c:null;}catch(x){return null;} }
+function ofCopy(){
+  const o=ofCur(),e=ofSel();if(!e)return;
+  if(ofEditing)ofStopEdit();
+  try{localStorage.setItem('foto_of_clip',JSON.stringify({from:o.id,pg:e.pg||0,els:[e]}));}catch(x){}
+  showDriveToast('⧉ Skopiowano — wklej w tej lub innej ofercie/umowie');renderOfSide();
+}
+function ofPaste(){
+  const o=ofCur(),c=ofClipGet();if(!o||!c)return;
+  ofSnap();
+  const same=c.from===o.id&&(c.pg||0)===ofCurPage;
+  c.els.forEach(src=>{const n=JSON.parse(JSON.stringify(src));n.pg=Math.min(ofCurPage,ofPages(o)-1);if(same){n.x+=12;n.y+=12;}o.els.push(n);});
+  ofSelIdx=o.els.length-1;ofTouch(o);renderOffers();showDriveToast('📋 Wklejono');
+}
+document.addEventListener('keydown',ev=>{
+  if(!document.getElementById('view-oferty')?.classList.contains('active')||ofEditing)return;
+  const t=document.activeElement;if(t&&/INPUT|TEXTAREA|SELECT/.test(t.tagName))return;
+  const mod=ev.metaKey||ev.ctrlKey;
+  if(mod&&ev.key.toLowerCase()==='c'&&ofSel()){ev.preventDefault();ofCopy();}
+  else if(mod&&ev.key.toLowerCase()==='v'&&ofClipGet()){ev.preventDefault();ofPaste();}
+  else if(mod&&ev.key.toLowerCase()==='d'&&ofSel()){ev.preventDefault();ofDupEl();}
+  else if(mod&&ev.key.toLowerCase()==='z'){ev.preventDefault();ofUndo();}
+  else if(mod&&(ev.key==='='||ev.key==='+')){ev.preventDefault();ofZoomStep(1.15);}
+  else if(mod&&ev.key==='-'){ev.preventDefault();ofZoomStep(1/1.15);}
+  else if(mod&&ev.key==='0'){ev.preventDefault();ofSetZoom('fit');}
+  else if(ofSel()&&ev.key.startsWith('Arrow')){ev.preventDefault();const s=ev.shiftKey?10:1;
+    ofNudge(ev.key==='ArrowLeft'?-s:ev.key==='ArrowRight'?s:0,ev.key==='ArrowUp'?-s:ev.key==='ArrowDown'?s:0);}
+});
+// ── kolejność na liście ──
+function ofMoveInList(d){
+  const list=ofList(),o=ofCur();const i=list.indexOf(o),j=i+d;if(i<0||j<0||j>=list.length)return;
+  [list[i],list[j]]=[list[j],list[i]];
+  const now=Date.now();list.forEach((x,k)=>{if(x.order!==k){x.order=k;x.updatedAt=now;}});
+  saveOffers();renderOfPick();
+}
+// ── strony ──
+function ofAddPage(){ const o=ofCur();if(!o)return;ofSnap();o.pages=ofPages(o)+1;ofCurPage=o.pages-1;ofTouch(o);renderOffers();
+  setTimeout(()=>{const pg=document.querySelector(`#of-scale .opg[data-pg="${ofCurPage}"]`);pg&&pg.scrollIntoView({behavior:'smooth',block:'start'});},50); }
+function ofDelPage(){
+  const o=ofCur();if(!o||ofPages(o)<2)return;const p=ofCurPage;
+  if(!confirm(`Usunąć stronę ${p+1} razem z jej zawartością?`))return;
+  ofSnap();o.els=o.els.filter(e=>(e.pg||0)!==p);o.els.forEach(e=>{if((e.pg||0)>p)e.pg=(e.pg||0)-1;});
+  o.pages=ofPages(o)-1;ofCurPage=Math.max(0,p-1);ofSelIdx=-1;ofTouch(o);renderOffers();
+}
+// ── umowy: wypełnianie danymi zlecenia ──
+const OF_TOKENS=[
+  ['klient','nazwa klienta / pary'],['data','data imprezy'],['kategoria','rodzaj imprezy'],['miejsce','sala / adres'],['kosciol','kościół'],
+  ['pakiet','nazwa pakietu'],['pakiet_opis','zawartość pakietu'],['dodatki','dodatki'],['cena','wynagrodzenie'],['zadatek','zadatek'],
+  ['pozostalo','do zapłaty'],['termin_oddania','termin oddania zdjęć'],['dzis','dzisiejsza data']];
+function ofZlecOptions(){
+  const t=todayISO();
+  const list=zlecenia.filter(z=>!z.archived).sort((a,b)=>{const fa=(a.date||'')>=t,fb=(b.date||'')>=t;return fa!==fb?(fa?-1:1):(fa?(a.date||'').localeCompare(b.date||''):(b.date||'').localeCompare(a.date||''));});
+  return list.map(z=>`<option value="${z.id}">${esc(z.name)} — ${z.date?formatDate(z.date):'bez daty'}</option>`).join('');
+}
+function ofTokenValues(z){
+  const zl=n=>Math.round(n||0).toLocaleString('pl')+' zł';
+  const pk=(z.pakiet||'').split('\n');const ad=z.adresy||{};
+  const total=zTotal(z),zad=zZadatek(z);
+  return {klient:z.name||'',data:z.date?formatDate(z.date):'',kategoria:getCatLabel(z),miejsce:ad.sala||ad.adres||ad.lokalizacja||'',kosciol:ad.kosciol||'',
+    pakiet:(pk[0]||'').trim(),pakiet_opis:pk.slice(1).map(x=>x.replace(/^\s*[-–•]\s*/,'').trim()).filter(Boolean).join(', '),
+    dodatki:zDodatki(z).map(d=>d.name+(d.price?` (${zl(d.price)})`:'')).join(', ')||'brak',
+    cena:zl(total),zadatek:zl(zad),pozostalo:zl(Math.max(0,total-zad)),
+    termin_oddania:formatDate(z.deliveryDeadline||suggestedDeadline(z)||''),dzis:formatDate(todayISO())};
+}
+function ofFillFromZlecenie(){
+  const o=ofCur();const id=document.getElementById('of-fill-z')?.value;const z=zlecenia.find(x=>x.id===id);
+  if(!o||!z){alert('Wybierz zlecenie.');return;}
+  const vals=ofTokenValues(z);
+  const c=JSON.parse(JSON.stringify(o));
+  c.id='of_'+uid();c.name=`Umowa — ${z.name}${z.date?' '+formatDate(z.date):''}`;c.zlecenieId=z.id;c.updatedAt=Date.now();delete c.order;
+  let missing=0;
+  c.els.forEach(e=>{ if(e.t==='text') e.html=e.html.replace(/\{\{\s*([a-z_]+)\s*\}\}/g,(m,k)=>{ if(k in vals){ if(!vals[k])missing++; return esc(vals[k]); } return m; }); });
+  offers.push(c);saveOffersNow();ofSelect(c.id);
+  showDriveToast(`✅ Utworzono umowę dla „${z.name}"${missing?` — ${missing} pól bez danych, uzupełnij ręcznie`:''}`);
+}
 function ofSetOffer(k,v){ const o=ofCur();if(!o)return;ofSnap();o[k]=v;ofTouch(o);renderOfPage(); }
 function ofRename(v){ const o=ofCur();if(!o)return;o.name=v.trim()||o.name;ofTouch(o);renderOfPick(); }
-function ofSelect(id){ if(ofEditing)ofStopEdit(); ofCurId=id;ofSelIdx=-1;ofCropMode=false;try{localStorage.setItem('foto_offer_cur',id);}catch(e){} renderOffers(); }
+function ofSelect(id){ if(ofEditing)ofStopEdit(); ofCurId=id;ofCurIds[ofMode]=id;ofSelIdx=-1;ofCurPage=0;ofCropMode=false;try{localStorage.setItem(ofMode==='umowa'?'foto_umowa_cur':'foto_offer_cur',id);}catch(e){} renderOffers(); }
+function ofSetMode(m){
+  if(ofEditing)ofStopEdit();
+  ofCurIds[ofMode]=ofCurId;ofMode=m;ofCurId=ofCurIds[m]||'';ofSelIdx=-1;ofCurPage=0;ofCropMode=false;ofZoom='fit';
+  const t=document.getElementById('of-title');if(t)t.textContent=m==='umowa'?'📝 Umowy':'📄 Oferty';
+  document.querySelectorAll('.of-img-exp').forEach(b=>b.style.display=m==='umowa'?'none':'');   // umowy: tylko PDF
+  renderOffers();
+}
 function ofNew(){
   const base=ofCur();
-  if(base&&confirm('Nowa oferta na bazie obecnej?\n\nOK = kopia obecnej (zmienisz teksty)\nAnuluj = pusta strona')) return ofDuplicate();
-  const o={id:'of_'+uid(),name:'Nowa oferta',cat:base?.cat||'wesele',w:595,h:842,bg:base?.bg||'#dfe0e2',els:[],updatedAt:Date.now()};
+  if(ofMode==='umowa'){
+    const useTpl=confirm('Nowa umowa:\n\nOK = zacznij od wzoru umowy (z polami {{…}} do wypełnienia danymi zlecenia)\nAnuluj = '+(base?'kopia obecnej umowy':'pusta strona'));
+    if(useTpl){ const o=ofUmowaTemplate();offers.push(o);saveOffersNow();ofSelect(o.id);return; }
+    if(base)return ofDuplicate();
+  } else if(base&&confirm('Nowa oferta na bazie obecnej?\n\nOK = kopia obecnej (zmienisz teksty)\nAnuluj = pusta strona')) return ofDuplicate();
+  const o={id:'of_'+uid(),kind:ofMode,name:ofMode==='umowa'?'Nowa umowa':'Nowa oferta',cat:base?.cat||'wesele',w:595,h:842,pages:1,bg:ofMode==='umowa'?'#ffffff':(base?.bg||'#dfe0e2'),els:[],updatedAt:Date.now()};
   offers.push(o);saveOffersNow();ofSelect(o.id);
+}
+function ofUmowaTemplate(){
+  const F="Helvetica,'Helvetica Neue',Arial,sans-serif";
+  const sp=(t,o={})=>`<span style="font-family:${F};font-weight:${o.b?700:400};font-size:${o.sz||9.5}px;color:#1a1a1a">${t}</span>`;
+  const p=(t,o={})=>`<div style="text-align:${o.al||'justify'};font-size:${o.sz||9.5}px;line-height:${o.lh||14}px;${o.mt?`margin-top:${o.mt}px;`:''}">${sp(t,o)}</div>`;
+  const h=t=>p(t,{b:1,al:'left',mt:8});
+  const pg1=[
+    h('§1. Przedmiot umowy'),
+    p('1. Wykonawca zobowiązuje się do wykonania usługi fotograficznej: {{kategoria}} w dniu {{data}}.'),
+    p('2. Miejsce realizacji: {{miejsce}}. Ceremonia: {{kosciol}}.'),
+    h('§2. Zakres usługi'),
+    p('1. Zamawiający wybiera pakiet {{pakiet}}, obejmujący: {{pakiet_opis}}.'),
+    p('2. Usługi dodatkowe: {{dodatki}}.'),
+    h('§3. Wynagrodzenie i płatności'),
+    p('1. Łączne wynagrodzenie Wykonawcy wynosi {{cena}}.'),
+    p('2. Przy podpisaniu umowy Zamawiający wpłaca zadatek w wysokości {{zadatek}}, który zalicza się na poczet wynagrodzenia.'),
+    p('3. Pozostała kwota {{pozostalo}} płatna jest najpóźniej w dniu odbioru materiałów.'),
+    h('§4. Termin i forma przekazania materiałów'),
+    p('1. Wykonawca przekaże obrobione zdjęcia do dnia {{termin_oddania}}, w formie określonej w pakiecie.'),
+    p('2. Wykonawca przechowuje kopię materiałów przez okres wskazany w ofercie.')].join('');
+  const pg2=[
+    h('§5. Rezygnacja'),
+    p('1. W przypadku rezygnacji z usługi przez Zamawiającego zadatek nie podlega zwrotowi.'),
+    p('2. Jeżeli umowa nie zostanie wykonana z przyczyn leżących po stronie Wykonawcy, zwraca on zadatek w podwójnej wysokości, chyba że zapewni zastępstwo fotografa zaakceptowanego przez Zamawiającego.'),
+    h('§6. Prawa autorskie i wizerunek'),
+    p('1. Autorskie prawa majątkowe do zdjęć przysługują Wykonawcy. Zamawiający może korzystać ze zdjęć na użytek prywatny, w tym publikować je w mediach społecznościowych.'),
+    p('2. Zamawiający [wyraża / nie wyraża] zgodę na wykorzystanie wybranych zdjęć w portfolio Wykonawcy.'),
+    h('§7. Obowiązki Zamawiającego'),
+    p('Zamawiający zapewni Wykonawcy możliwość swobodnego wykonywania zdjęć w miejscach realizacji i przekaże harmonogram dnia najpóźniej 7 dni przed terminem.'),
+    h('§8. Postanowienia końcowe'),
+    p('1. Zmiany umowy wymagają formy pisemnej pod rygorem nieważności.'),
+    p('2. W sprawach nieuregulowanych stosuje się przepisy Kodeksu cywilnego.'),
+    p('3. Umowę sporządzono w dwóch jednobrzmiących egzemplarzach, po jednym dla każdej ze stron.')].join('');
+  const T=(x,y,w,html,pg)=>({t:'text',pg:pg||0,x,y,w,h:0,rot:0,html});
+  return {id:'of_'+uid(),kind:'umowa',name:'Wzór umowy',cat:'wesele',w:595,h:842,pages:2,bg:'#ffffff',updatedAt:Date.now(),els:[
+    T(50,50,495,p('UMOWA O ŚWIADCZENIE USŁUG FOTOGRAFICZNYCH',{b:1,sz:15,al:'center',lh:20})),
+    T(50,78,495,p('zawarta w dniu {{dzis}} pomiędzy:',{al:'center',sz:10})),
+    T(50,110,495,p('Wykonawcą: Złapać Młodych – Fotografia Ślubna, [imię i nazwisko, adres, NIP], tel. 726-841-465, e-mail pigula92@icloud.com,')+p('a Zamawiającym: {{klient}}, [adres, telefon],',{mt:4})+p('o następującej treści:',{mt:4})),
+    T(50,185,495,pg1),
+    T(50,50,495,pg2,1),
+    {t:'line',pg:1,x:60,y:700,w:190,h:0,rot:0,c:'#1a1a1a',th:0.75},
+    {t:'line',pg:1,x:345,y:700,w:190,h:0,rot:0,c:'#1a1a1a',th:0.75},
+    T(60,706,190,p('Wykonawca',{al:'center',sz:9}),1),
+    T(345,706,190,p('Zamawiający',{al:'center',sz:9}),1)]};
 }
 function ofDuplicate(){
   const o=ofCur();if(!o)return;
-  const c={...JSON.parse(JSON.stringify(o)),id:'of_'+uid(),name:o.name+' (kopia)',updatedAt:Date.now()};
+  const c={...JSON.parse(JSON.stringify(o)),id:'of_'+uid(),name:o.name+' (kopia)',updatedAt:Date.now()};delete c.order;
   offers.push(c);saveOffersNow();ofSelect(c.id);
 }
 function ofDelete(){
@@ -4682,10 +4971,11 @@ async function ofImport(){
   let b;try{b=JSON.parse(await f.text());}catch(e){alert('To nie jest plik z ofertami.');return;}
   if(b.kind!=='fotoplaner-oferty'||!Array.isArray(b.offers)){alert('To nie jest plik z ofertami FotoPlanera.');return;}
   const exist=b.offers.filter(x=>offers.some(o=>o.id===x.id&&!o.deleted));
-  if(!confirm(`Zaimportować ${b.offers.length} ofert${exist.length?` (${exist.length} już istnieje — zostaną zastąpione)`:''}?\n\nZdjęcia (${Object.keys(b.images||{}).length}) zostaną zapisane na Twoim Dysku Google.`))return;
-  if(!await ofNeedDrive())return;
+  if(!confirm(`Zaimportować ${b.offers.length} ${b.docKind==='umowa'?'umów':'ofert'}${exist.length?` (${exist.length} już istnieje — zostaną zastąpione)`:''}?${Object.keys(b.images||{}).length?`\n\nZdjęcia (${Object.keys(b.images||{}).length}) zostaną zapisane na Twoim Dysku Google.`:''}`))return;
+  const keys=Object.keys(b.images||{});
+  if(keys.length&&!await ofNeedDrive())return;
   try{
-    const map={};const keys=Object.keys(b.images||{});
+    const map={};
     for(let k=0;k<keys.length;k++){
       showDriveToast(`⬆ Zdjęcia na Dysk: ${k+1}/${keys.length}…`);
       const blob=await (await fetch(b.images[keys[k]])).blob();
@@ -4694,52 +4984,75 @@ async function ofImport(){
     const now=Date.now();
     b.offers.forEach(x=>{
       x.els.forEach(e=>{if(e.img&&map[e.img])e.img=map[e.img];});
-      x.updatedAt=now;delete x.deleted;
+      x.updatedAt=now;delete x.deleted;if(b.docKind&&!x.kind)x.kind=b.docKind;
       const i=offers.findIndex(o=>o.id===x.id); if(i>=0)offers[i]=x; else offers.push(x);
     });
     offers.forEach(o=>{if(!Array.isArray(o.els)&&!o.deleted){o.deleted=true;o.updatedAt=now;}});   // stary format z pierwszej wersji
     saveOffersNow();if(gdriveToken)gdriveSave();
-    ofCurId=b.offers[0].id;ofSelIdx=-1;renderOffers();
+    const k0=b.offers[0].kind||'oferta'; if(k0!==ofMode)setMainView(k0==='umowa'?'umowy':'oferty');
+    ofSelect(b.offers[0].id);
     showDriveToast(`✅ Zaimportowano ${b.offers.length} ofert`);
   }catch(e){showDriveToast('Błąd importu: '+e.message,true);}
 }
 
-// ── eksport PNG / JPEG ──
-function loadHtml2Canvas(){
+// ── eksport PNG / JPEG / PDF ──
+function loadScript(src,test){
   return new Promise((res,rej)=>{
-    if(window.html2canvas){res();return;}
-    const s=document.createElement('script');
-    s.src='https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
-    s.onload=res;s.onerror=()=>rej(new Error('Nie udało się wczytać modułu eksportu (brak internetu?)'));
+    if(test())return res();
+    const s=document.createElement('script');s.src=src;s.onload=res;s.onerror=()=>rej(new Error('Nie udało się wczytać modułu eksportu (brak internetu?)'));
     document.head.appendChild(s);
   });
+}
+function loadHtml2Canvas(){ return loadScript('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js',()=>!!window.html2canvas); }
+function loadJsPDF(){ return loadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js',()=>!!(window.jspdf&&window.jspdf.jsPDF)); }
+async function ofRenderPages(o){
+  await loadHtml2Canvas();
+  try{ await document.fonts.ready; }catch(e){}
+  const refs=[...new Set(o.els.filter(e=>e.img).map(e=>e.img))];
+  await Promise.all(refs.map(ofImgUrl));
+  const out=[];
+  for(let p=0;p<ofPages(o);p++){
+    showDriveToast(`🖼 Przygotowuję stronę ${p+1}/${ofPages(o)}…`);
+    const host=document.createElement('div');
+    host.style.cssText=`position:fixed;left:-20000px;top:0;width:${o.w||595}px;height:${o.h||842}px;`;
+    host.innerHTML=offerHtml(o,ofImgSync,p);
+    host.querySelectorAll('.oe-i > div:not(.oe-im)').forEach(x=>x.remove());
+    document.body.appendChild(host);
+    await new Promise(r=>setTimeout(r,120));
+    out.push(await html2canvas(host.firstElementChild,{scale:2480/(o.w||595),backgroundColor:o.bg||'#dfe0e2',useCORS:true,logging:false}));
+    host.remove();
+  }
+  return out;
+}
+function ofDownload(blob,fname){
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=fname;
+  document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),8000);
 }
 async function ofExport(kind){
   const o=ofCur();if(!o)return;
   if(ofEditing)ofStopEdit();
   try{
-    showDriveToast('🖼 Przygotowuję plik…');
-    await loadHtml2Canvas();
-    const refs=[...new Set(o.els.filter(e=>e.img).map(e=>e.img))];
-    await Promise.all(refs.map(ofImgUrl));
-    const host=document.createElement('div');
-    host.style.cssText=`position:fixed;left:-20000px;top:0;width:${o.w||595}px;height:${o.h||842}px;`;
-    host.innerHTML=offerHtml(o,ofImgSync);
-    host.querySelectorAll('.oe-i > div:not(.oe-im)').forEach(x=>x.remove());
-    document.body.appendChild(host);
-    await new Promise(r=>setTimeout(r,150));
-    const canvas=await html2canvas(host.firstElementChild,{scale:2480/(o.w||595),backgroundColor:o.bg||'#dfe0e2',useCORS:true,logging:false});
-    host.remove();
-    const mime=kind==='png'?'image/png':'image/jpeg';
-    const blob=await new Promise(r=>canvas.toBlob(r,mime,0.92));
-    const fname=(o.name||'Oferta').replace(/[\\/:*?"<>|]+/g,'').trim().replace(/\s+/g,'-')+(kind==='png'?'.png':'.jpg');
-    if(kind==='share'){
-      const file=new File([blob],fname,{type:mime});
-      if(navigator.canShare&&navigator.canShare({files:[file]})){await navigator.share({files:[file],title:o.name});return;}
+    const base=(o.name||'Oferta').replace(/[\\/:*?"<>|]+/g,'').replace(/[—–]/g,'-').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/ł/g,'l').replace(/Ł/g,'L').trim().replace(/\s+/g,'-').replace(/-{2,}/g,'-');
+    const canvases=await ofRenderPages(o);
+    let files=[];
+    if(kind==='pdf'||kind==='pdfshare'){
+      await loadJsPDF();
+      const W=o.w||595,H=o.h||842;
+      const pdf=new window.jspdf.jsPDF({unit:'pt',format:[W,H],compress:true});
+      canvases.forEach((c,k)=>{ if(k)pdf.addPage([W,H]); pdf.addImage(c.toDataURL('image/jpeg',0.9),'JPEG',0,0,W,H); });
+      files=[new File([pdf.output('blob')],base+'.pdf',{type:'application/pdf'})];
+    } else {
+      const mime=kind==='png'?'image/png':'image/jpeg', ext=kind==='png'?'.png':'.jpg';
+      for(let k=0;k<canvases.length;k++){
+        const b=await new Promise(r=>canvases[k].toBlob(r,mime,0.92));
+        files.push(new File([b],base+(canvases.length>1?'-str'+(k+1):'')+ext,{type:mime}));
+      }
     }
-    const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=fname;
-    document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),5000);
-    showDriveToast('✅ Zapisano: '+fname);
+    if(kind==='share'||kind==='pdfshare'){
+      if(navigator.canShare&&navigator.canShare({files})){await navigator.share({files,title:o.name});return;}
+    }
+    files.forEach(f=>ofDownload(f,f.name));
+    showDriveToast('✅ Zapisano: '+files.map(f=>f.name).join(', '));
   }catch(e){ if(e&&e.name==='AbortError')return; showDriveToast('Błąd eksportu: '+(e.message||e),true); }
 }
 
