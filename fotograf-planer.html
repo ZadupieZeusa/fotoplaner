@@ -466,46 +466,39 @@ html.standalone .top-spacer{display:block}
 @media(max-width:680px){.yr-grid{grid-template-columns:1fr}}
 ::-webkit-scrollbar{width:3px;height:3px}
 ::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
-/* ══ OFERTY ══════════════════════════════════════════════════════════════ */
+/* ══ OFERTY — edytor ═════════════════════════════════════════════════════ */
 #view-oferty{flex-direction:row}
-.of-side{width:380px;min-width:320px;flex-shrink:0;background:var(--panel);border-right:1px solid var(--border);overflow-y:auto;padding:12px 14px 40px}
+.of-side{width:300px;min-width:260px;flex-shrink:0;background:var(--panel);border-right:1px solid var(--border);overflow-y:auto;padding:12px 14px 40px}
 .of-main{flex:1;min-width:0;display:flex;flex-direction:column;overflow:hidden}
-.of-toolbar{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1px solid var(--border);flex-wrap:wrap}
-.of-stage{flex:1;overflow:auto;display:flex;justify-content:center;align-items:flex-start;padding:18px}
-.of-scale{transform-origin:top center}
+.of-toolbar{display:flex;align-items:center;gap:6px;padding:8px 12px;border-bottom:1px solid var(--border);flex-wrap:wrap}
+.of-toolbar .btn-ghost{font-size:12px;padding:6px 10px}
+.of-stage{flex:1;overflow:auto;padding:18px;background:#0b0b0b}
+.of-scale{transform-origin:0 0;margin:0 auto;position:relative}
 .of-sec{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;margin:16px 0 6px}
-.of-row{display:flex;gap:8px;margin-bottom:8px}
-.of-row>*{flex:1;min-width:0}
-.of-side .form-input,.of-side textarea{font-size:12px;padding:7px 9px}
-.of-side textarea{width:100%;min-height:70px;resize:vertical;background:var(--surface);border:1px solid var(--border2);color:var(--text);border-radius:7px;font-family:inherit;line-height:1.4;box-sizing:border-box}
-.of-pkg{background:var(--surface2);border-radius:8px;padding:8px;margin-bottom:8px}
-.of-img-row{display:flex;align-items:center;gap:8px;margin-bottom:8px}
-.of-img-thumb{width:54px;height:40px;border-radius:5px;background:var(--surface2) center/cover no-repeat;border:1px solid var(--border2);flex-shrink:0}
+.of-row{display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap}
+.of-row>.form-input{flex:1;min-width:0}
+.of-side .form-input{font-size:12px;padding:7px 9px}
+.of-btn{background:var(--surface2);border:1px solid var(--border2);color:var(--text);border-radius:7px;padding:6px 10px;font-size:12px;cursor:pointer;font-family:inherit;min-width:34px}
+.of-btn:hover{border-color:var(--text3)}
+.of-btn.on{background:var(--sesja);color:#0d0d0d;border-color:var(--sesja)}
+.of-btn.danger{color:var(--danger)}
 .of-hint{font-size:11px;color:var(--text3);line-height:1.45}
-/* strona oferty — A4 w jednostkach 794×1123 */
-.op{width:794px;height:1123px;background:#dfe0e2;position:relative;overflow:hidden;color:#1f1f1f;font-family:Helvetica,'Helvetica Neue',Arial,sans-serif;box-shadow:0 8px 40px #0009}
-.op-photo{position:absolute;left:217px;top:0;right:0;height:657px;background:#c9c9c9 center/cover no-repeat}
-.op-photo.empty{display:flex;align-items:center;justify-content:center;color:#888;font-size:16px}
-.op-logo{position:absolute;left:46px;top:20px;width:126px;height:150px;background:center top/contain no-repeat}
-.op-vt{position:absolute;left:50px;top:657px;transform-origin:0 0;transform:rotate(-90deg);white-space:nowrap}
-.op-vt-1{font-family:Futura,'Century Gothic','Trebuchet MS',Arial,sans-serif;font-weight:800;font-size:49px;line-height:48px;letter-spacing:1px;color:#1f1f1f}
-.op-vt-2{position:absolute;left:170px;top:657px;transform-origin:0 0;transform:rotate(-90deg);white-space:nowrap;font-family:Futura,'Century Gothic','Trebuchet MS',Arial,sans-serif;font-weight:600;font-size:27px;line-height:27px;letter-spacing:1px}
-.op-body{position:absolute;left:30px;right:30px;top:676px;bottom:40px;display:flex;flex-direction:column}
-.op-pkgs{display:grid;gap:14px;margin-bottom:12px}
-.op-pkg-t{font-weight:700;font-size:15px;margin-bottom:5px;white-space:nowrap}
-.op-pkg ul,.op-list{margin:0;padding:0;list-style:none}
-.op-pkg li{font-size:9.6px;line-height:1.55;padding-left:10px;position:relative}
-.op-pkg li:before,.op-list li:before{content:'•';position:absolute;left:1px}
-.op-hr{border-top:1.2px solid #666;margin:2px 0 10px}
-.op-h{font-family:Futura,'Century Gothic',Arial,sans-serif;font-weight:700;font-size:10.5px;text-decoration:underline;margin-bottom:3px}
-.op-list li{font-size:10px;line-height:1.6;padding-left:12px;position:relative;margin-left:4px}
-.op-list.bold li{font-weight:700}
-.op-gap{height:12px}
-.op-foot{position:absolute;left:0;right:0;bottom:14px;display:flex;justify-content:center;gap:34px;font-size:13px;align-items:center}
-.op-foot span{display:inline-flex;align-items:center;gap:6px}
-.op-foot svg{width:15px;height:15px}
-.op-foot .op-mail{font-family:Futura,'Century Gothic',Arial,sans-serif;text-transform:uppercase;letter-spacing:.3px}
-@media(max-width:900px){#view-oferty{flex-direction:column}.of-side{width:auto;max-height:45vh;border-right:none;border-bottom:1px solid var(--border)}}
+/* strona oferty (595×842 pt) */
+.opg{position:relative;overflow:hidden;color:#000;font-family:Helvetica,Arial,sans-serif}
+.opg .oe{position:absolute;box-sizing:border-box}
+.opg .oe-t{line-height:1.25;word-wrap:break-word;overflow-wrap:break-word}
+.opg .oe-t div{min-height:1em}
+.opg .bl{position:relative;padding-left:1.15em}
+.opg .bl:before{content:'•';position:absolute;left:.15em;font-family:Arial,sans-serif;color:#222}
+.opg .oe-i{overflow:hidden}
+.opg .oe-im{position:absolute}
+.of-edit .oe{cursor:move;touch-action:none}
+.of-edit .oe:hover{outline:1px dashed #e8439380}
+.of-edit .oe.sel{outline:1.5px solid #e84393;z-index:5}
+.of-edit .oe.editing{cursor:text;outline:1.5px solid #4ade80;touch-action:auto}
+.of-edit .oe-t[contenteditable=true]:focus{outline:1.5px solid #4ade80}
+.of-handle{position:absolute;width:14px;height:14px;background:#e84393;border:2px solid #fff;border-radius:50%;z-index:20;touch-action:none;cursor:nwse-resize}
+@media(max-width:900px){#view-oferty{flex-direction:column-reverse}.of-side{width:auto;max-height:38vh;border-right:none;border-top:1px solid var(--border)}}
 </style>
 </head>
 <body>
@@ -525,7 +518,7 @@ html.standalone .top-spacer{display:block}
 <!-- ── TOPBAR ── -->
 <div class="top-spacer"></div>
 <header class="topbar">
-  <div class="logo">📷 <span>Foto</span>Planer <small style="font-size:9px;font-weight:500;color:var(--text3);letter-spacing:0" title="Wersja pliku">v1.11</small></div>
+  <div class="logo">📷 <span>Foto</span>Planer <small style="font-size:9px;font-weight:500;color:var(--text3);letter-spacing:0" title="Wersja pliku">v1.12</small></div>
   <nav class="main-nav">
     <button class="mnav active" onclick="setMainView('planer')">📅 Planer</button>
     <button class="mnav" onclick="setMainView('timeline')">📊 Timeline</button>
@@ -665,18 +658,18 @@ html.standalone .top-spacer{display:block}
     <div class="yr-body" id="yr-body"></div>
   </div>
 
-  <!-- VIEW: OFERTY I UMOWY -->
+  <!-- VIEW: OFERTY -->
   <div class="main-view" id="view-oferty">
     <div class="of-side" id="of-side"></div>
     <div class="of-main">
       <div class="of-toolbar">
-        <div class="dash-title" style="margin-right:6px">📄 Oferty</div>
         <select class="form-input" id="of-pick" style="width:auto;min-width:170px;font-size:12px;padding:6px 8px" onchange="ofSelect(this.value)"></select>
-        <button class="btn-ghost" style="font-size:12px;padding:6px 10px" onclick="ofNew()">+ Nowa</button>
-        <button class="btn-ghost" style="font-size:12px;padding:6px 10px" onclick="ofDuplicate()">⧉ Duplikuj</button>
+        <button class="btn-ghost" onclick="ofNew()">+ Nowa</button>
+        <button class="btn-ghost" onclick="ofDuplicate()">⧉ Duplikuj</button>
+        <button class="btn-ghost" onclick="ofUndo()" title="Cofnij ostatnią zmianę">↶ Cofnij</button>
         <div class="tb-spacer"></div>
-        <button class="btn-ghost" style="font-size:12px;padding:6px 10px" onclick="ofExport('png')">⬇ PNG</button>
-        <button class="btn-ghost" style="font-size:12px;padding:6px 10px" onclick="ofExport('jpeg')">⬇ JPEG</button>
+        <button class="btn-ghost" onclick="ofExport('png')">⬇ PNG</button>
+        <button class="btn-ghost" onclick="ofExport('jpeg')">⬇ JPEG</button>
         <button class="btn-primary" style="flex:0 0 auto;font-size:12px;padding:6px 12px" onclick="ofExport('share')">📤 Udostępnij</button>
       </div>
       <div class="of-stage" id="of-stage"><div class="of-scale" id="of-scale"></div></div>
@@ -4315,37 +4308,35 @@ async function installPWA(){
   };
 })();
 
-// ══ OFERTY ═══════════════════════════════════════════════════════════════════
-// Oferty (treść) jadą razem z resztą danych w pliku na Dysku Google.
-// Zdjęcia i logo to osobne pliki w ukrytym folderze aplikacji na Dysku (appDataFolder);
-// oferta trzyma tylko ich id. Dzięki temu na każdym urządzeniu jest to samo.
-const OF_INFO_DEFAULT='Niezmienność ceny podczas trwania całej umowy !!\nDojazd do 50km na ślub/wesele w cenie! (Sesja ślubna ustalana indywidualnie)\nBez względu na pakiet, zabezpieczona kopia materiału na okres 2 lat w formie plików .jpeg w cenie\nZadatek przy podpisaniu umowy w wysokości 800zł';
-const OF_ADDONS_DEFAULT='Teledysk (4-5min) - 1500 zł\nSesja narzeczeńska - 500 zł\nDwie Fotoksięgi dla rodziców w formacie 30x30cm - 400 zł';
-const OF_W_ITEMS={
-  mini:['Reportaż ze ślubu','Reportaż z wesela do 4h','Galeria internetowa - 2 miesiące','Pakiet 250 zdjęć','Pendrive w drewnianym boxie'],
-  silver:['Reportaż z Przygotowań','Reportaż ze Ślubu','Reportaż z Wesela (do 1:00)','Sesja ślubna w dzień ślubu','Galeria internetowa - 2 miesiące','Pakiet 500 zdjęć','Pendrive w drewnianym boxie'],
-  gold:['Reportaż z Przygotowań','Reportaż ze Ślubu','Reportaż z Wesela (do 1:00)','Sesja ślubna w inny dzień','Galeria internetowa - 6 miesięcy','Pakiet 600 zdjęć','Pendrive w drewnianym boxie','Fotoksiążka BASIC 30x30cm -28 str'],
-  platinum:['Reportaż z Przygotowań','Reportaż ze Ślubu','Reportaż z Wesela (do 1:00)','Sesja ślubna w inny dzień','Galeria internetowa - 6 miesięcy','Pakiet 700 zdjęć','Pendrive w drewnianym boxie','Fotoksiążka PRO 30x30cm -28str.']
-};
-function ofSeed(year,p){
-  return {id:'of_wesele_'+year,name:'Wesele '+year,cat:'wesele',title:'WEDDING\nPHOTOGRAPHY',subtitle:'OFERTA '+year,accent:'#b25d27',
-    packages:[['MINI',p[0],'mini'],['SILVER',p[1],'silver'],['GOLD',p[2],'gold'],['PLATINUM',p[3],'platinum']].map(([n,c,k])=>({name:n,price:c,items:OF_W_ITEMS[k].slice()})),
-    addonsTitle:'DODATKI :',addons:OF_ADDONS_DEFAULT,infoTitle:'INFORMACJE DODATKOWE:',info:OF_INFO_DEFAULT,
-    phone:'726-841-465',www:'https://zlapacmlodych.pl/',email:'pigula92@icloud.com',photoId:'',logoId:'',updatedAt:1};
-}
+// ══ OFERTY — edytor ══════════════════════════════════════════════════════════
+// Oferta = strona A4 (595×842 pt) z elementami: tekst, zdjęcie, prostokąt, linia.
+// Treść ofert jedzie w pliku synchronizacji na Dysku Google; zdjęcia to osobne
+// pliki w ukrytym folderze aplikacji na Dysku (element trzyma 'drive:<id>').
 let offers=[];
-try{offers=JSON.parse(localStorage.getItem('foto_offers')||'null');}catch(e){offers=null;}
-if(!Array.isArray(offers)) offers=[ofSeed(2026,[3400,4100,4300,4600]),ofSeed(2027,[3400,4100,4300,4600]),ofSeed(2028,[3600,4200,4400,4700])];
+try{offers=JSON.parse(localStorage.getItem('foto_offers')||'[]');}catch(e){offers=[];}
+if(!Array.isArray(offers))offers=[];
 let ofCurId=localStorage.getItem('foto_offer_cur')||'';
-function saveOffers(){ try{localStorage.setItem('foto_offers',JSON.stringify(offers));}catch(e){} markDirty(); scheduleDriveSave(); }
-function ofList(){ return offers.filter(o=>!o.deleted).sort((a,b)=>(a.name||'').localeCompare(b.name||'','pl')); }
-function ofCur(){ return offers.find(o=>o.id===ofCurId&&!o.deleted)||ofList()[0]||null; }
+let ofSelIdx=-1, ofEditing=false, ofCropMode=false, ofK=1;
+const ofUndoStack=[];
+function saveOffersNow(){ try{localStorage.setItem('foto_offers',JSON.stringify(offers));}catch(e){showDriveToast('Za mało miejsca w przeglądarce na oferty',true);} markDirty(); scheduleDriveSave(); }
+let _ofSaveT=null;
+function saveOffers(){ clearTimeout(_ofSaveT); _ofSaveT=setTimeout(saveOffersNow,600); }
+function ofList(){ return offers.filter(o=>!o.deleted&&Array.isArray(o.els)).sort((a,b)=>(a.name||'').localeCompare(b.name||'','pl',{numeric:true})); }
+function ofCur(){ return offers.find(o=>o.id===ofCurId&&!o.deleted&&Array.isArray(o.els))||ofList()[0]||null; }
+function ofSnap(){ const o=ofCur();if(!o)return; ofUndoStack.push({id:o.id,data:JSON.stringify(o)}); if(ofUndoStack.length>40)ofUndoStack.shift(); }
+function ofTouch(o){ o.updatedAt=Date.now(); saveOffers(); }
+function ofUndo(){
+  const s=ofUndoStack.pop();if(!s){showDriveToast('Nie ma czego cofnąć');return;}
+  const i=offers.findIndex(o=>o.id===s.id);if(i<0)return;
+  offers[i]=JSON.parse(s.data);offers[i].updatedAt=Date.now();ofCurId=s.id;ofSelIdx=-1;ofEditing=false;
+  saveOffers();renderOffers();
+}
 function mergeOffers(remote){
   if(!Array.isArray(remote)||!remote.length)return 0;
   const map=new Map(offers.map(o=>[o.id,o]));let n=0;
   remote.forEach(o=>{ if(!o||!o.id)return; const p=map.get(o.id); if(!p||(o.updatedAt||0)>(p.updatedAt||0)){map.set(o.id,o);n++;} });
-  if(n){offers=[...map.values()];try{localStorage.setItem('foto_offers',JSON.stringify(offers));}catch(e){}
-    if(document.getElementById('view-oferty')?.classList.contains('active'))renderOffers();}
+  if(n){ offers=[...map.values()]; try{localStorage.setItem('foto_offers',JSON.stringify(offers));}catch(e){}
+    if(document.getElementById('view-oferty')?.classList.contains('active')&&!ofEditing)renderOffers(); }
   return n;
 }
 function offersAhead(remote){
@@ -4354,31 +4345,30 @@ function offersAhead(remote){
 }
 
 // ── zdjęcia na Dysku ──
-const ofImgCache={};          // driveId → objectURL
-const ofImgLoading={};
-async function ofImgUrl(id){
-  if(!id)return '';
+const ofImgCache={}, ofImgLoading={};
+function ofImgSync(ref){ if(!ref)return ''; if(ref.startsWith('drive:'))return ofImgCache[ref.slice(6)]||''; return ''; }
+async function ofImgUrl(ref){
+  if(!ref||!ref.startsWith('drive:'))return '';
+  const id=ref.slice(6);
   if(ofImgCache[id])return ofImgCache[id];
   if(ofImgLoading[id])return ofImgLoading[id];
   ofImgLoading[id]=(async()=>{
-    try{
+    try{ if(!gdriveToken&&!await ensureToken())return '';
       const r=await driveRequest(`https://www.googleapis.com/drive/v3/files/${id}?alt=media`);
       if(!r.ok)throw new Error(r.status);
-      const url=URL.createObjectURL(await r.blob());
-      ofImgCache[id]=url;return url;
-    }catch(e){return '';}
-    finally{delete ofImgLoading[id];}
+      const u=URL.createObjectURL(await r.blob());ofImgCache[id]=u;return u;
+    }catch(e){return '';} finally{delete ofImgLoading[id];}
   })();
   return ofImgLoading[id];
 }
-function ofResize(file,max,mime){
+function ofResize(blobOrFile,max,mime){
   return new Promise((res,rej)=>{
-    const img=new Image();const u=URL.createObjectURL(file);
+    const img=new Image();const u=URL.createObjectURL(blobOrFile);
     img.onload=()=>{
       const k=Math.min(1,max/Math.max(img.width,img.height));
       const c=document.createElement('canvas');c.width=Math.round(img.width*k);c.height=Math.round(img.height*k);
       c.getContext('2d').drawImage(img,0,0,c.width,c.height);URL.revokeObjectURL(u);
-      c.toBlob(b=>b?res(b):rej(new Error('Nie udało się przetworzyć zdjęcia')),mime,0.9);
+      c.toBlob(b=>b?res({blob:b,w:img.width,h:img.height}):rej(new Error('Nie udało się przetworzyć zdjęcia')),mime,0.9);
     };
     img.onerror=()=>{URL.revokeObjectURL(u);rej(new Error('Nie można odczytać pliku'));};
     img.src=u;
@@ -4391,187 +4381,328 @@ async function ofUploadImage(blob,name){
   const r=await driveRequest('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id',
     {method:'POST',headers:{'Content-Type':'multipart/related; boundary='+bnd},body});
   const j=await r.json();
-  if(!j.id)throw new Error(j.error?.message||'Błąd wysyłania');
+  if(!j.id)throw new Error(j.error?.message||'Błąd wysyłania na Dysk');
   ofImgCache[j.id]=URL.createObjectURL(blob);
-  return j.id;
+  return 'drive:'+j.id;
 }
-function ofPickImage(field){
-  const o=ofCur();if(!o)return;
-  const inp=document.createElement('input');inp.type='file';inp.accept='image/*';
-  inp.onchange=async()=>{
-    const f=inp.files[0];if(!f)return;
-    if(!await ensureToken()){showDriveToast('Najpierw połącz się z Google (☁ Drive) — zdjęcia zapisują się na Twoim Dysku.',true);return;}
-    try{
-      showDriveToast('⬆ Wysyłam '+(field==='logoId'?'logo':'zdjęcie')+' na Dysk…');
-      const isLogo=field==='logoId';
-      const blob=await ofResize(f,isLogo?1000:2600,isLogo?'image/png':'image/jpeg');
-      const id=await ofUploadImage(blob,(isLogo?'oferta-logo-':'oferta-zdjecie-')+uid()+(isLogo?'.png':'.jpg'));
-      ofSet(field,id);
-      if(isLogo) offers.forEach(x=>{if(!x.deleted&&!x.logoId){x.logoId=id;x.updatedAt=Date.now();}});   // logo przyda się wszędzie
-      saveOffers();renderOffers();
-      showDriveToast('✅ Zapisano na Dysku');
-    }catch(e){showDriveToast('Błąd: '+e.message,true);}
-  };
-  inp.click();
+function ofPickFile(accept){
+  return new Promise(res=>{const i=document.createElement('input');i.type='file';i.accept=accept;i.onchange=()=>res(i.files[0]||null);i.click();});
+}
+async function ofNeedDrive(){
+  if(await ensureToken())return true;
+  showDriveToast('Najpierw połącz się z Google (☁ Drive) — zdjęcia zapisują się na Twoim Dysku.',true);return false;
 }
 
-// ── edycja ──
-function ofSet(field,val){
+// ── render ──
+function ofElHtml(e,i,url){
+  const rot=e.rot?`transform-origin:${e.w/2}px ${(e.h||0)/2}px;transform:rotate(${-e.rot}deg);`:'';
+  const pos=`left:${e.x}px;top:${e.y}px;width:${e.w}px;`;
+  const deco=(e.bg?`background:${e.bg};`:'')+(e.bw?`border:${e.bw}px solid ${e.bc||'#000'};`:'')+(e.br?`border-radius:${e.br}px;`:'');
+  if(e.t==='text') return `<div class="oe oe-t" data-i="${i}" style="${pos}${e.h>1?`min-height:${e.h}px;`:''}${deco}${rot}">${e.html}</div>`;
+  if(e.t==='box') return `<div class="oe oe-b" data-i="${i}" style="${pos}height:${e.h}px;${deco}${rot}"></div>`;
+  if(e.t==='line') return `<div class="oe oe-l" data-i="${i}" style="${pos}height:${Math.max(6,e.th||1)}px;margin-top:-3px;${rot}"><div style="border-top:${e.th||1}px solid ${e.c||'#333'};margin-top:3px"></div></div>`;
+  if(e.t==='img'){
+    const inner=e.iw?`left:${e.ix}px;top:${e.iy}px;width:${e.iw}px;height:${e.ih}px;`:'left:0;top:0;width:100%;height:100%;';
+    const bg=url?`background-image:url('${url}');`:'background-color:#c8c8c8;';
+    const ph=url?'':`<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:${Math.max(7,Math.min(14,e.w/14))}px;color:#777;text-align:center;padding:4px">${e.img?'zdjęcie na Dysku':'dodaj zdjęcie'}</div>`;
+    return `<div class="oe oe-i" data-i="${i}" style="${pos}height:${e.h}px;${deco}${rot}"><div class="oe-im" style="${inner}${bg}background-size:${e.fit==='contain'?'contain':'cover'};background-position:center;background-repeat:no-repeat"></div>${ph}</div>`;
+  }
+  return '';
+}
+function offerHtml(o,urlOf){
+  return `<div class="opg" style="width:${o.w||595}px;height:${o.h||842}px;background:${o.bg||'#dfe0e2'}">${(o.els||[]).map((e,i)=>ofElHtml(e,i,e.img?urlOf(e.img):'')).join('')}</div>`;
+}
+function renderOfPick(){
+  const sel=document.getElementById('of-pick');if(!sel)return;const cur=ofCur();
+  sel.innerHTML=ofList().map(o=>`<option value="${o.id}" ${cur&&o.id===cur.id?'selected':''}>${esc(o.name||'(bez nazwy)')}</option>`).join('')||'<option>— brak ofert —</option>';
+}
+function renderOffers(){
+  renderOfPick();renderOfPage();renderOfSide();
+  const o=ofCur();
+  if(o){ const missing=[...new Set(o.els.filter(e=>e.img&&e.img.startsWith('drive:')&&!ofImgSync(e.img)).map(e=>e.img))];
+    if(missing.length)Promise.all(missing.map(ofImgUrl)).then(()=>{ if(ofCur()===o&&!ofEditing)renderOfPage(); }); }
+}
+function renderOfPage(){
+  const box=document.getElementById('of-scale');if(!box)return;
+  const o=ofCur();
+  if(!o){box.innerHTML='<div class="of-hint" style="padding:40px;color:#aaa">Brak ofert. Kliknij „+ Nowa" albo zaimportuj oferty (panel po lewej).</div>';box.style.transform='';return;}
+  box.innerHTML=offerHtml(o,ofImgSync);
+  const pg=box.firstElementChild;pg.classList.add('of-edit');
+  ofFit();
+  if(ofSelIdx>=0){const el=pg.querySelector(`.oe[data-i="${ofSelIdx}"]`);if(el){el.classList.add('sel');ofAddHandle(el);}else ofSelIdx=-1;}
+  ofBindPage(pg);
+}
+function ofFit(){
+  const st=document.getElementById('of-stage'),sc=document.getElementById('of-scale'),o=ofCur();if(!st||!sc||!o)return;
+  const W=o.w||595,H=o.h||842;
+  ofK=Math.max(0.35,Math.min(2,(st.clientWidth-36)/W,(st.clientHeight-36)/H));
+  sc.style.transform=`scale(${ofK})`;sc.style.width=W+'px';sc.style.height=H+'px';
+  sc.style.marginBottom=(H*ofK-H)+'px';sc.style.marginRight=(W*ofK-W)+'px';
+  sc.style.marginLeft=Math.max(0,(st.clientWidth-36-W*ofK)/2)+'px';
+}
+window.addEventListener('resize',()=>{if(document.getElementById('view-oferty')?.classList.contains('active')&&!ofEditing)renderOfPage();});
+
+// ── zaznaczanie, przesuwanie, zmiana rozmiaru ──
+function ofAddHandle(el){
+  const o=ofCur(),e=o&&o.els[+el.dataset.i];if(!e||e.rot)return;
+  const h=document.createElement('div');h.className='of-handle';
+  const H=e.t==='text'?el.offsetHeight:(e.t==='line'?6:e.h);
+  h.style.left=(e.x+e.w-7)+'px';h.style.top=(e.y+(e.t==='line'?-7:H-7))+'px';
+  h.dataset.handle='1';el.parentElement.appendChild(h);
+}
+function ofBindPage(pg){
+  pg.addEventListener('pointerdown',ofPointerDown);
+  pg.addEventListener('dblclick',ev=>{const el=ev.target.closest('.oe-t');if(el)ofStartEdit(+el.dataset.i);});
+}
+let ofDrag=null, ofLastDown={i:-1,t:0};
+function ofPointerDown(ev){
+  if(ofEditing){ if(ev.target.closest('.editing'))return; ofStopEdit(); }
   const o=ofCur();if(!o)return;
-  o[field]=val;o.updatedAt=Date.now();
-  saveOffersDebounced();renderOfferPage();
-  if(field==='name')renderOfPick();
+  const handle=ev.target.closest('.of-handle');
+  const el=ev.target.closest('.oe');
+  if(!el&&!handle){ if(ofSelIdx!==-1){ofSelIdx=-1;renderOfPage();renderOfSide();} return; }
+  const i=handle?ofSelIdx:+el.dataset.i;const e=o.els[i];if(!e)return;
+  // dwuklik / podwójne stuknięcie w tekst = edycja
+  const now=Date.now();
+  if(!handle&&e.t==='text'&&ofLastDown.i===i&&now-ofLastDown.t<400){ ofLastDown={i:-1,t:0}; ofStartEdit(i); return; }
+  ofLastDown={i,t:now};
+  ev.preventDefault();
+  const wasSel=(i===ofSelIdx);
+  if(i!==ofSelIdx){ofSelIdx=i;renderOfSide();}
+  ofDrag={i,mode:handle?'resize':(ofCropMode&&e.t==='img'?'crop':'move'),sx:ev.clientX,sy:ev.clientY,
+    o:{x:e.x,y:e.y,w:e.w,h:e.h,ix:e.ix||0,iy:e.iy||0,iw:e.iw,ih:e.ih},moved:false,
+    // drugie stuknięcie w zaznaczony tekst (bez przesuwania) = edycja — iPad nie ma dwukliku
+    tapEdit:wasSel&&!handle&&e.t==='text'&&ev.pointerType!=='mouse'};
+  document.addEventListener('pointermove',ofPointerMove);
+  document.addEventListener('pointerup',ofPointerUp,{once:true});
+  // pokaż zaznaczenie od razu
+  const pgEl=document.querySelector('#of-scale .opg');
+  pgEl.querySelectorAll('.oe.sel').forEach(x=>x.classList.remove('sel'));pgEl.querySelectorAll('.of-handle').forEach(x=>x.remove());
+  const target=pgEl.querySelector(`.oe[data-i="${i}"]`);if(target){target.classList.add('sel');ofAddHandle(target);}
 }
-let _ofSaveT=null;
-function saveOffersDebounced(){clearTimeout(_ofSaveT);_ofSaveT=setTimeout(saveOffers,700);}
-function ofPkgSet(i,field,val){
-  const o=ofCur();if(!o||!o.packages[i])return;
-  if(field==='items')val=val.split('\n').map(s=>s.trim()).filter(Boolean);
-  if(field==='price')val=val===''?'':Number(val)||0;
-  o.packages[i][field]=val;o.updatedAt=Date.now();
-  saveOffersDebounced();renderOfferPage();
+function ofPointerMove(ev){
+  if(!ofDrag)return;const o=ofCur();const e=o.els[ofDrag.i];if(!e)return;
+  const dx=(ev.clientX-ofDrag.sx)/ofK, dy=(ev.clientY-ofDrag.sy)/ofK;
+  if(!ofDrag.moved&&Math.abs(dx)+Math.abs(dy)<1.5)return;
+  if(!ofDrag.moved){ofSnap();ofDrag.moved=true;}
+  if(ofDrag.mode==='move'){ e.x=Math.round((ofDrag.o.x+dx)*2)/2; e.y=Math.round((ofDrag.o.y+dy)*2)/2; }
+  else if(ofDrag.mode==='crop'){
+    if(!e.iw){e.iw=e.w;e.ih=e.h;e.ix=0;e.iy=0;ofDrag.o.ix=0;ofDrag.o.iy=0;}
+    e.ix=Math.min(0,Math.max(e.w-e.iw,(ofDrag.o.ix||0)+dx)); e.iy=Math.min(0,Math.max(e.h-e.ih,(ofDrag.o.iy||0)+dy));
+  } else {
+    const O=ofDrag.o;
+    e.w=Math.max(10,Math.round(O.w+dx));
+    if(e.t==='img'){            // zdjęcie skaluje się proporcjonalnie razem z kadrem
+      const k=e.w/O.w; e.h=O.h*k;
+      if(O.iw){e.iw=O.iw*k;e.ih=O.ih*k;e.ix=O.ix*k;e.iy=O.iy*k;}
+    } else if(e.t==='box') e.h=Math.max(4,Math.round(O.h+dy));
+  }
+  const el=document.querySelector(`#of-scale .oe[data-i="${ofDrag.i}"]`);
+  if(el){ const pg=el.parentElement;const tmp=document.createElement('div');tmp.innerHTML=ofElHtml(e,ofDrag.i,e.img?ofImgSync(e.img):'');
+    const n=tmp.firstElementChild;n.classList.add('sel');el.replaceWith(n);
+    pg.querySelectorAll('.of-handle').forEach(x=>x.remove());ofAddHandle(n); }
 }
-function ofPkgAdd(){const o=ofCur();if(!o)return;o.packages.push({name:'NOWY',price:0,items:[]});o.updatedAt=Date.now();saveOffers();renderOffers();}
-function ofPkgDel(i){const o=ofCur();if(!o)return;if(!confirm(`Usunąć pakiet „${o.packages[i].name}" z oferty?`))return;o.packages.splice(i,1);o.updatedAt=Date.now();saveOffers();renderOffers();}
-function ofPkgMove(i,d){const o=ofCur();if(!o)return;const j=i+d;if(j<0||j>=o.packages.length)return;[o.packages[i],o.packages[j]]=[o.packages[j],o.packages[i]];o.updatedAt=Date.now();saveOffers();renderOffers();}
-function ofFromCennik(){
+function ofPointerUp(){
+  document.removeEventListener('pointermove',ofPointerMove);
+  const d=ofDrag;ofDrag=null;
+  if(d&&d.moved){ofTouch(ofCur());renderOfSide();}
+  else if(d&&d.tapEdit) ofStartEdit(d.i);
+}
+function ofStartEdit(i){
+  const o=ofCur();if(!o||o.els[i]?.t!=='text')return;
+  ofSelIdx=i;ofEditing=true;
+  const el=document.querySelector(`#of-scale .oe[data-i="${i}"]`);if(!el)return;
+  document.querySelectorAll('#of-scale .of-handle').forEach(x=>x.remove());
+  el.classList.add('sel','editing');el.contentEditable='true';
+  ofSnap();el.focus();
+  try{document.execCommand('styleWithCSS',false,true);}catch(e){}
+  el.addEventListener('blur',()=>setTimeout(()=>{ if(ofEditing&&!document.querySelector('#of-side:focus-within'))ofStopEdit(); },150),{once:true});
+  renderOfSide();
+}
+function ofStopEdit(){
+  if(!ofEditing)return;ofEditing=false;
+  const o=ofCur();const el=document.querySelector(`#of-scale .oe.editing`);
+  if(o&&el){ const e=o.els[+el.dataset.i]; if(e){ const h=el.innerHTML; if(h!==e.html){e.html=h;ofTouch(o);} } }
+  renderOfPage();renderOfSide();
+}
+document.addEventListener('keydown',ev=>{
+  if(!document.getElementById('view-oferty')?.classList.contains('active'))return;
+  if(ev.key==='Escape'&&ofEditing){ev.preventDefault();ofStopEdit();}
+});
+
+// ── panel boczny ──
+function ofSel(){const o=ofCur();return o&&ofSelIdx>=0?o.els[ofSelIdx]:null;}
+function ofCmd(cmd,val){ // na zaznaczonym tekście w trakcie edycji
+  if(!ofEditing)return false;
+  document.querySelector('#of-scale .oe.editing')?.focus();
+  document.execCommand(cmd,false,val);return true;
+}
+function ofScaleFont(f){
+  const e=ofSel();if(!e||e.t!=='text')return;
+  if(ofEditing)ofStopEdit();
+  ofSnap();
+  e.html=e.html.replace(/font-size:\s*([\d.]+)px/g,(m,n)=>`font-size:${Math.max(4,Math.round(parseFloat(n)*f*10)/10)}px`)
+               .replace(/line-height:\s*([\d.]+)px/g,(m,n)=>`line-height:${Math.round(parseFloat(n)*f*10)/10}px`);
+  ofTouch(ofCur());renderOfPage();renderOfSide();
+}
+function ofBold(){
+  if(ofCmd('bold'))return;
+  const e=ofSel();if(!e||e.t!=='text')return;ofSnap();
+  const isBold=/font-weight:\s*(700|bold)/.test(e.html);
+  e.html=e.html.replace(/font-weight:\s*\w+/g,'font-weight:'+(isBold?400:700));
+  ofTouch(ofCur());renderOfPage();
+}
+function ofColor(c){
+  if(ofCmd('foreColor',c))return;
+  const e=ofSel();if(!e)return;ofSnap();
+  if(e.t==='text') e.html=e.html.replace(/([^-])color:\s*#[0-9a-fA-F]{3,8}/g,'$1color:'+c).replace(/^color:/,'color:');
+  else if(e.t==='line') e.c=c; else if(e.t==='box'){ if(e.bg)e.bg=c; else e.bc=c; }
+  ofTouch(ofCur());renderOfPage();
+}
+function ofAlign(a){
+  const e=ofSel();if(!e||e.t!=='text')return;if(ofEditing)ofStopEdit();ofSnap();
+  e.html=e.html.replace(/text-align:\s*\w+/g,'text-align:'+a);
+  ofTouch(ofCur());renderOfPage();
+}
+function ofSetProp(k,v){ const e=ofSel();if(!e)return;ofSnap();e[k]=v;ofTouch(ofCur());renderOfPage(); }
+function ofRotate(){ const e=ofSel();if(!e)return;ofSnap();e.rot=e.rot===90?0:90;if(!e.h&&e.t==='text')e.h=0;ofTouch(ofCur());renderOfPage();renderOfSide(); }
+function ofDelEl(){ const o=ofCur(),e=ofSel();if(!e)return;if(!confirm('Usunąć zaznaczony element?'))return;ofSnap();o.els.splice(ofSelIdx,1);ofSelIdx=-1;ofEditing=false;ofTouch(o);renderOffers(); }
+function ofDupEl(){ const o=ofCur(),e=ofSel();if(!e)return;ofSnap();const c=JSON.parse(JSON.stringify(e));c.x+=12;c.y+=12;o.els.push(c);ofSelIdx=o.els.length-1;ofTouch(o);renderOffers(); }
+function ofLayer(d){ const o=ofCur(),e=ofSel();if(!e)return;ofSnap();o.els.splice(ofSelIdx,1);if(d>0){o.els.push(e);ofSelIdx=o.els.length-1;}else{o.els.unshift(e);ofSelIdx=0;}ofTouch(o);renderOffers(); }
+function ofNudge(dx,dy){ const e=ofSel();if(!e)return;ofSnap();e.x+=dx;e.y+=dy;ofTouch(ofCur());renderOfPage(); }
+function ofAddText(){
+  const o=ofCur();if(!o)return;ofSnap();
+  o.els.push({t:'text',x:60,y:60,w:220,h:0,rot:0,html:'<div style="text-align:left;font-size:14px"><span style="font-family:Helvetica,Arial,sans-serif;font-weight:400;font-size:14px;color:#2b2b2b">Nowy tekst</span></div>'});
+  ofSelIdx=o.els.length-1;ofTouch(o);renderOffers();
+}
+function ofAddLine(){ const o=ofCur();if(!o)return;ofSnap();o.els.push({t:'line',x:20,y:400,w:555,h:0,rot:0,c:'#160e0c',th:0.75});ofSelIdx=o.els.length-1;ofTouch(o);renderOffers(); }
+function ofAddBox(){ const o=ofCur();if(!o)return;ofSnap();o.els.push({t:'box',x:200,y:540,w:80,h:20,rot:0,bc:'#2b2b2b',bw:0.75,br:10});ofSelIdx=o.els.length-1;ofTouch(o);renderOffers(); }
+async function ofAddImage(replace){
   const o=ofCur();if(!o)return;
-  const lista=getPackages(o.cat);
-  if(!lista.length){alert('W cenniku (⚙ Ustawienia → Pakiety) nie ma pakietów dla tej kategorii.');return;}
-  if(!confirm(`Zastąpić pakiety w tej ofercie pakietami z cennika (${lista.length})?`))return;
-  o.packages=lista.map(p=>({name:p.name,price:p.price||'',items:(p.items||[]).slice()}));
-  o.updatedAt=Date.now();saveOffers();renderOffers();
+  const f=await ofPickFile('image/*');if(!f)return;
+  if(!await ofNeedDrive())return;
+  try{
+    showDriveToast('⬆ Wysyłam zdjęcie na Dysk…');
+    const png=/png/i.test(f.type);
+    const r=await ofResize(f,png?1400:2400,png?'image/png':'image/jpeg');
+    const ref=await ofUploadImage(r.blob,'oferta-'+uid()+(png?'.png':'.jpg'));
+    ofSnap();
+    const e=replace?ofSel():null;
+    if(e&&e.t==='img'){
+      e.img=ref;
+      if(e.iw){ const ar=r.w/r.h; let iw=e.w,ih=e.w/ar; if(ih<e.h){ih=e.h;iw=e.h*ar;} e.iw=iw;e.ih=ih;e.ix=(e.w-iw)/2;e.iy=(e.h-ih)/2; }
+    } else {
+      const w=200,h=Math.round(200*r.h/r.w);
+      o.els.push({t:'img',x:200,y:200,w,h,rot:0,img:ref,fit:png?'contain':undefined});ofSelIdx=o.els.length-1;
+    }
+    ofTouch(o);renderOffers();showDriveToast('✅ Zdjęcie zapisane na Dysku');
+  }catch(e){showDriveToast('Błąd: '+e.message,true);}
 }
-function ofSelect(id){ofCurId=id;try{localStorage.setItem('foto_offer_cur',id);}catch(e){}renderOffers();}
+function ofCropZoom(f){
+  const e=ofSel();if(!e||e.t!=='img')return;ofSnap();
+  if(!e.iw){e.iw=e.w;e.ih=e.h;e.ix=0;e.iy=0;}
+  const cx=e.w/2-e.ix, cy=e.h/2-e.iy; // punkt środka kadru w obrazie
+  let iw=e.iw*f, ih=e.ih*f; if(iw<e.w||ih<e.h){const k=Math.max(e.w/iw,e.h/ih);iw*=k;ih*=k;}
+  const k=iw/e.iw; e.ix=Math.min(0,Math.max(e.w-iw,e.w/2-cx*k)); e.iy=Math.min(0,Math.max(e.h-ih,e.h/2-cy*k)); e.iw=iw;e.ih=ih;
+  ofTouch(ofCur());renderOfPage();
+}
+function renderOfSide(){
+  const side=document.getElementById('of-side');if(!side)return;
+  const o=ofCur();const e=ofSel();
+  const v=s=>esc(s==null?'':String(s));
+  const catOpts=Object.keys(CATS).map(k=>`<option value="${k}" ${o&&o.cat===k?'selected':''}>${CATS[k].icon} ${CATS[k].label}</option>`).join('');
+  let h='';
+  if(o){
+    h+=`<div class="of-sec" style="margin-top:2px">Oferta</div>
+      <div class="of-row"><input class="form-input" value="${v(o.name)}" placeholder="Nazwa" onchange="ofRename(this.value)"></div>
+      <div class="of-row"><select class="form-input" onchange="ofSetOffer('cat',this.value)">${catOpts}</select>
+        <input class="form-input" type="color" value="${v(o.bg||'#dfe0e2')}" title="Kolor tła" style="flex:0 0 46px;padding:2px" onchange="ofSetOffer('bg',this.value)"></div>
+      <div class="of-sec">Dodaj</div>
+      <div class="of-row"><button class="of-btn" onclick="ofAddText()">＋ Tekst</button><button class="of-btn" onclick="ofAddImage(false)">＋ Zdjęcie</button>
+        <button class="of-btn" onclick="ofAddLine()">＋ Linia</button><button class="of-btn" onclick="ofAddBox()">＋ Ramka</button></div>`;
+  }
+  if(e){
+    const nm={text:'Tekst',img:'Zdjęcie',line:'Linia',box:'Ramka'}[e.t];
+    h+=`<div class="of-sec">Zaznaczone: ${nm}</div>`;
+    if(e.t==='text'){
+      h+=`<div class="of-hint" style="margin-bottom:8px">${ofEditing?'Piszesz w tekście. Zaznacz fragment, żeby go pogrubić albo zmienić kolor. Esc lub klik obok = koniec.':'Przeciągnij, żeby przesunąć. Dwuklik (na iPadzie: drugie stuknięcie) = edycja tekstu.'}</div>
+        <div class="of-row">${ofEditing?`<button class="of-btn on" onmousedown="event.preventDefault()" onclick="ofStopEdit()">✓ Gotowe</button>`:`<button class="of-btn" onclick="ofStartEdit(ofSelIdx)">✎ Edytuj tekst</button>`}</div>
+        <div class="of-row"><button class="of-btn" onmousedown="event.preventDefault()" onclick="ofScaleFont(1/1.1)" title="Mniejsza czcionka">A−</button>
+          <button class="of-btn" onmousedown="event.preventDefault()" onclick="ofScaleFont(1.1)" title="Większa czcionka">A+</button>
+          <button class="of-btn" onmousedown="event.preventDefault()" onclick="ofBold()" style="font-weight:800">B</button>
+          <input type="color" class="form-input" style="flex:0 0 46px;padding:2px" onmousedown="ofKeepSel()" onchange="ofColor(this.value)" title="Kolor (zaznaczenia albo całego tekstu)"></div>
+        <div class="of-row"><button class="of-btn" onclick="ofAlign('left')">⯇ Do lewej</button><button class="of-btn" onclick="ofAlign('center')">Środek</button><button class="of-btn" onclick="ofAlign('right')">Do prawej ⯈</button></div>`;
+    }
+    if(e.t==='img'){
+      h+=`<div class="of-row"><button class="of-btn" onclick="ofAddImage(true)">🖼 Zmień zdjęcie</button></div>
+        <div class="of-row"><button class="of-btn ${ofCropMode?'on':''}" onclick="ofCropMode=!ofCropMode;renderOfSide()">✥ Przesuwaj kadr</button>
+          <button class="of-btn" onclick="ofCropZoom(1.1)" title="Przybliż kadr">＋</button><button class="of-btn" onclick="ofCropZoom(1/1.1)" title="Oddal kadr">－</button></div>
+        <div class="of-hint" style="margin-bottom:8px">${ofCropMode?'Teraz przeciąganie przesuwa zdjęcie wewnątrz ramki.':'Przeciągnij, żeby przesunąć. Kółko w rogu zmienia rozmiar.'}</div>`;
+    }
+    if(e.t==='line') h+=`<div class="of-row"><input class="form-input" type="number" step="0.25" min="0.25" value="${v(e.th)}" title="Grubość" onchange="ofSetProp('th',parseFloat(this.value)||1)"><input type="color" class="form-input" style="flex:0 0 46px;padding:2px" value="${v(e.c||'#160e0c')}" onchange="ofColor(this.value)"></div>`;
+    if(e.t==='box') h+=`<div class="of-row"><input type="color" class="form-input" style="flex:0 0 46px;padding:2px" value="${v(e.bc||e.bg||'#2b2b2b')}" onchange="ofColor(this.value)"><input class="form-input" type="number" step="1" min="0" value="${v(e.br||0)}" title="Zaokrąglenie" onchange="ofSetProp('br',parseFloat(this.value)||0)"></div>`;
+    h+=`<div class="of-row"><button class="of-btn" onclick="ofNudge(-1,0)">←</button><button class="of-btn" onclick="ofNudge(1,0)">→</button><button class="of-btn" onclick="ofNudge(0,-1)">↑</button><button class="of-btn" onclick="ofNudge(0,1)">↓</button><button class="of-btn" onclick="ofRotate()" title="Obróć o 90°">⟲ 90°</button></div>
+      <div class="of-row"><button class="of-btn" onclick="ofLayer(1)">Na wierzch</button><button class="of-btn" onclick="ofLayer(-1)">Pod spód</button><button class="of-btn" onclick="ofDupEl()">⧉</button><button class="of-btn danger" onclick="ofDelEl()">🗑</button></div>`;
+  } else if(o){
+    h+=`<div class="of-hint" style="margin-top:14px">Kliknij element na ofercie, żeby go zaznaczyć i przesunąć. Dwuklik na tekście (na iPadzie: drugie stuknięcie) — edycja treści.</div>`;
+  }
+  h+=`<div class="of-sec">Oferty</div>
+    <div class="of-row"><button class="of-btn" onclick="ofImport()">📥 Importuj oferty z pliku</button></div>
+    ${o?`<div class="of-row"><button class="of-btn danger" onclick="ofDelete()">🗑 Usuń tę ofertę</button></div>`:''}
+    <div class="of-hint">Wszystko zapisuje się na Twoim Dysku Google — oferty są takie same na każdym urządzeniu.</div>`;
+  side.innerHTML=h;
+}
+let _ofSavedRange=null;
+function ofKeepSel(){ const s=window.getSelection(); if(ofEditing&&s.rangeCount)_ofSavedRange=s.getRangeAt(0).cloneRange(); }
+const _ofColorOrig=ofColor;
+ofColor=function(c){ if(ofEditing&&_ofSavedRange){const el=document.querySelector('#of-scale .oe.editing');el&&el.focus();const s=window.getSelection();s.removeAllRanges();s.addRange(_ofSavedRange);_ofSavedRange=null;} _ofColorOrig(c); };
+function ofSetOffer(k,v){ const o=ofCur();if(!o)return;ofSnap();o[k]=v;ofTouch(o);renderOfPage(); }
+function ofRename(v){ const o=ofCur();if(!o)return;o.name=v.trim()||o.name;ofTouch(o);renderOfPick(); }
+function ofSelect(id){ if(ofEditing)ofStopEdit(); ofCurId=id;ofSelIdx=-1;ofCropMode=false;try{localStorage.setItem('foto_offer_cur',id);}catch(e){} renderOffers(); }
 function ofNew(){
   const base=ofCur();
-  const year=new Date().getFullYear()+1;
-  const o={id:'of_'+uid(),name:'Nowa oferta',cat:'wesele',title:'WEDDING\nPHOTOGRAPHY',subtitle:'OFERTA '+year,accent:base?.accent||'#b25d27',
-    packages:[],addonsTitle:'DODATKI :',addons:'',infoTitle:'INFORMACJE DODATKOWE:',info:'',
-    phone:base?.phone||'',www:base?.www||'',email:base?.email||'',photoId:'',logoId:base?.logoId||'',updatedAt:Date.now()};
-  offers.push(o);saveOffers();ofSelect(o.id);
+  if(base&&confirm('Nowa oferta na bazie obecnej?\n\nOK = kopia obecnej (zmienisz teksty)\nAnuluj = pusta strona')) return ofDuplicate();
+  const o={id:'of_'+uid(),name:'Nowa oferta',cat:base?.cat||'wesele',w:595,h:842,bg:base?.bg||'#dfe0e2',els:[],updatedAt:Date.now()};
+  offers.push(o);saveOffersNow();ofSelect(o.id);
 }
 function ofDuplicate(){
   const o=ofCur();if(!o)return;
   const c={...JSON.parse(JSON.stringify(o)),id:'of_'+uid(),name:o.name+' (kopia)',updatedAt:Date.now()};
-  offers.push(c);saveOffers();ofSelect(c.id);
+  offers.push(c);saveOffersNow();ofSelect(c.id);
 }
 function ofDelete(){
   const o=ofCur();if(!o)return;
   if(!confirm(`Usunąć ofertę „${o.name}"?`))return;
   if(!confirm(`NA PEWNO usunąć „${o.name}"? Tej operacji nie można cofnąć.`))return;
-  o.deleted=true;o.updatedAt=Date.now();saveOffers();ofCurId='';renderOffers();
+  o.deleted=true;o.updatedAt=Date.now();saveOffersNow();ofCurId='';ofSelIdx=-1;renderOffers();
 }
-
-// ── widok ──
-function renderOfPick(){
-  const sel=document.getElementById('of-pick');if(!sel)return;
-  const cur=ofCur();
-  sel.innerHTML=ofList().map(o=>`<option value="${o.id}" ${cur&&o.id===cur.id?'selected':''}>${esc(o.name||'(bez nazwy)')}</option>`).join('');
+// Import paczki ofert (plik .json przygotowany z Keynote): zdjęcia lecą na Dysk, oferty do aplikacji.
+async function ofImport(){
+  const f=await ofPickFile('.json,application/json');if(!f)return;
+  let b;try{b=JSON.parse(await f.text());}catch(e){alert('To nie jest plik z ofertami.');return;}
+  if(b.kind!=='fotoplaner-oferty'||!Array.isArray(b.offers)){alert('To nie jest plik z ofertami FotoPlanera.');return;}
+  const exist=b.offers.filter(x=>offers.some(o=>o.id===x.id&&!o.deleted));
+  if(!confirm(`Zaimportować ${b.offers.length} ofert${exist.length?` (${exist.length} już istnieje — zostaną zastąpione)`:''}?\n\nZdjęcia (${Object.keys(b.images||{}).length}) zostaną zapisane na Twoim Dysku Google.`))return;
+  if(!await ofNeedDrive())return;
+  try{
+    const map={};const keys=Object.keys(b.images||{});
+    for(let k=0;k<keys.length;k++){
+      showDriveToast(`⬆ Zdjęcia na Dysk: ${k+1}/${keys.length}…`);
+      const blob=await (await fetch(b.images[keys[k]])).blob();
+      map['key:'+keys[k]]=await ofUploadImage(blob,'oferta-'+keys[k]+(blob.type==='image/png'?'.png':'.jpg'));
+    }
+    const now=Date.now();
+    b.offers.forEach(x=>{
+      x.els.forEach(e=>{if(e.img&&map[e.img])e.img=map[e.img];});
+      x.updatedAt=now;delete x.deleted;
+      const i=offers.findIndex(o=>o.id===x.id); if(i>=0)offers[i]=x; else offers.push(x);
+    });
+    offers.forEach(o=>{if(!Array.isArray(o.els)&&!o.deleted){o.deleted=true;o.updatedAt=now;}});   // stary format z pierwszej wersji
+    saveOffersNow();if(gdriveToken)gdriveSave();
+    ofCurId=b.offers[0].id;ofSelIdx=-1;renderOffers();
+    showDriveToast(`✅ Zaimportowano ${b.offers.length} ofert`);
+  }catch(e){showDriveToast('Błąd importu: '+e.message,true);}
 }
-function renderOffers(){
-  renderOfPick();
-  const side=document.getElementById('of-side');if(!side)return;
-  const o=ofCur();
-  if(!o){side.innerHTML='<div class="of-hint" style="padding:20px 0">Brak ofert. Kliknij „+ Nowa".</div>';document.getElementById('of-scale').innerHTML='';return;}
-  const v=s=>esc(s==null?'':String(s));
-  const ta=(f,rows)=>`<textarea rows="${rows||4}" oninput="ofSet('${f}',this.value)">${v(o[f])}</textarea>`;
-  const catOpts=Object.keys(CATS).map(k=>`<option value="${k}" ${o.cat===k?'selected':''}>${CATS[k].icon} ${CATS[k].label}</option>`).join('');
-  const thumb=id=>`<div class="of-img-thumb" id="of-th-${id||'none'}"></div>`;
-  side.innerHTML=`
-    <div class="of-sec" style="margin-top:2px">Oferta</div>
-    <div class="of-row"><input class="form-input" value="${v(o.name)}" placeholder="Nazwa (tylko dla Ciebie)" oninput="ofSet('name',this.value)"></div>
-    <div class="of-row"><select class="form-input" onchange="ofSet('cat',this.value)">${catOpts}</select>
-      <input class="form-input" type="color" value="${v(o.accent||'#b25d27')}" style="max-width:56px;padding:2px" title="Kolor akcentu" oninput="ofSet('accent',this.value)"></div>
-    <div class="of-sec">Tytuł (pionowo, po lewej)</div>
-    ${ta('title',2)}
-    <div class="of-row" style="margin-top:8px"><input class="form-input" value="${v(o.subtitle)}" placeholder="np. OFERTA 2027" oninput="ofSet('subtitle',this.value)"></div>
-    <div class="of-sec">Zdjęcia (zapisywane na Twoim Dysku Google)</div>
-    <div class="of-img-row">${thumb(o.photoId)}<div style="flex:1" class="of-hint">Zdjęcie główne</div><button class="btn-ghost" style="font-size:11px;padding:5px 9px" onclick="ofPickImage('photoId')">${o.photoId?'Zmień':'Dodaj'}</button></div>
-    <div class="of-img-row">${thumb(o.logoId)}<div style="flex:1" class="of-hint">Logo (PNG z przezroczystym tłem)</div><button class="btn-ghost" style="font-size:11px;padding:5px 9px" onclick="ofPickImage('logoId')">${o.logoId?'Zmień':'Dodaj'}</button></div>
-    <div class="of-sec">Pakiety</div>
-    ${o.packages.map((p,i)=>`<div class="of-pkg">
-      <div class="of-row" style="margin-bottom:6px"><input class="form-input" value="${v(p.name)}" placeholder="Nazwa" oninput="ofPkgSet(${i},'name',this.value)">
-        <input class="form-input" type="number" inputmode="numeric" value="${v(p.price)}" placeholder="Cena zł" style="max-width:96px" oninput="ofPkgSet(${i},'price',this.value)"></div>
-      <textarea rows="5" placeholder="Zawartość — jedna pozycja w linii" oninput="ofPkgSet(${i},'items',this.value)">${v((p.items||[]).join('\n'))}</textarea>
-      <div style="display:flex;gap:6px;margin-top:6px;justify-content:flex-end">
-        <button class="btn-ghost" style="font-size:11px;padding:3px 8px" onclick="ofPkgMove(${i},-1)" title="W lewo">◀</button>
-        <button class="btn-ghost" style="font-size:11px;padding:3px 8px" onclick="ofPkgMove(${i},1)" title="W prawo">▶</button>
-        <button class="btn-ghost" style="font-size:11px;padding:3px 8px;color:var(--danger)" onclick="ofPkgDel(${i})">Usuń</button></div>
-    </div>`).join('')}
-    <div style="display:flex;gap:6px">
-      <button class="btn-ghost" style="font-size:11px;padding:5px 9px" onclick="ofPkgAdd()">+ Pakiet</button>
-      <button class="btn-ghost" style="font-size:11px;padding:5px 9px" onclick="ofFromCennik()" title="Wczytaj nazwy, ceny i zawartość z ⚙ Ustawienia → Pakiety">⟳ Z cennika (${v(CATS[o.cat]?.label||o.cat)})</button>
-    </div>
-    <div class="of-sec">Dodatki</div>
-    <div class="of-row"><input class="form-input" value="${v(o.addonsTitle)}" oninput="ofSet('addonsTitle',this.value)"></div>
-    ${ta('addons',4)}
-    <div class="of-hint" style="margin-top:4px">Jedna pozycja w linii. Kwota po ostatnim „ - " jest pogrubiona.</div>
-    <div class="of-sec">Informacje</div>
-    <div class="of-row"><input class="form-input" value="${v(o.infoTitle)}" oninput="ofSet('infoTitle',this.value)"></div>
-    ${ta('info',5)}
-    <div class="of-sec">Kontakt (stopka)</div>
-    <div class="of-row"><input class="form-input" value="${v(o.phone)}" placeholder="Telefon" oninput="ofSet('phone',this.value)"></div>
-    <div class="of-row"><input class="form-input" value="${v(o.www)}" placeholder="Strona" oninput="ofSet('www',this.value)"></div>
-    <div class="of-row"><input class="form-input" value="${v(o.email)}" placeholder="E-mail" oninput="ofSet('email',this.value)"></div>
-    <button class="btn-ghost" style="font-size:11px;padding:6px 10px;color:var(--danger);margin-top:14px" onclick="ofDelete()">🗑 Usuń tę ofertę</button>`;
-  renderOfferPage();
-  [['photoId',o.photoId],['logoId',o.logoId]].forEach(([,id])=>{ if(id) ofImgUrl(id).then(u=>{const t=document.getElementById('of-th-'+id);if(t&&u)t.style.backgroundImage=`url("${u}")`;}); });
-}
-function ofAddonLine(line){
-  const i=line.lastIndexOf(' - ');
-  return i>0?`${esc(line.slice(0,i))} - <b>${esc(line.slice(i+3))}</b>`:esc(line);
-}
-function offerPageHtml(o,urls){
-  const lines=s=>(s||'').split('\n').map(x=>x.trim()).filter(Boolean);
-  const n=Math.max(1,o.packages.length);
-  const fmt=p=>p===''||p==null?'':`- ${Number(p).toLocaleString('pl').replace(/\s/g,'')} zł`;
-  const ic={
-    tel:'<svg viewBox="0 0 24 24"><path fill="#2b2b2b" d="M6.6 10.8a15.1 15.1 0 0 0 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1A17 17 0 0 1 3 4c0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.3.2 2.5.6 3.6.1.3 0 .7-.2 1z"/></svg>',
-    www:'<svg viewBox="0 0 24 24" fill="none" stroke="#2b2b2b" stroke-width="2"><circle cx="12" cy="12" r="9.5"/><path d="M2.5 12h19M12 2.5c3 3.2 3 15.8 0 19M12 2.5c-3 3.2-3 15.8 0 19M4.5 6.8h15M4.5 17.2h15"/></svg>',
-    mail:'<svg viewBox="0 0 24 24" fill="none" stroke="#2b2b2b" stroke-width="1.6"><rect x="2.5" y="5" width="19" height="14" rx="1.5"/><path d="M3 6l9 7 9-7"/></svg>'};
-  const addons=lines(o.addons), info=lines(o.info);
-  return `<div class="op">
-    <div class="op-photo ${urls.photo?'':'empty'}" style="${urls.photo?`background-image:url('${urls.photo}')`:''}">${urls.photo?'':(o.photoId?'Zdjęcie jest na Dysku — połącz z Google (☁ Drive)':'Dodaj zdjęcie główne (panel po lewej)')}</div>
-    ${urls.logo?`<div class="op-logo" style="background-image:url('${urls.logo}')"></div>`:''}
-    <div class="op-vt"><div class="op-vt-1">${esc(o.title||'').replace(/\n/g,'<br>')}</div></div>
-    <div class="op-vt-2" style="color:${esc(o.accent||'#b25d27')}">${esc(o.subtitle||'')}</div>
-    <div class="op-body">
-      <div class="op-pkgs" style="grid-template-columns:repeat(${n},1fr)">
-        ${o.packages.map(p=>`<div class="op-pkg"><div class="op-pkg-t">${esc(p.name)}${fmt(p.price)}</div>
-          <ul>${(p.items||[]).map(i=>`<li>${esc(i)}</li>`).join('')}</ul></div>`).join('')}
-      </div>
-      <div class="op-hr"></div>
-      ${addons.length?`<div class="op-h">${esc(o.addonsTitle||'')}</div><ul class="op-list">${addons.map(a=>`<li>${ofAddonLine(a)}</li>`).join('')}</ul><div class="op-gap"></div>`:''}
-      ${info.length?`<div class="op-h">${esc(o.infoTitle||'')}</div><ul class="op-list bold">${info.map(a=>`<li>${esc(a)}</li>`).join('')}</ul>`:''}
-    </div>
-    <div class="op-foot">
-      ${o.phone?`<span>${ic.tel}${esc(o.phone)}</span>`:''}
-      ${o.www?`<span>${ic.www}${esc(o.www)}</span>`:''}
-      ${o.email?`<span class="op-mail">${ic.mail}${esc(o.email)}</span>`:''}
-    </div>
-  </div>`;
-}
-let _ofRenderSeq=0;
-async function renderOfferPage(){
-  const o=ofCur();const box=document.getElementById('of-scale');if(!box||!o)return;
-  const seq=++_ofRenderSeq;
-  const urls={photo:ofImgCache[o.photoId]||'',logo:ofImgCache[o.logoId]||''};
-  box.innerHTML=offerPageHtml(o,urls);
-  ofFit();
-  if((o.photoId&&!urls.photo)||(o.logoId&&!urls.logo)){
-    const [p,l]=await Promise.all([ofImgUrl(o.photoId),ofImgUrl(o.logoId)]);
-    if(seq!==_ofRenderSeq)return;
-    box.innerHTML=offerPageHtml(o,{photo:p,logo:l});ofFit();
-  }
-}
-function ofFit(){
-  const st=document.getElementById('of-stage'),sc=document.getElementById('of-scale');if(!st||!sc)return;
-  const k=Math.min(1,Math.max(0.3,(st.clientWidth-36)/794));
-  sc.style.transform=`scale(${k})`;sc.style.height=(1123*k)+'px';sc.style.width=(794*k)+'px';
-  sc.style.transformOrigin='top left';
-}
-window.addEventListener('resize',()=>{if(document.getElementById('view-oferty')?.classList.contains('active'))ofFit();});
 
 // ── eksport PNG / JPEG ──
 function loadHtml2Canvas(){
@@ -4585,17 +4716,19 @@ function loadHtml2Canvas(){
 }
 async function ofExport(kind){
   const o=ofCur();if(!o)return;
+  if(ofEditing)ofStopEdit();
   try{
     showDriveToast('🖼 Przygotowuję plik…');
     await loadHtml2Canvas();
-    const [p,l]=await Promise.all([ofImgUrl(o.photoId),ofImgUrl(o.logoId)]);
+    const refs=[...new Set(o.els.filter(e=>e.img).map(e=>e.img))];
+    await Promise.all(refs.map(ofImgUrl));
     const host=document.createElement('div');
-    host.style.cssText='position:fixed;left:-10000px;top:0;width:794px;height:1123px;';
-    host.innerHTML=offerPageHtml(o,{photo:p,logo:l});
-    host.firstElementChild.style.boxShadow='none';
+    host.style.cssText=`position:fixed;left:-20000px;top:0;width:${o.w||595}px;height:${o.h||842}px;`;
+    host.innerHTML=offerHtml(o,ofImgSync);
+    host.querySelectorAll('.oe-i > div:not(.oe-im)').forEach(x=>x.remove());
     document.body.appendChild(host);
-    await new Promise(r=>setTimeout(r,120));
-    const canvas=await html2canvas(host.firstElementChild,{scale:2480/794,backgroundColor:'#dfe0e2',useCORS:true,logging:false});
+    await new Promise(r=>setTimeout(r,150));
+    const canvas=await html2canvas(host.firstElementChild,{scale:2480/(o.w||595),backgroundColor:o.bg||'#dfe0e2',useCORS:true,logging:false});
     host.remove();
     const mime=kind==='png'?'image/png':'image/jpeg';
     const blob=await new Promise(r=>canvas.toBlob(r,mime,0.92));
