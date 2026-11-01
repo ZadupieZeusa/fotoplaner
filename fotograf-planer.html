@@ -524,7 +524,7 @@ html.standalone .top-spacer{display:block}
 <!-- ── TOPBAR ── -->
 <div class="top-spacer"></div>
 <header class="topbar">
-  <div class="logo">📷 <span>Foto</span>Planer <small style="font-size:9px;font-weight:500;color:var(--text3);letter-spacing:0" title="Wersja pliku">v1.14</small></div>
+  <div class="logo">📷 <span>Foto</span>Planer <small style="font-size:9px;font-weight:500;color:var(--text3);letter-spacing:0" title="Wersja pliku">v1.15</small></div>
   <nav class="main-nav">
     <button class="mnav active" onclick="setMainView('planer')">📅 Planer</button>
     <button class="mnav" onclick="setMainView('timeline')">📊 Timeline</button>
@@ -3386,7 +3386,10 @@ function restoreDefaultPackages(){
 
 // Keyboard shortcut
 document.addEventListener('keydown',e=>{
-  if(e.key==='n'&&!['INPUT','TEXTAREA','SELECT'].includes(document.activeElement.tagName)){
+  const ae=document.activeElement;
+  const typing=ae&&(['INPUT','TEXTAREA','SELECT'].includes(ae.tagName)||ae.isContentEditable);
+  // „N" = nowe zlecenie tylko w Planerze/Timeline/Dashboardzie/Roku — nigdy w trakcie pisania ani w edytorze ofert/umów
+  if(e.key==='n'&&!e.metaKey&&!e.ctrlKey&&!e.altKey&&!typing&&!['oferty','umowy'].includes(mainView)){
     e.preventDefault();openAddModal();
   }
   if(e.key==='Escape'){
