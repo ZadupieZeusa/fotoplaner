@@ -524,7 +524,7 @@ html.standalone .top-spacer{display:block}
 <!-- ── TOPBAR ── -->
 <div class="top-spacer"></div>
 <header class="topbar">
-  <div class="logo">📷 <span>Foto</span>Planer <small style="font-size:9px;font-weight:500;color:var(--text3);letter-spacing:0" title="Wersja pliku">v1.15</small></div>
+  <div class="logo">📷 <span>Foto</span>Planer <small style="font-size:9px;font-weight:500;color:var(--text3);letter-spacing:0" title="Wersja pliku">v1.17</small></div>
   <nav class="main-nav">
     <button class="mnav active" onclick="setMainView('planer')">📅 Planer</button>
     <button class="mnav" onclick="setMainView('timeline')">📊 Timeline</button>
@@ -4422,9 +4422,11 @@ function ofElHtml(e,i,url){
   if(e.t==='line') return `<div class="oe oe-l" data-i="${i}" style="${pos}height:${Math.max(6,e.th||1)}px;margin-top:-3px;${rot}"><div style="border-top:${e.th||1}px solid ${e.c||'#333'};margin-top:3px"></div></div>`;
   if(e.t==='img'){
     const inner=e.iw?`left:${e.ix}px;top:${e.iy}px;width:${e.iw}px;height:${e.ih}px;`:'left:0;top:0;width:100%;height:100%;';
-    const bg=url?`background-image:url('${url}');`:'background-color:#c8c8c8;';
+    // <img> zamiast tła: html2canvas rysuje tło w niskiej rozdzielczości (rozmyte logo/zdjęcia w eksporcie)
+    const im=url?`<img class="oe-im" src="${url}" alt="" draggable="false" data-fit="${e.fit==='contain'?'contain':'cover'}" style="position:absolute;${inner}object-fit:${e.fit==='contain'?'contain':'cover'};pointer-events:none;max-width:none">`
+                :`<div class="oe-im" style="position:absolute;${inner}background-color:#c8c8c8"></div>`;
     const ph=url?'':`<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:${Math.max(7,Math.min(14,e.w/14))}px;color:#777;text-align:center;padding:4px">${e.img?'zdjęcie na Dysku':'dodaj zdjęcie'}</div>`;
-    return `<div class="oe oe-i" data-i="${i}" style="${pos}height:${e.h}px;${deco}${rot}"><div class="oe-im" style="${inner}${bg}background-size:${e.fit==='contain'?'contain':'cover'};background-position:center;background-repeat:no-repeat"></div>${ph}</div>`;
+    return `<div class="oe oe-i" data-i="${i}" style="${pos}height:${e.h}px;${deco}${rot}">${im}${ph}</div>`;
   }
   return '';
 }
@@ -5021,6 +5023,16 @@ async function ofRenderPages(o){
     host.innerHTML=offerHtml(o,ofImgSync,p);
     host.querySelectorAll('.oe-i > div:not(.oe-im)').forEach(x=>x.remove());
     document.body.appendChild(host);
+    // html2canvas nie zna object-fit — przelicz dokładne wymiary każdego zdjęcia
+    for(const img of host.querySelectorAll('img.oe-im')){
+      try{ await img.decode(); }catch(e){}
+      const nw=img.naturalWidth,nh=img.naturalHeight;if(!nw||!nh)continue;
+      const W=img.offsetWidth,H=img.offsetHeight,L=img.offsetLeft,T=img.offsetTop;
+      const k=img.dataset.fit==='contain'?Math.min(W/nw,H/nh):Math.max(W/nw,H/nh);
+      const w=nw*k,h=nh*k;
+      img.style.objectFit='fill';img.style.width=w+'px';img.style.height=h+'px';
+      img.style.left=(L+(W-w)/2)+'px';img.style.top=(T+(H-h)/2)+'px';
+    }
     await new Promise(r=>setTimeout(r,120));
     out.push(await html2canvas(host.firstElementChild,{scale:2480/(o.w||595),backgroundColor:o.bg||'#dfe0e2',useCORS:true,logging:false}));
     host.remove();
@@ -5035,7 +5047,7 @@ async function ofExport(kind){
   const o=ofCur();if(!o)return;
   if(ofEditing)ofStopEdit();
   try{
-    const base=(o.name||'Oferta').replace(/[\\/:*?"<>|]+/g,'').replace(/[—–]/g,'-').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/ł/g,'l').replace(/Ł/g,'L').trim().replace(/\s+/g,'-').replace(/-{2,}/g,'-');
+    const base=(o.name||(ofMode==='umowa'?'Umowa':'Oferta')).replace(/[\\/:*?"<>|]+/g,'').replace(/\s+/g,' ').trim()||'Oferta';   // nazwa pliku = tytuł
     const canvases=await ofRenderPages(o);
     let files=[];
     if(kind==='pdf'||kind==='pdfshare'){
@@ -5048,7 +5060,7 @@ async function ofExport(kind){
       const mime=kind==='png'?'image/png':'image/jpeg', ext=kind==='png'?'.png':'.jpg';
       for(let k=0;k<canvases.length;k++){
         const b=await new Promise(r=>canvases[k].toBlob(r,mime,0.92));
-        files.push(new File([b],base+(canvases.length>1?'-str'+(k+1):'')+ext,{type:mime}));
+        files.push(new File([b],base+(canvases.length>1?' - str. '+(k+1):'')+ext,{type:mime}));
       }
     }
     if(kind==='share'||kind==='pdfshare'){
